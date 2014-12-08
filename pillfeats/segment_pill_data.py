@@ -114,7 +114,7 @@ def summarize(segments, interval_in_minutes):
         
         for i in range(len(myenergies)):
             #transform energy output to to a quantized log value
-            logval = int(numpy.round(numpy.log10(myenergies[i] + 1.0)))
+            logval = int(numpy.ceil(numpy.log10(myenergies[i] + 1.0) + 1))
             myenergies[i] = logval
         
         summary.append({key_counts : mycounts,  key_energies : myenergies})
