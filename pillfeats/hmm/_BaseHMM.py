@@ -45,8 +45,8 @@ class _BaseHMM(object):
         if (cache==False):
             self._mapB(observations)
         
-        alpha = self._calcalpha(observations)
-        return numpy.log(sum(alpha[-1]))
+        alpha, c = self._calcalpha(observations)
+        return numpy.log(sum(alpha[-1])) + numpy.sum(numpy.log(c))
     
     def _calcalpha(self,observations):
         '''
@@ -57,6 +57,7 @@ class _BaseHMM(object):
         first t symbols.
         '''        
         alpha = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        c = numpy.ones((len(observations), ))
         
         # init stage - alpha_1(x) = pi(x)b_x(O1)
         for x in xrange(self.n):
@@ -67,11 +68,16 @@ class _BaseHMM(object):
             for j in xrange(self.n):
                 for i in xrange(self.n):
                     alpha[t][j] += alpha[t-1][i]*self.A[i][j]
+                
                 alpha[t][j] *= self.B_map[j][t]
                 
-        return alpha
+            c[t] = numpy.sum(alpha[t][:])
+                
+            alpha[t][:] = alpha[t][:] / c[t] 
+                
+        return (alpha, c)
 
-    def _calcbeta(self,observations):
+    def _calcbeta(self,observations, c):
         '''
         Calculates 'beta' the backward variable.
         
@@ -91,6 +97,9 @@ class _BaseHMM(object):
                 for j in xrange(self.n):
                     beta[t][i] += self.A[i][j]*self.B_map[j][t+1]*beta[t+1][j]
                     
+                
+            beta[t][:] = beta[t][:] / c[t]    
+        
         return beta
     
     def decode(self, observations):
@@ -156,10 +165,8 @@ class _BaseHMM(object):
         xi[t][i][j] = the probability of being in state 'i' at time 't', and 'j' at
         time 't+1' given the entire observation sequence.
         '''        
-        if alpha is None:
-            alpha = self._calcalpha(observations)
-        if beta is None:
-            beta = self._calcbeta(observations)
+        alpha, c = self._calcalpha(observations)
+        beta = self._calcbeta(observations, c)
         xi = numpy.zeros((len(observations),self.n,self.n),dtype=self.precision)
         
         for t in xrange(len(observations)-1):
@@ -172,6 +179,8 @@ class _BaseHMM(object):
                     thing *= self.B_map[j][t+1]
                     thing *= beta[t+1][j]
                     denom += thing
+                    
+
             for i in xrange(self.n):
                 for j in xrange(self.n):
                     numer = 1.0
@@ -179,8 +188,9 @@ class _BaseHMM(object):
                     numer *= self.A[i][j]
                     numer *= self.B_map[j][t+1]
                     numer *= beta[t+1][j]
-                    xi[t][i][j] = numer/denom
                     
+                    xi[t][i][j] = numer/denom
+        
         return xi
 
     def _calcgamma(self,xi,seqlen):
@@ -195,6 +205,7 @@ class _BaseHMM(object):
         for t in xrange(seqlen):
             for i in xrange(self.n):
                 gamma[t][i] = sum(xi[t][i])
+        
         
         return gamma
     
@@ -220,9 +231,9 @@ class _BaseHMM(object):
             if (self.verbose):      
                 print "iter: ", i, ", L(model|O) =", prob_old, ", L(model_new|O) =", prob_new, ", converging =", ( prob_new-prob_old > thres )
                 
-            if ( abs(prob_new-prob_old) < epsilon ):
-                # converged
-                break
+            #if ( abs(prob_new-prob_old) < epsilon ):
+            #    # converged
+            #    break
                 
     def _updatemodel(self,new_model):
         '''
@@ -284,8 +295,18 @@ class _BaseHMM(object):
         '''
         stats = {}
         
-        stats['alpha'] = self._calcalpha(observations)
-        stats['beta'] = self._calcbeta(observations)
+        alpha, c = self._calcalpha(observations)
+        
+#        for t in xrange(alpha.shape[0]):
+#            alpha[t][:] = alpha[t][:] * c[t]
+        
+        beta = self._calcbeta(observations, c)
+        
+#        for t in xrange(beta.shape[0]):
+#            beta[t][:] = beta[t][:] / c[t]
+        
+        stats['alpha'] = alpha
+        stats['beta'] = beta
         stats['xi'] = self._calcxi(observations,stats['alpha'],stats['beta'])
         stats['gamma'] = self._calcgamma(stats['xi'],len(observations))
         
