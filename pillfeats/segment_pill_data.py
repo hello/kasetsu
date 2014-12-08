@@ -10,10 +10,10 @@ key_counts = 'counts'
 key_energies = 'energies'
 
 k_conversion_factor = (1.0 / 1000.0 / 60.0) # to minutes from milliseconds
-k_interval = 15.0 # minutes
+k_interval = 6.0 # minutes
 k_segment_split_duaration = 60.0 * 3.0 #minutes
-k_max_segment_length_in_intervals = 60 #intervals
-k_min_segment_length_in_intervals = 15 #intervals
+k_max_segment_length_in_intervals = 60*3 #intervals
+k_min_segment_length_in_intervals = 15*3 #intervals
 
 def flatten(days_of_data):
     events = []

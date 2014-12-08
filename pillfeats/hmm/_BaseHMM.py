@@ -46,7 +46,7 @@ class _BaseHMM(object):
             self._mapB(observations)
         
         alpha, c = self._calcalpha(observations)
-        return numpy.log(sum(alpha[-1])) + numpy.sum(numpy.log(c))
+        return numpy.sum(numpy.log(c))
     
     def _calcalpha(self,observations):
         '''
@@ -141,7 +141,18 @@ class _BaseHMM(object):
                     if (delta[t][j] < delta[t-1][i]*self.A[i][j]):
                         delta[t][j] = delta[t-1][i]*self.A[i][j]
                         psi[t][j] = i
+                
                 delta[t][j] *= self.B_map[j][t]
+                
+            normalizer = numpy.sum(delta[t][:])
+            
+            if normalizer < 1e-8:
+                normalizer = 1.0 / delta.shape[1]
+                delta[t][:] = 1
+                
+                
+            delta[t][:] = delta[t][:] / normalizer
+                
         
         # termination: find the maximum probability for the entire sequence (=highest prob path)
         p_max = 0 # max value in time T (max)
