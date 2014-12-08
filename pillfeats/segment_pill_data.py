@@ -12,7 +12,7 @@ key_energies = 'energies'
 k_conversion_factor = (1.0 / 1000.0 / 60.0) # to minutes from milliseconds
 k_interval = 15.0 # minutes
 k_segment_split_duaration = 60.0 * 3.0 #minutes
-k_max_segment_length_in_intervals = 50 #intervals
+k_max_segment_length_in_intervals = 60 #intervals
 k_min_segment_length_in_intervals = 15 #intervals
 
 def flatten(days_of_data):
@@ -88,6 +88,10 @@ def summarize(segments, interval_in_minutes):
     summary = []
     for segment in segments:
         times = [int(item[key_time]) for item in segment]
+        
+        if times is None or len(times) == 0:
+            continue
+            
         t0 = times[0]
     
         #get time in minutes from first
@@ -149,13 +153,8 @@ def enforce_summary_length(summary, min_length, max_length):
         
     return summary2
     
-if __name__ == '__main__':
-    f = open(sys.argv[1])
-    data = json.load(f)
-    f.close()
-    
-    
-    events = flatten(data)
+def process(jsondata):
+    events = flatten(jsondata)
     events2 = filter_bad_values(events)
     
     segments2 = segment(events2)
@@ -163,6 +162,15 @@ if __name__ == '__main__':
 
     summary2 = enforce_summary_length(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
 
+    return summary2
+    
+    
+if __name__ == '__main__':
+    f = open(sys.argv[1])
+    data = json.load(f)
+    f.close()
+    
+    summary2 = process(data)
     f = open(sys.argv[1] + '.summary', 'w')
     json.dump(summary2, f)
     f.close()
