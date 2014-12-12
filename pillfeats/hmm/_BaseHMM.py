@@ -307,15 +307,10 @@ class _BaseHMM(object):
         stats = {}
         
         alpha, c = self._calcalpha(observations)
-        
-#        for t in xrange(alpha.shape[0]):
-#            alpha[t][:] = alpha[t][:] * c[t]
-        
         beta = self._calcbeta(observations, c)
         
-#        for t in xrange(beta.shape[0]):
-#            beta[t][:] = beta[t][:] / c[t]
-        
+        stats['loglik'] = numpy.sum(numpy.log(c))
+        stats['lik'] = numpy.exp(stats['loglik'])
         stats['alpha'] = alpha
         stats['beta'] = beta
         stats['xi'] = self._calcxi(observations,stats['alpha'],stats['beta'])

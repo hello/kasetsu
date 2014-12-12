@@ -4,8 +4,10 @@ import segment_pill_data
 import json
 from numpy import *
 from hmm.discrete.DiscreteHMM import DiscreteHMM
+from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
 k_files = ['ben.json', 'bryan.json', 'pang.json']
+
 
 if __name__ == '__main__':
     energies = []
@@ -73,18 +75,40 @@ if __name__ == '__main__':
     print energies.shape
     set_printoptions(precision=4, suppress=True, threshold=nan)
     hmm = DiscreteHMM(N, M, A, B, x, init_type='user', verbose=True)
+    print hmm.forwardbackward(obs)
     
-    hmm.train(obs, 4)
+ #   hmm.train(obs, 5)
     
-    print "Pi",hmm.pi
-    print "A",hmm.A
-    print "B", hmm.B
+#    print "Pi",hmm.pi
+#    print "A",hmm.A
+#    print "B", hmm.B
     
+    multidimensionaldata = []
+    for seq in esequences:
+        d1 = [concatenate((zeros((10, )), seq))]
+        multidimensionaldata.append(d1)
+        
+    hmm2 = MultipleDiscreteHMM(A,x)
+    hmm2.addModel(B)
+    
+    ll2 = hmm2.forwardbackward(multidimensionaldata)
+    print ll2
+    print hmm2.obsmodels
+    print hmm2.A
+    for i in range(5):
+        hmm2.training_iter(multidimensionaldata)
+        ll2 = hmm2.forwardbackward(multidimensionaldata)
+        print ll2
+        print hmm2.obsmodels
+        print hmm2.A
+ 
+
  #   idx = 4
 #    figure(1)
 #    plot(hmm.decode(obs))
 #    show()
 
+'''
     k = 0
     for seq in esequences:
         path = hmm.decode(seq)
@@ -97,6 +121,6 @@ if __name__ == '__main__':
         #if k > 10:
         #    break
     
-    
+'''
     
     
