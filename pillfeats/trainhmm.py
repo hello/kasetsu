@@ -7,6 +7,8 @@ from numpy.random import *
 from hmm.discrete.DiscreteHMM import DiscreteHMM
 from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
+import sys
+
 k_files = ['ben.json', 'bryan.json', 'pang.json']
 
             
@@ -59,26 +61,32 @@ if __name__ == '__main__':
     B2 = B2 / row_sums[:, newaxis]
     
     x = array([0.9,0.05 , 0.05])
-    
-    print B1
-    print B2
         
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
     hmm2.addModel(B2)
-
-    ll2 = hmm2.forwardbackward(meas)
-    print ll2
-  
-    for i in range(20):
-        hmm2.training_iter(meas)
-        ll2 = hmm2.forwardbackward(meas)
-        print ll2
-  
- 
+    
+    #hmm2.decode(meas[0])
+    #sys.exit(0)
+    
+    hmm2.train(meas, 10)
+    
     print hmm2.obsmodels
     print hmm2.A
     print hmm2.pi
+    
+    for m in meas:
+        x = hmm2.decode(m)
+        numhours = sum([f == 2 for f in x]) / 10.0
+        t = array(range(len(m[0])))/10.0
+        #print len(t),len(x), len(m[0]), len(m[1])
+        plot(t, x, 'k.-')
+        plot(t, m[0])
+        plot(t, m[1])
+        title('%f hours slept I think' % numhours)
+        legend(['state', 'energies', 'num times woken'])
+        show()
+ 
  #   idx = 4
 #    figure(1)
 #    plot(hmm.decode(obs))

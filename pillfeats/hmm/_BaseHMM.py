@@ -109,9 +109,9 @@ class _BaseHMM(object):
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations)
+        return self._viterbi(observations, len(observations))
     
-    def _viterbi(self, observations):
+    def _viterbi(self, observations, numobs):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
         very similar to the forward-backward algorithm, with the added step of maximization and eventual
@@ -126,8 +126,8 @@ class _BaseHMM(object):
         # similar to the forward-backward algorithm, we need to make sure that we're using fresh data for the given observations.
         self._mapB(observations)
         
-        delta = numpy.zeros((len(observations),self.n),dtype=self.precision)
-        psi = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        delta = numpy.zeros((numobs,self.n),dtype=self.precision)
+        psi = numpy.zeros((numobs,self.n),dtype=self.precision)
         
         # init
         for x in xrange(self.n):
@@ -135,7 +135,7 @@ class _BaseHMM(object):
             psi[0][x] = 0
         
         # induction
-        for t in xrange(1,len(observations)):
+        for t in xrange(1,numobs):
             for j in xrange(self.n):
                 for i in xrange(self.n):
                     if (delta[t][j] < delta[t-1][i]*self.A[i][j]):
@@ -156,16 +156,16 @@ class _BaseHMM(object):
         
         # termination: find the maximum probability for the entire sequence (=highest prob path)
         p_max = 0 # max value in time T (max)
-        path = numpy.zeros((len(observations)),dtype=self.precision)
+        path = numpy.zeros((numobs),dtype=self.precision)
         for i in xrange(self.n):
-            if (p_max < delta[len(observations)-1][i]):
-                p_max = delta[len(observations)-1][i]
-                path[len(observations)-1] = i
+            if (p_max < delta[numobs-1][i]):
+                p_max = delta[numobs-1][i]
+                path[numobs-1] = i
         
         # path backtracing
 #        path = numpy.zeros((len(observations)),dtype=self.precision) ### 2012-11-17 - BUG FIX: wrong reinitialization destroyed the last state in the path
-        for i in xrange(1, len(observations)):
-            path[len(observations)-i-1] = psi[len(observations)-i][ path[len(observations)-i] ]
+        for i in xrange(1, numobs):
+            path[numobs-i-1] = psi[numobs-i][ path[numobs-i] ]
         return path
      
     def _calcxi(self,observations,alpha=None,beta=None):
@@ -311,6 +311,7 @@ class _BaseHMM(object):
         
         stats['loglik'] = numpy.sum(numpy.log(c))
         stats['lik'] = numpy.exp(stats['loglik'])
+        
         stats['alpha'] = alpha
         stats['beta'] = beta
         stats['xi'] = self._calcxi(observations,stats['alpha'],stats['beta'])

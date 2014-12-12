@@ -2,6 +2,8 @@
 
 from hmm.discrete.DiscreteHMM import DiscreteHMM
 import numpy
+from hmm._BaseHMM import _BaseHMM
+
 '''
 Handles the case of multiple training sets 
 and multiple independnet observation types
@@ -9,7 +11,7 @@ and multiple independnet observation types
 
 k_min_loglik = -10
 
-class MultipleDiscreteHMM(object):
+class MultipleDiscreteHMM(_BaseHMM):
     def __init__(self,A,pi,precision=numpy.double,verbose=False):
         self.obsmodels = []
 
@@ -19,6 +21,28 @@ class MultipleDiscreteHMM(object):
         self.precision = numpy.double
         self.verbose = verbose
         self.n = A.shape[0] #be square
+        
+    def _mapB(self,observations):
+        numobs = len(observations[0])
+        
+        self.B_map = numpy.ones( (self.n,numobs), dtype=self.precision)
+        
+        for istate in xrange(self.n):
+            for t in xrange(numobs):
+                for imodel in xrange(len(self.obsmodels)):
+                    this_obs = observations[imodel][t]
+                    self.B_map[istate][t] = self.B_map[istate][t] * self.obsmodels[imodel][istate][this_obs]
+                             
+
+    def decode(self, observations):
+        '''
+        Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
+        
+        This method is usually used to predict the next state after training. 
+        '''        
+        # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
+        return self._viterbi(observations, len(observations[0]))
+        
         
     def reset(self):
         self.obsmodels = []
@@ -44,6 +68,16 @@ class MultipleDiscreteHMM(object):
                 
                 
         return total_loglik
+        
+    def train(self, observations, numiters):
+        ll2 = self.forwardbackward(observations)
+        print ll2
+  
+        for i in range(numiters):
+            self.training_iter(observations)
+            ll2 = self.forwardbackward(observations)
+            print ll2
+        
     '''
     observations should be a list of vector observations
      obs[model][list of observations]
