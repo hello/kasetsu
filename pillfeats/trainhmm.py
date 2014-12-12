@@ -11,6 +11,7 @@ import sys
 
 k_files = ['ben.json', 'bryan.json', 'pang.json']
 
+NUM_ITERS = 15
             
 
 if __name__ == '__main__':
@@ -35,62 +36,99 @@ if __name__ == '__main__':
     #state2 = on bed sleeping
     N  = 3 #number of states
 
-    A = array([[0.7, 0.15, 0.05], 
-              [0.15, 0.55, 0.2], 
-              [0.05, 0.25, 0.7]])
+    A = array([[0.90, 0.05, 0.0], 
+              [0.1, 0.90, 0.1], 
+              [0.0, 0.25, 0.75],])
               
-    row_sums = A.sum(axis=1)
-    A = A / row_sums[:, newaxis]
-              
+
     B1 = zeros((N, maxenergy + 1))
-    B1[0,:] = [0.7, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
-    B1[1, :] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-    B1[2, :] = [0.3, 1.0, 1.0, 1.0, 0.5, 0.1, 0.0]
-    
-    row_sums = B1.sum(axis=1)
-    B1 = B1 / row_sums[:, newaxis]
+    B1[0,:] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    B1[1, :] = [0.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    B1[2, :] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+ 
     
     B2 = zeros((N, int(maxcounts + 1)))
-    B2[0, :] = [0.8, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
-    B2[1, :] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-    B2[2, :] = [0.33, 0.33, 0.33, 0.0, 0.0, 0.0, 0.0]
-     
+    B2[0, 0] = 1.0
+    B2[1, :] = ones((maxcounts+1, ))
+    B2[1, 0:2] = [0.0, 0.0]
+    B2[2, 0:5] = [1.0, 1.0, 1.0, 1.0, 1.0]
     
+
     
+    x = array([0.9,0.05 , 0.05])
+
+
+    row_sums = A.sum(axis=1)
+    A = A / row_sums[:, newaxis]
+
+    row_sums = B1.sum(axis=1)
+    B1 = B1 / row_sums[:, newaxis]
+
     row_sums = B2.sum(axis=1)
     B2 = B2 / row_sums[:, newaxis]
     
-    x = array([0.9,0.05 , 0.05])
         
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
     hmm2.addModel(B2)
+  
+    '''  
+    testmeas = zeros((2, 100))
     
-    #hmm2.decode(meas[0])
-    #sys.exit(0)
+    testmeas[0][20] = 5
+    testmeas[1][20] = 6
     
-    hmm2.train(meas, 10)
+    
+    testmeas[0][90] = 5
+    testmeas[1][90] = 5
+    
+    testmeas[0][40:42] = 1
+    testmeas[0][40:42] = 1
+    
+    n = 45
+    
+    testmeas[0][n:n+2] = 1
+    testmeas[0][n:n+2] = 1
+    
+    print hmm2.decode(testmeas)
+    plot(hmm2.decode(meas[34]))
+    plot(meas[34][0])
+    plot(meas[34][1])
+
+    print [amin(m[0]) for m in meas]
+
+    show()
+
+    '''
+    
+#   '''
+    
+    
+    hmm2.train(meas, NUM_ITERS)
     
     print hmm2.obsmodels
     print hmm2.A
     print hmm2.pi
     
-    for m in meas:
+    for imeas in xrange(len(meas)):
+        m = meas[imeas]
         x = hmm2.decode(m)
-        numhours = sum([f == 2 for f in x]) / 10.0
-        t = array(range(len(m[0])))/10.0
+        numhours = sum([f == 2 for f in x[20:-20]]) / 4.0
+        t = array(range(len(m[0])))/4.0
         #print len(t),len(x), len(m[0]), len(m[1])
         plot(t, x, 'k.-')
         plot(t, m[0])
         plot(t, m[1])
-        title('%f hours slept I think' % numhours)
+        title('DATA SET %d, %f hours in mode 2' % (imeas, numhours))
         legend(['state', 'energies', 'num times woken'])
+        
+
         show()
- 
- #   idx = 4
-#    figure(1)
-#    plot(hmm.decode(obs))
-#    show()
+
+#        if imeas > 10:
+#            break;
+#    '''
 
 '''
     k = 0

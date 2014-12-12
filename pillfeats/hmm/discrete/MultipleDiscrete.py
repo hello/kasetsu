@@ -9,7 +9,7 @@ Handles the case of multiple training sets
 and multiple independnet observation types
 '''
 
-k_min_loglik = -10
+k_min_loglik = -5
 
 class MultipleDiscreteHMM(_BaseHMM):
     def __init__(self,A,pi,precision=numpy.double,verbose=False):
@@ -74,6 +74,7 @@ class MultipleDiscreteHMM(_BaseHMM):
         print ll2
   
         for i in range(numiters):
+            print ('iter %d' % i)
             self.training_iter(observations)
             ll2 = self.forwardbackward(observations)
             print ll2
@@ -119,10 +120,7 @@ class MultipleDiscreteHMM(_BaseHMM):
                 
                 ll = stats['loglik']
                 
-                if ll < k_min_loglik:
-                    ll = k_min_loglik
-                    
-                    
+        
                 #save for later use in scaling
                 logliks.append(ll)
                 
@@ -133,9 +131,12 @@ class MultipleDiscreteHMM(_BaseHMM):
             
             loglik = numpy.sum(logliks)
 
-            medlik = numpy.median(logliks)
-            logliks = logliks - medlik
+            maxlik = numpy.amax(logliks)
+            logliks = logliks - maxlik
             
+            for i in xrange(len(logliks)):
+                if logliks[i] < k_min_loglik:
+                    logliks[i] = k_min_loglik
             
             
             for i in xrange(len(observations)):
@@ -167,22 +168,20 @@ class MultipleDiscreteHMM(_BaseHMM):
             pi0list.append(pi0)
                 
             
-           
+
         model_loglik = numpy.array(model_loglik)
         loglik_for_everything = numpy.sum(model_loglik)
         
         themax = numpy.amax(model_loglik)
-        model_loglik = model_loglik[:] - themax
-        
+        model_loglik = model_loglik - themax
+
         for i in range(len(model_loglik)):
             if model_loglik[i] < k_min_loglik:
                 model_loglik[i] = k_min_loglik
         
         weights = numpy.exp(-model_loglik)
         weights = weights / numpy.sum(weights)
-                
-        print weights
-        
+                        
         newA = numpy.zeros(self.A.shape)
         newPi0 = numpy.zeros((self.n, ))
         #compute cominated A update

@@ -10,12 +10,13 @@ key_counts = 'counts'
 key_energies = 'energies'
 
 k_conversion_factor = (1.0 / 1000.0 / 60.0) # to minutes from milliseconds
-k_interval = 6.0 # minutes
+k_interval = 15.0 # minutes
 k_segment_split_duaration = 60.0 * 3.0 #minutes
-k_max_segment_length_in_intervals = 60*3 #intervals
-k_min_segment_length_in_intervals = 15*3 #intervals
+k_max_segment_length_in_intervals = 14*60/k_interval #intervals
+k_min_segment_length_in_intervals = 4*60/k_interval #intervals
 
-k_num_zeros_to_prepend = 10
+k_num_zeros_to_prepend = 20
+k_num_zeros_to_append = 20
 
 def flatten(days_of_data):
     events = []
@@ -116,7 +117,7 @@ def summarize(segments, interval_in_minutes):
         
         for i in range(len(myenergies)):
             #transform energy output to to a quantized log value
-            logval = int(numpy.ceil(numpy.log10(myenergies[i] + 1.0) + 1))
+            logval = int(numpy.ceil(numpy.log10(myenergies[i] + 1.0) ))
             myenergies[i] = logval
         
         summary.append({key_counts : mycounts,  key_energies : myenergies})
@@ -148,13 +149,13 @@ def enforce_summary_limits(summary, min_length, max_length):
         
     return summary2
     
-def prepend_zeros(summary, numzeros):
+def prepend_zeros(summary, numzeros, numzeros2):
         for item in summary:
             counts = item[key_counts]
             energies = item[key_energies]
             
-            item[key_counts] = numpy.concatenate((numpy.zeros((numzeros, )), counts))
-            item[key_energies] = numpy.concatenate((numpy.zeros((numzeros, )), energies))
+            item[key_counts] = numpy.concatenate((numpy.zeros((numzeros, )), counts, numpy.zeros((numzeros2, ))))
+            item[key_energies] = numpy.concatenate((numpy.zeros((numzeros, )), energies, numpy.zeros((numzeros2, ))))
 
     
 def vectorize_measurements(summary):
@@ -184,7 +185,7 @@ def process(jsondata):
 
     summary2 = enforce_summary_limits(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
 
-    prepend_zeros(summary2, k_num_zeros_to_prepend)
+    prepend_zeros(summary2, k_num_zeros_to_prepend, k_num_zeros_to_append)
 
     meas = vectorize_measurements(summary2)
     return meas
