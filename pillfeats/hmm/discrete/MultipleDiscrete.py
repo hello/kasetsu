@@ -7,7 +7,7 @@ Handles the case of multiple training sets
 and multiple independnet observation types
 '''
 
-k_min_loglik = -100
+k_min_loglik = -10
 
 class MultipleDiscreteHMM(object):
     def __init__(self,A,pi,precision=numpy.double,verbose=False):
@@ -54,7 +54,7 @@ class MultipleDiscreteHMM(object):
         model_loglik = []
         numerAlist = []
         denomAlist = []
-        
+        pi0list = []
 
         for imodel in range(len(self.obsmodels)):
             B = self.obsmodels[imodel]
@@ -70,6 +70,8 @@ class MultipleDiscreteHMM(object):
         
             numerA = numpy.zeros((self.n, self.n))
             numerB = numpy.zeros((self.n, M))
+            
+            pi0 = numpy.zeros((self.n, ))
             
             params = []
             logliks = []
@@ -105,13 +107,14 @@ class MultipleDiscreteHMM(object):
             for i in xrange(len(observations)):
                 myliklihood = numpy.exp(logliks[i])
                 
-                numerA2, numerB2, denomA2, denomB2 = params[i]
+                numerA2, numerB2, denomA2, denomB2, gamma0 = params[i]
                 
                 
                 numerA += numerA2/myliklihood
                 numerB += numerB2/myliklihood
                 denomA += denomA2/myliklihood
                 denomB += denomB2/myliklihood
+                pi0 += gamma0 / myliklihood
                 
 
             
@@ -127,6 +130,7 @@ class MultipleDiscreteHMM(object):
             model_loglik.append(loglik)
             numerAlist.append(numerA)
             denomAlist.append(denomA)
+            pi0list.append(pi0)
                 
             
            
@@ -135,10 +139,18 @@ class MultipleDiscreteHMM(object):
         
         themax = numpy.amax(model_loglik)
         model_loglik = model_loglik[:] - themax
+        
+        for i in range(len(model_loglik)):
+            if model_loglik[i] < k_min_loglik:
+                model_loglik[i] = k_min_loglik
+        
         weights = numpy.exp(-model_loglik)
         weights = weights / numpy.sum(weights)
+                
+        print weights
         
         newA = numpy.zeros(self.A.shape)
+        newPi0 = numpy.zeros((self.n, ))
         #compute cominated A update
         for k in range(len(model_loglik)):
             lik = numpy.exp(model_loglik[k])
@@ -146,8 +158,14 @@ class MultipleDiscreteHMM(object):
             for j in xrange(newA.shape[0]):
                 for i in xrange(newA.shape[1]):
                     newA[j][i] = newA[j][i] + weights[k]*(numerA[j][i] / denomA[j])
+                    
+            newPi0 = newPi0 + pi0list[k]*weights[k]
             
         self.A = newA
+        
+        newPi0 = newPi0 / numpy.sum(newPi0)
+        
+        self.pi = newPi0
         
         return loglik_for_everything
         
@@ -157,6 +175,8 @@ class MultipleDiscreteHMM(object):
         
         numerA = numpy.zeros((self.n, self.n))
         numerB = numpy.zeros((self.n, M))
+        
+        gamma0 = gamma[0]
 
         for i in xrange(self.n): 
             for t in xrange(len(obs)-1):
@@ -184,6 +204,6 @@ class MultipleDiscreteHMM(object):
                 numerB[j][k] = numer
                 
                 
-        return (numerA, numerB, denomA, denomB)
+        return (numerA, numerB, denomA, denomB, gamma0)
         
   

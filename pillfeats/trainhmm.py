@@ -3,106 +3,82 @@
 import segment_pill_data
 import json
 from numpy import *
+from numpy.random import *
 from hmm.discrete.DiscreteHMM import DiscreteHMM
 from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
 k_files = ['ben.json', 'bryan.json', 'pang.json']
 
+            
 
 if __name__ == '__main__':
-    energies = []
-    esequences = []
+    set_printoptions(precision=3, suppress=True, threshold=np.nan)
+    meas = []
     for file in k_files:
         f = open(file, 'r')
         data = json.load(f)
         f.close()
-        summary = segment_pill_data.process(data)
-        
-        e = [s['energies'] for s in summary]
-        
-        for item in e:
-            energies.extend(item) 
-            esequences.append(item)
-        
-    energies = array(energies)
-    maxenergy = amax(energies)
-    print 'max energy %d' % maxenergy
-    M = maxenergy + 1 # "alphabet" size
-    N  = 3 #number of states
+        meas_for_file = segment_pill_data.process(data)
+        meas.extend(meas_for_file)
     
+    
+    maxenergy = amax(array([amax(m[0, :]) for m in meas]))
+    maxcounts = amax(array([amax(m[1, :]) for m in meas]))
+
+    print 'max energy %d' % maxenergy
+    print 'max counts %d' % maxcounts
+
     #state0 = not on bed
     #state1 = on bed not sleeping
     #state2 = on bed sleeping
-    
-    A = array([[0.7, 0.20, 0.0], 
-              [0.2, 0.6, 0.2], 
-              [0.0, 0.3, 0.7]])
+    N  = 3 #number of states
+
+    A = array([[0.7, 0.15, 0.05], 
+              [0.15, 0.55, 0.2], 
+              [0.05, 0.25, 0.7]])
               
     row_sums = A.sum(axis=1)
     A = A / row_sums[:, newaxis]
               
-    B = zeros((N, M))
-    B[0,0] = 0.7
-    B[0, 1] = 0.3
-
-    B[2, 0] = 0.3
-    B[2, 1] = 1.0
-    B[2, 2] = 1.0
-    B[2, 3] = 1.0
-    B[2, 4] = 0.5
-    B[2, 5] = 0.1
-    B[2, 6] = 0.0
-
-    B[1, 0] = 0.1
-    B[1, 1] = 0.1
-    B[1, 2] = 0.2
-    B[1, 3] = 0.3
-    B[1, 4] = 0.4
-    B[1, 5] = 0.5
-    B[1, 6] = 0.7
-
+    B1 = zeros((N, maxenergy + 1))
+    B1[0,:] = [0.7, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+    B1[1, :] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    B1[2, :] = [0.3, 1.0, 1.0, 1.0, 0.5, 0.1, 0.0]
     
-
-    row_sums = B.sum(axis=1)
-    B = B / row_sums[:, newaxis]
+    row_sums = B1.sum(axis=1)
+    B1 = B1 / row_sums[:, newaxis]
     
-    print B
-
-    obs = concatenate((zeros((10, )),energies))
-    x = array([0.90, 0.05, 0.05])
+    B2 = zeros((N, int(maxcounts + 1)))
+    B2[0, :] = [0.8, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
+    B2[1, :] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    B2[2, :] = [0.33, 0.33, 0.33, 0.0, 0.0, 0.0, 0.0]
+     
     
-    print x.shape
-    print energies.shape
-    set_printoptions(precision=4, suppress=True, threshold=nan)
-    hmm = DiscreteHMM(N, M, A, B, x, init_type='user', verbose=True)
-    print hmm.forwardbackward(obs)
     
- #   hmm.train(obs, 5)
+    row_sums = B2.sum(axis=1)
+    B2 = B2 / row_sums[:, newaxis]
     
-#    print "Pi",hmm.pi
-#    print "A",hmm.A
-#    print "B", hmm.B
+    x = array([0.9,0.05 , 0.05])
     
-    multidimensionaldata = []
-    for seq in esequences:
-        d1 = [concatenate((zeros((10, )), seq))]
-        multidimensionaldata.append(d1)
+    print B1
+    print B2
         
     hmm2 = MultipleDiscreteHMM(A,x)
-    hmm2.addModel(B)
-    
-    ll2 = hmm2.forwardbackward(multidimensionaldata)
+    hmm2.addModel(B1)
+    hmm2.addModel(B2)
+
+    ll2 = hmm2.forwardbackward(meas)
     print ll2
+  
+    for i in range(20):
+        hmm2.training_iter(meas)
+        ll2 = hmm2.forwardbackward(meas)
+        print ll2
+  
+ 
     print hmm2.obsmodels
     print hmm2.A
-    for i in range(5):
-        hmm2.training_iter(multidimensionaldata)
-        ll2 = hmm2.forwardbackward(multidimensionaldata)
-        print ll2
-        print hmm2.obsmodels
-        print hmm2.A
- 
-
+    print hmm2.pi
  #   idx = 4
 #    figure(1)
 #    plot(hmm.decode(obs))

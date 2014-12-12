@@ -15,6 +15,8 @@ k_segment_split_duaration = 60.0 * 3.0 #minutes
 k_max_segment_length_in_intervals = 60*3 #intervals
 k_min_segment_length_in_intervals = 15*3 #intervals
 
+k_num_zeros_to_prepend = 10
+
 def flatten(days_of_data):
     events = []
     for day in days_of_data:
@@ -127,7 +129,7 @@ def summarize(segments, interval_in_minutes):
     those that are in the acceptable range, pad with zeros to fill out
     the max length
 '''
-def enforce_summary_length(summary, min_length, max_length):
+def enforce_summary_limits(summary, min_length, max_length):
     summary2 = []
     for item in summary:
         counts = copy(item[key_counts])
@@ -141,18 +143,38 @@ def enforce_summary_length(summary, min_length, max_length):
         if len(counts) > max_length:
             continue
             
-            
-        if len(counts) < max_length:
-            N = max_length - len(counts)
-            
-            for i in range(N):
-                counts.append(0)
-                energies.append(0)
-                
+        
         summary2.append({key_counts : counts,  key_energies : energies})
         
     return summary2
     
+def prepend_zeros(summary, numzeros):
+        for item in summary:
+            counts = item[key_counts]
+            energies = item[key_energies]
+            
+            item[key_counts] = numpy.concatenate((numpy.zeros((numzeros, )), counts))
+            item[key_energies] = numpy.concatenate((numpy.zeros((numzeros, )), energies))
+
+    
+def vectorize_measurements(summary):
+    meas = []
+    for item in summary:
+        e = item[key_energies]
+        c = item[key_counts]
+        
+        if len(e) != len(c):
+            print ("somehow, energies and counts are not the same length.")
+            continue
+        
+        arr = numpy.array([e, c])
+                
+        meas.append(arr)
+        
+    return meas
+        
+            
+
 def process(jsondata):
     events = flatten(jsondata)
     events2 = filter_bad_values(events)
@@ -160,9 +182,12 @@ def process(jsondata):
     segments2 = segment(events2)
     summary = summarize(segments2,k_interval)
 
-    summary2 = enforce_summary_length(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
+    summary2 = enforce_summary_limits(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
 
-    return summary2
+    prepend_zeros(summary2, k_num_zeros_to_prepend)
+
+    meas = vectorize_measurements(summary2)
+    return meas
     
     
 if __name__ == '__main__':
