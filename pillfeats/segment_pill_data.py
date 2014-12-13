@@ -9,7 +9,7 @@ key_value = 'value'
 key_counts = 'counts'
 key_energies = 'energies'
 
-k_conversion_factor = (1.0 / 1000.0 / 60.0) # to minutes from milliseconds
+k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
 k_segment_split_duaration = 60.0 * 3.0 #minutes
 k_max_segment_length_in_intervals = 14*60/k_interval #intervals
@@ -18,16 +18,7 @@ k_min_segment_length_in_intervals = 4*60/k_interval #intervals
 k_num_zeros_to_prepend = 20
 k_num_zeros_to_append = 20
 
-def flatten(days_of_data):
-    events = []
-    for day in days_of_data:
-        for item in day:
-            events.append(item)
-            
-    #sort ascending by time        
-    sorted_events = sorted(events, key=lambda k: k[key_time]) 
-    
-    return sorted_events
+
 
 def filter_bad_values(events):
     events2 = [item for item in events if item[key_value] > 0]
@@ -38,44 +29,49 @@ def filter_bad_values(events):
     take list of events, find gaps of time in events, and use those gaps 
     to split the events into segments of events where there is activity
 '''
-def segment(events):
-    t1_list = []
-    t2_list = []
-    
-    if len(events) == 0:
-        return None
-        
-    times = [event[key_time] for event in events]
-    seg_t1 = events[0][key_time]
-    t1 = seg_t1
-    last_t2 = t1
-    
-    for event in events:
-      
-        t2 = event[key_time]
-        dt = float(t2-t1)*k_conversion_factor
-        
-        if dt > k_segment_split_duaration:
-            seg_t2 = last_t1
-            t1_list.append(seg_t1)
-            t2_list.append(seg_t2)
-
-            seg_t1 = t2
-            
-        last_t1 = t1
-        t1 = t2
-
+def segment(dict_of_lists):
     segments = []
+
+    for key in dict_of_lists:
+        lists = dict_of_lists[key]
+        timelist = lists[0]
+        valuelist = lists[1]
     
-    for i in range(len(t1_list)):
-        t1 = t1_list[i]
-        t2 = t2_list[i]
+        t1_list = []
+        t2_list = []
+    
+        if len(timelist) == 0:
+            continue
+            
+        seg_t1 = timelist[0]
+        t1 = seg_t1
+        last_t2 = t1
         
-        i1 = bisect(times, t1)
-        i2 = bisect(times, t2)  + 1
+        for t in timelist:
+          
+            t2 = t
+            dt = float(t2-t1)*k_conversion_factor
+            
+            if dt > k_segment_split_duaration:
+                seg_t2 = last_t1
+                t1_list.append(seg_t1)
+                t2_list.append(seg_t2)
+    
+                seg_t1 = t2
                 
-        segments.append(events[i1:i2])
+            last_t1 = t1
+            t1 = t2
+    
         
+        for i in range(len(t1_list)):
+            t1 = t1_list[i]
+            t2 = t2_list[i]
+            
+            i1 = bisect(timelist, t1)
+            i2 = bisect(timelist, t2)  + 1
+                    
+            segments.append((timelist[i1:i2], valuelist[i1:i2]))
+            
     return segments
 
 
@@ -90,29 +86,36 @@ def summarize(segments, interval_in_minutes):
        
     summary = []
     for segment in segments:
-        times = [int(item[key_time]) for item in segment]
+        times = segment[0]
+        values = segment[1]
         
         if times is None or len(times) == 0:
             continue
             
         t0 = times[0]
-    
+        
         #get time in minutes from first
         times = [(t - t0) * k_conversion_factor for t in times ]
+        print times
+
+        #get index of each time point
         indices = [int(t / interval_in_minutes) for t in times]  
 
         maxidx = indices[-1]
         mycounts = []
         myenergies = []
-        for i in range(maxidx+1):
+        
+        #create counts and energies arrays
+        for i in xrange(maxidx+1):
             mycounts.append(0) 
             myenergies.append(0)
             
             
-        for i in range(len(indices)):
+        for i in xrange(len(indices)):
             idx = indices[i]
+            print idx, len(mycounts), maxidx
             mycounts[idx] = mycounts[idx] + 1
-            myenergies[idx] = myenergies[idx] + segment[i][key_value]
+            myenergies[idx] = myenergies[idx] + values[i]
     
         
         for i in range(len(myenergies)):
@@ -176,11 +179,10 @@ def vectorize_measurements(summary):
         
             
 
-def process(jsondata):
-    events = flatten(jsondata)
-    events2 = filter_bad_values(events)
+def process(dict_of_lists):
     
-    segments2 = segment(events2)
+    segments2 = segment(dict_of_lists)
+    
     summary = summarize(segments2,k_interval)
 
     summary2 = enforce_summary_limits(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
