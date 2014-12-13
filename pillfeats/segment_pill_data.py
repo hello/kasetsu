@@ -196,7 +196,7 @@ if __name__ == '__main__':
     data = json.load(f)
     f.close()
     
-    summary2 = process(data)
-    f = open(sys.argv[1] + '.summary', 'w')
+    meas = process(data)
+    f = open(sys.argv[1] + '.meas', 'w')
     json.dump(summary2, f)
     f.close()
