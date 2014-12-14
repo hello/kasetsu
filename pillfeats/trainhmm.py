@@ -11,14 +11,14 @@ import sys
 import pillcsv
 
 data_file = 'pill_data_2014_12_08.csv'
-
-NUM_ITERS = 5
+min_unix_time = 1414800000.0 #November 1, 2014
+NUM_ITERS = 10
             
 
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
-    pilldata = pillcsv.read_pill_csv(data_file)
+    pilldata = pillcsv.read_pill_csv(data_file, min_unix_time)
     pillcsv.sort_pill_data(pilldata)
         
     meas = segment_pill_data.process(pilldata)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     #state1 = on bed not sleeping
     #state2 = on bed sleeping
     N  = 3 #number of states
-
+    
     A = array([[0.90, 0.05, 0.0], 
               [0.1, 0.90, 0.1], 
               [0.0, 0.25, 0.75],])
@@ -54,8 +54,20 @@ if __name__ == '__main__':
 
     
     x = array([0.9,0.05 , 0.05])
+    '''
+    B1 = array([[ 1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,0.   ,  0.   ,  0.   ,  0.   ],
+       [ 0.   ,  0.   ,  0.001,  0.021,  0.036,  0.022,  0.004,  0.609,0.175,  0.065,  0.065,  0.001],
+       [ 0.448,  0.001,  0.011,  0.141,  0.259,  0.06 ,  0.   ,  0.   , 0.   ,  0.066,  0.014,  0.   ]])
+       
+    B2 = array([[ 1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ],
+       [ 0.   ,  0.   ,  0.056,  0.07 ,  0.871,  0.002],
+       [ 0.624,  0.18 ,  0.145,  0.05 ,  0.001,  0.   ]])
 
-
+    A  = array( 
+    [[ 0.969 ,  0.031 ,  1e-6 ], 
+    [ 0.05 ,   0.896 ,  0.055], 
+    [ 1e-6   ,   0.012 ,  0.988]])
+    '''
     #make rows sum to one
     row_sums = A.sum(axis=1)
     A = A / row_sums[:, newaxis]
@@ -66,7 +78,8 @@ if __name__ == '__main__':
     row_sums = B2.sum(axis=1)
     B2 = B2 / row_sums[:, newaxis]
     
-        
+    x = array([ 0.999 ,  0.   ,   0.001])
+    
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
     hmm2.addModel(B2)
