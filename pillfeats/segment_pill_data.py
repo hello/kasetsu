@@ -96,7 +96,6 @@ def summarize(segments, interval_in_minutes):
         
         #get time in minutes from first
         times = [(t - t0) * k_conversion_factor for t in times ]
-        print times
 
         #get index of each time point
         indices = [int(t / interval_in_minutes) for t in times]  
@@ -113,15 +112,18 @@ def summarize(segments, interval_in_minutes):
             
         for i in xrange(len(indices)):
             idx = indices[i]
-            print idx, len(mycounts), maxidx
             mycounts[idx] = mycounts[idx] + 1
             myenergies[idx] = myenergies[idx] + values[i]
     
-        
         for i in range(len(myenergies)):
             #transform energy output to to a quantized log value
             logval = int(numpy.ceil(numpy.log10(myenergies[i] + 1.0) ))
             myenergies[i] = logval
+            
+        for i in range(len(mycounts)):
+            logval = int(numpy.ceil(numpy.log2(mycounts[i] + 1.0) ))
+            mycounts[i] = logval
+
         
         summary.append({key_counts : mycounts,  key_energies : myenergies})
         
@@ -135,16 +137,19 @@ def summarize(segments, interval_in_minutes):
 '''
 def enforce_summary_limits(summary, min_length, max_length):
     summary2 = []
+    
     for item in summary:
         counts = copy(item[key_counts])
         energies = copy(item[key_energies])
         
         #reject
         if len(counts) < min_length:
+            #print "rejecting %d length item, which was less than %d counts" % (len(counts), min_length)
             continue
             
         #reject
         if len(counts) > max_length:
+            #print "rejecting %d length item, which was greater than %d counts" % (len(counts), max_length)
             continue
             
         

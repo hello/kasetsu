@@ -8,25 +8,23 @@ from hmm.discrete.DiscreteHMM import DiscreteHMM
 from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
 import sys
+import pillcsv
 
-k_files = ['ben.json', 'bryan.json', 'pang.json']
+data_file = 'pill_data_2014_12_08.csv'
 
-NUM_ITERS = 15
+NUM_ITERS = 5
             
 
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
-    meas = []
-    for file in k_files:
-        f = open(file, 'r')
-        data = json.load(f)
-        f.close()
-        meas_for_file = segment_pill_data.process(data)
-        meas.extend(meas_for_file)
     
+    pilldata = pillcsv.read_pill_csv(data_file)
+    pillcsv.sort_pill_data(pilldata)
+        
+    meas = segment_pill_data.process(pilldata)
     
-    maxenergy = amax(array([amax(m[0, :]) for m in meas]))
-    maxcounts = amax(array([amax(m[1, :]) for m in meas]))
+    maxenergy = int(amax(array([amax(m[0, :]) for m in meas])))
+    maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
 
     print 'max energy %d' % maxenergy
     print 'max counts %d' % maxcounts
@@ -42,23 +40,23 @@ if __name__ == '__main__':
               
 
     B1 = zeros((N, maxenergy + 1))
-    B1[0,:] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    B1[1, :] = [0.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-    B1[2, :] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
+    B1[1, 1:] = 1.0 #disturbed movement, cannot be zero energy
+    B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
 
  
     
     B2 = zeros((N, int(maxcounts + 1)))
     B2[0, 0] = 1.0
-    B2[1, :] = ones((maxcounts+1, ))
+    B2[1, 1:] = 1.0
     B2[1, 0:2] = [0.0, 0.0]
-    B2[2, 0:5] = [1.0, 1.0, 1.0, 1.0, 1.0]
-    
+    B2[2, :] = array(range(maxcounts+1, 0, -1))    
 
     
     x = array([0.9,0.05 , 0.05])
 
 
+    #make rows sum to one
     row_sums = A.sum(axis=1)
     A = A / row_sums[:, newaxis]
 
@@ -103,7 +101,7 @@ if __name__ == '__main__':
     '''
     
 #   '''
-    
+    print "training on %d segments" % len(meas)
     
     hmm2.train(meas, NUM_ITERS)
     
