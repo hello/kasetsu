@@ -22,6 +22,22 @@ class MultipleDiscreteHMM(_BaseHMM):
         self.verbose = verbose
         self.n = A.shape[0] #be square
         
+    def force_no_zero_values(self, min_val=1e-6):
+        for B in self.obsmodels:
+            for j in range(B.shape[0]):
+                for i in range(B.shape[1]):
+                    if B[j, i] < min_val:
+                        B[j, i] = min_val;
+         
+        A = self.A
+        for j in range(A.shape[0]):
+            for i in range(A.shape[1]):
+                if A[j, i] < min_val:
+                    A[j, i] = min_val
+                    
+                    
+            
+        
     def _mapB(self,observations):
         numobs = len(observations[0])
         
