@@ -9,6 +9,8 @@ from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
 import sys
 import pillcsv
+from time import strftime
+
 
 data_file = 'pill_data_2014_12_08.csv'
 min_unix_time = 1414800000.0 #November 1, 2014
@@ -83,6 +85,7 @@ if __name__ == '__main__':
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
     hmm2.addModel(B2)
+    
   
     '''  
     testmeas = zeros((2, 100))
@@ -117,10 +120,26 @@ if __name__ == '__main__':
     print "training on %d segments" % len(meas)
     
     hmm2.train(meas, NUM_ITERS)
+    hmm2.force_no_zero_values(1e-9)
     
-    print hmm2.obsmodels
+    result = {}
+    result['A'] = hmm2.A.tolist()
+    result['obsmodels'] = []
+    for model in hmm2.obsmodels:
+        result['obsmodels'].append(model.tolist())
+        
+    result['pi'] = hmm2.pi.tolist()
+    
     print hmm2.A
+    for model in hmm2.obsmodels:
+        print model
+        
     print hmm2.pi
+
+
+    f = open(strftime("HMM_%Y-%m-%d_%H:%M:%S.json"), 'w')
+    json.dump(result, f)
+    f.close()
     
     for imeas in xrange(len(meas)):
         m = meas[imeas]
