@@ -4,10 +4,14 @@ from copy import *
 import sys
 import json
 import numpy
+from pylab import *
+
+
 key_time = 'timestamp'
 key_value = 'value'
 key_counts = 'counts'
 key_energies = 'energies'
+key_lightvar = 'lightvariance'
 
 k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
@@ -31,11 +35,18 @@ def filter_bad_values(events):
 '''
 def segment(dict_of_lists):
     segments = []
-
     for key in dict_of_lists:
-        lists = dict_of_lists[key]
-        timelist = lists[0]
-        valuelist = lists[1]
+        pilllists = dict_of_lists[key]['pill']
+        senselist = dict_of_lists[key]['sense']
+
+        timelist = pilllists[0]
+        valuelist = pilllists[1]
+        
+        sensetimes = senselist[0]
+        temperatures = senselist[1]
+        humidities = senselist[2]
+        lights = senselist[3]
+        
     
         t1_list = []
         t2_list = []
@@ -47,6 +58,8 @@ def segment(dict_of_lists):
         t1 = seg_t1
         last_t2 = t1
         
+        is_one_segment_found = False
+
         for t in timelist:
           
             t2 = t
@@ -56,29 +69,59 @@ def segment(dict_of_lists):
                 seg_t2 = last_t1
                 t1_list.append(seg_t1)
                 t2_list.append(seg_t2)
-    
                 seg_t1 = t2
+                
+                is_one_segment_found = True
                 
             last_t1 = t1
             t1 = t2
+            
+        if not is_one_segment_found:
+            seg_t2 = last_t1
+            t1_list.append(seg_t1)
+            t2_list.append(seg_t2)
+            seg_t1 = t2
+            
     
         
         for i in range(len(t1_list)):
+            segment_dict = {}
+            
             t1 = t1_list[i]
             t2 = t2_list[i]
             
             i1 = bisect(timelist, t1)
             i2 = bisect(timelist, t2)  + 1
-                    
-            segments.append((timelist[i1:i2], valuelist[i1:i2]))
             
+            segment_dict['pill'] = (timelist[i1:i2], valuelist[i1:i2])
+
+            
+            j1 = bisect(sensetimes, t1)
+            j2 = bisect(sensetimes, t2)  + 1
+
+
+            segment_dict['sense'] = (sensetimes[j1:j2],temperatures[j1:j2],humidities[j1:j2],lights[j1:j2])
+            
+            segments.append(segment_dict)
+
+      
     return segments
 
 
 '''
     build series of observation data at fixed intervals for training HMMs
-
 '''
+
+def compute_log_variance(x, logbase = 2.0, offset=1.0):
+    return numpy.log(numpy.var(x) + offset) / numpy.log(logbase)
+    
+def compute_log_range(x, logbase = 2.0, maxval=10.):
+    range = numpy.amax(x) - numpy.amin(x)
+    val =  numpy.ceil(numpy.log(range + 1) / numpy.log(logbase))
+    if val > maxval:
+        val = maxval
+    
+    return val
 
 def summarize(segments, interval_in_minutes):
     if segments is None or len(segments) == 0:
@@ -86,8 +129,13 @@ def summarize(segments, interval_in_minutes):
        
     summary = []
     for segment in segments:
-        times = segment[0]
-        values = segment[1]
+        times = segment['pill'][0]
+        values = segment['pill'][1]
+        
+        sensetimes = segment['sense'][0]
+        humidities = segment['sense'][1]
+        temperatures = segment['sense'][2]
+        lights = segment['sense'][3]
         
         if times is None or len(times) == 0:
             continue
@@ -96,20 +144,32 @@ def summarize(segments, interval_in_minutes):
         
         #get time in minutes from first
         times = [(t - t0) * k_conversion_factor for t in times ]
+        sensetimes = [(t - t0) * k_conversion_factor for t in sensetimes]
 
         #get index of each time point
         indices = [int(t / interval_in_minutes) for t in times]  
+        indices2 = [int(t / interval_in_minutes) for t in sensetimes]  
 
-        maxidx = indices[-1]
+        if len(indices2) == 0 or len(indices) == 0:
+            continue
+
+        if indices2[-1] > indices[-1]:
+            maxidx = indices2[-1]
+        else:
+            maxidx = indices[-1]
+
         mycounts = []
         myenergies = []
+        mylight = []
         
         #create counts and energies arrays
         for i in xrange(maxidx+1):
             mycounts.append(0) 
             myenergies.append(0)
+            mylight.append(0)
             
             
+        #SUMMARIZE PILL DATA
         for i in xrange(len(indices)):
             idx = indices[i]
             mycounts[idx] = mycounts[idx] + 1
@@ -121,12 +181,24 @@ def summarize(segments, interval_in_minutes):
             myenergies[i] = logval
             
         for i in range(len(mycounts)):
-            logval = int(numpy.ceil(numpy.log2(mycounts[i] + 1.0) ))
+            logval = int(numpy.ceil(numpy.log(mycounts[i] + 1.0)/numpy.log(2.0) ))
             mycounts[i] = logval
+            
+
+        #SUMMARIZE SENSE DATA
+        for idx in xrange(maxidx+1):
+            indices = [i for i in xrange(len(indices2)) if indices2[i] == idx]
+
+            lightvals = numpy.array(map(lights.__getitem__, indices))
+            if len(lightvals) == 0:
+                lightvals = numpy.array([0])
+                
+            y = int(compute_log_range(lightvals, 10))
+            
+            mylight[idx] = y
 
         
-        summary.append({key_counts : mycounts,  key_energies : myenergies})
-        
+        summary.append({key_counts : mycounts,  key_energies : myenergies,  key_lightvar : mylight})
         
     return summary
     
@@ -137,6 +209,10 @@ def summarize(segments, interval_in_minutes):
 '''
 def enforce_summary_limits(summary, min_length, max_length):
     summary2 = []
+    
+    if summary is None:
+        print 'got a nonexistant summary. wat?'
+        return None
     
     for item in summary:
         counts = copy(item[key_counts])

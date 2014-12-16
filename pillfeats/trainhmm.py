@@ -4,7 +4,6 @@ import segment_pill_data
 import json
 from numpy import *
 from numpy.random import *
-from hmm.discrete.DiscreteHMM import DiscreteHMM
 from hmm.discrete.MultipleDiscrete import MultipleDiscreteHMM
 from pylab import *
 import sys
@@ -36,24 +35,24 @@ if __name__ == '__main__':
     #state2 = on bed sleeping
     N  = 3 #number of states
     
-    A = array([[0.90, 0.05, 0.0], 
-              [0.1, 0.90, 0.1], 
-              [0.0, 0.25, 0.75],])
+    A = array([[0.8, 0.2, 0.00001], 
+              [0.05, 0.35, 0.6], 
+              [0.00001, 0.001, 0.999],])
               
 
     B1 = zeros((N, maxenergy + 1))
     B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
-    B1[1, 1:] = 1.0 #disturbed movement, cannot be zero energy
+    B1[1, 0:] = 1.0 #disturbed movement, cannot be zero energy
     B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
 
  
     
     B2 = zeros((N, int(maxcounts + 1)))
     B2[0, 0] = 1.0
-    B2[1, 1:] = 1.0
-    B2[1, 0:2] = [0.0, 0.0]
+    B2[1, 0:] = 1.0
     B2[2, :] = array(range(maxcounts+1, 0, -1))    
 
+  
     
     x = array([0.9,0.05 , 0.05])
     '''
@@ -80,7 +79,11 @@ if __name__ == '__main__':
     row_sums = B2.sum(axis=1)
     B2 = B2 / row_sums[:, newaxis]
     
-    x = array([ 0.999 ,  0.   ,   0.001])
+    x = array([ 0.998 ,  0.001, 0.001])
+    
+    print A
+    print B1
+    print B2
     
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
@@ -120,7 +123,7 @@ if __name__ == '__main__':
     print "training on %d segments" % len(meas)
     
     hmm2.train(meas, NUM_ITERS)
-    hmm2.force_no_zero_values(1e-9)
+    #hmm2.force_no_zero_values(1e-9)
     
     result = {}
     result['A'] = hmm2.A.tolist()
