@@ -11,19 +11,23 @@ import time
 import json
 
 k_uri = 'https://dev-api.hello.is/v1/datascience/pill/'
+k_uri_light = 'https://dev-api.hello.is/v1/room/light/day'
 
 def get_info_for_day_from_server(auth, datestring):
     
     headers = {'Authorization' : 'Bearer %s' % auth}
     response = requests.get(k_uri + datestring,params={},headers = headers)
-
+    response2 = requests.get(k_uri_light, params = {}, headers=headers)
+    
     ibucket = 0
     mydict = {}
     energydict = {}
-    if (response.ok):
+    if (response.ok and response2.ok):
         data = response.json()
+        light = response2.json()
         
-        print ('got %d records' % len(data))
+        print ('got %d records of pill data, %d light records' % (len(data), len(light)))
+        
         
         return data
 

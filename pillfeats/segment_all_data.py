@@ -120,8 +120,8 @@ def compute_log_range(x, logbase = 2.0, maxval=10.):
     max = numpy.amax(x)
     med = numpy.median(x)
     range = max - min
-    fracchange = range / (min + 20)
-    fracchange = fracchange - 0.5
+    fracchange = range / (min + 10)
+    fracchange = fracchange - 0.25
     
     if fracchange < 0:
         fracchange = 0

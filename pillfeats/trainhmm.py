@@ -10,134 +10,15 @@ import sys
 import pillcsv
 from time import strftime
 import all_data
+import argparse
+import extract_last_week
+
 
 data_file = 'alldata.json'
 min_unix_time = 1414800000.0 #November 1, 2014
 NUM_ITERS = 10
             
-
-if __name__ == '__main__':
-    set_printoptions(precision=3, suppress=True, threshold=np.nan)
-
-    task = 'evaluate'
-    if len(sys.argv) > 1:
-        task = sys.argv[1]
-        
-    isModelInitialized = False
-    if len(sys.argv) > 2:
-        isModelInitialized = True
-        f = open(sys.argv[2], 'r')
-        hmmdata = json.load(f)
-        f.close()
-        
-        hmm2 = MultipleDiscreteHMM(array(hmmdata['A']),array(hmmdata['pi']))
-        
-        for B in hmmdata['obsmodels']:
-            B = array(B)
-            hmm2.addModel(B)
-            
-    if len(sys.argv) > 3:
-        NUM_ITERS = int(sys.argv[3])
-    
-        
-    f = open(data_file, 'r');
-    alldata = json.load(f)
-    f.close()
-    
-    joined = all_data.join_by_account_id(alldata,250)
-    meas = segment_all_data.process(joined)
-    
-    
-    
-            
-    if task == 'train':
-    
-        if not isModelInitialized:
-            maxenergy = int(amax(array([amax(m[0, :]) for m in meas])))
-            maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
-            maxlight = int(amax(array([amax(m[2, :]) for m in meas])))
-        
-        
-            print 'max energy val %d' % maxenergy
-            print 'max counts val %d' % maxcounts
-            print 'max light val %d' % maxlight
-        
-            #state0 = not on bed
-            #state1 = on bed not sleeping
-            #state2 = on bed sleeping
-            N  = 3 #number of states
-            
-            A = array([[0.95, 0.05, 0.0], 
-                      [0.05, 0.90, 0.05], 
-                      [0.0, 0.20, 0.80],])
-                      
-        
-            B1 = zeros((N, maxenergy + 1))
-            B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
-            B1[1, :] = array(range(maxenergy+1))      #disturbed movement, cannot be zero energy
-            B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
-        
-            B2 = zeros((N, int(maxcounts + 1)))
-            B2[0, 0] = 1.0
-            B2[1, :] = array(range(maxcounts+1))
-            B2[2, :] = array(range(maxcounts+1, 0, -1))    
-            
-            B3 = zeros((N, int(maxlight + 1)))
-            B3[0, :] = 1.0
-            B3[1, :] = array(range(1, maxlight + 2))
-            B3[2, 0] = 1.0
-        
-          
-        
-            #make rows sum to one
-            row_sums = A.sum(axis=1)
-            A = A / row_sums[:, newaxis]
-        
-            row_sums = B1.sum(axis=1)
-            B1 = B1 / row_sums[:, newaxis]
-        
-            row_sums = B2.sum(axis=1)
-            B2 = B2 / row_sums[:, newaxis]
-            
-            row_sums = B3.sum(axis=1)
-            B3 = B3 / row_sums[:, newaxis]
-            
-            x = array([ 0.998 ,  0.001, 0.001])
-            
-            print A
-            print B1
-            print B2
-            print B3
-        
-            
-            hmm2 = MultipleDiscreteHMM(A,x)
-            hmm2.addModel(B1)
-            hmm2.addModel(B2)
-            hmm2.addModel(B3)
-    
-        
-      
-        print "training on %d segments" % len(meas)
-        
-        hmm2.train(meas, NUM_ITERS)
-        #hmm2.force_no_zero_values(1e-9)
-        
-        
-    
-#    hmm2.A[0, 2] = 1e-6
-#    hmm2.A[2, 0] = 1e-6
-        result = {}
-        result['A'] = hmm2.A.tolist()
-        result['obsmodels'] = []
-        for model in hmm2.obsmodels:
-            result['obsmodels'].append(model.tolist())
-            
-        result['pi'] = hmm2.pi.tolist()
-    
-        f = open(strftime("HMM_%Y-%m-%d_%H:%M:%S.json"), 'w')
-        json.dump(result, f)
-        f.close()
-    
+def evaluate(hmm2, meas):
     print hmm2.A
     for model in hmm2.obsmodels:
         print model
@@ -161,23 +42,149 @@ if __name__ == '__main__':
 
         show()
 
-#        if imeas > 10:
-#            break;
-#    '''
-
-'''
-    k = 0
-    for seq in esequences:
-        path = hmm.decode(seq)
-        counts_of_sleep = sum([i == 2 for i in path])
-        hours_of_sleep = counts_of_sleep / 10.0
-        plot(path)
-        title('sequence %d, %f hours of sleep' % (k, hours_of_sleep))
-        show()
-        k = k + 1
-        #if k > 10:
-        #    break
     
-'''
+    
+def initialize_model(meas):
+    maxenergy = int(amax(array([amax(m[0, :]) for m in meas])))
+    maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
+    maxlight = int(amax(array([amax(m[2, :]) for m in meas])))
+
+
+    print 'max energy val %d' % maxenergy
+    print 'max counts val %d' % maxcounts
+    print 'max light val %d' % maxlight
+
+    #state0 = not on bed
+    #state1 = on bed not sleeping
+    #state2 = on bed sleeping
+    N  = 3 #number of states
+    
+    A = array([[0.95, 0.05, 0.0], 
+              [0.05, 0.90, 0.05], 
+              [0.0, 0.20, 0.80],])
+              
+
+    B1 = zeros((N, maxenergy + 1))
+    B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
+    B1[1, :] = array(range(maxenergy+1))      #disturbed movement, cannot be zero energy
+    B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
+
+    B2 = zeros((N, int(maxcounts + 1)))
+    B2[0, 0] = 1.0
+    B2[1, :] = array(range(maxcounts+1))
+    B2[2, :] = array(range(maxcounts+1, 0, -1))    
+    
+    B3 = zeros((N, int(maxlight + 1)))
+    B3[0, :] = 1.0
+    B3[1, :] = array(range(1, maxlight + 2))
+    B3[2, 0] = 1.0
+
+  
+
+    #make rows sum to one
+    row_sums = A.sum(axis=1)
+    A = A / row_sums[:, newaxis]
+
+    row_sums = B1.sum(axis=1)
+    B1 = B1 / row_sums[:, newaxis]
+
+    row_sums = B2.sum(axis=1)
+    B2 = B2 / row_sums[:, newaxis]
+    
+    row_sums = B3.sum(axis=1)
+    B3 = B3 / row_sums[:, newaxis]
+    
+    x = array([ 0.998 ,  0.001, 0.001])
+    
+    print A
+    print B1
+    print B2
+    print B3
+
+    
+    hmm2 = MultipleDiscreteHMM(A,x)
+    hmm2.addModel(B1)
+    hmm2.addModel(B2)
+    hmm2.addModel(B3)
+    
+    return hmm2
+    
+    
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", help="specify input source from file",type=str)
+    parser.add_argument("-t", "--token", help="specify input from server via token",type=str)
+    parser.add_argument("-a",  "--action",help="evaluate,train", required=True, type=str)
+    parser.add_argument("-m",  "--model", help="model file (usually a .json)")
+    parser.add_argument("--iter", help="number of training iterations")
+    args = parser.parse_args()
+    
+    if args.file is None and args.token is None:
+        print "must specify either token (-t) or file (-f)"
+        sys.exit(0)
+    
+    set_printoptions(precision=3, suppress=True, threshold=np.nan)
+
+    
+    if args.action == 'evaluate' and args.model == None:
+        print "you must specify a model file (-m) if you are going to evaluate"
+        sys.exit(0)
+   
+    if args.file is not None and args.token is not None:
+        print "you can not specify both a input file or a server auth token"
+        sys.exit(0)
+
+        
+    if args.model is not None:
+        isModelInitialized = True
+        
+        hmm2 = MultipleDiscreteHMM()
+        hmm2.load_from_file(args.model)
+        
+    if args.iter is not None:
+        NUM_ITERS = int(args.iter)
+    
+        
+        
+
+    if args.token is not None:
+        alldata = extract_last_week.get_week_info()
+        joined = all_data.join_by_account_id(alldata,1)
+        meas = segment_all_data.process(joined)
+
+        
+    elif args.file is not None:
+        #get data
+        f = open(data_file, 'r');
+        alldata = json.load(f)
+        f.close()
+        
+        joined = all_data.join_by_account_id(alldata,250)
+        meas = segment_all_data.process(joined)
+    
+    
+    
+            
+    if args.action == 'train':
+    
+        if not isModelInitialized:
+            hmm2 = initialize_model(meas)
+    
+        
+      
+        print "training on %d segments" % len(meas)
+        
+        hmm2.train(meas, NUM_ITERS)
+        
+        filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
+        
+        hmm2.save_to_file(filename)
+        
+    elif args.action == 'evaluate':
+        evaluate(hmm2, meas)
+ 
+
+
     
     

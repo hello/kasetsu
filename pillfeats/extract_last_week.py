@@ -53,8 +53,17 @@ def get_week_info():
     sense_id = '007'
     
     data = {}
-    pilltimes = [p['timestamp']/1000.0 for p in pilldata]
-    pillvalues = [p['value'] for p in pilldata]
+    pill2 = [(p['value'], p['timestamp']/1000.0) for p in pilldata if p['value'] != -1]
+    
+    pillvalues = [p[0] for p in pill2]
+    pilltimes = [p[1] for p in pill2]
+    
+    for i in range(len(pillvalues)):
+        if (pillvalues[i] < 0):
+            pillvalues[i] = 1
+            
+        
+    
     data['pill'] = [pilltimes, pillvalues]
     
     
