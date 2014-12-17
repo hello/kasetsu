@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import segment_pill_data
+import segment_all_data
 import json
 from numpy import *
 from numpy.random import *
@@ -9,140 +9,140 @@ from pylab import *
 import sys
 import pillcsv
 from time import strftime
+import all_data
 
-
-data_file = 'pill_data_2014_12_08.csv'
+data_file = 'alldata.json'
 min_unix_time = 1414800000.0 #November 1, 2014
 NUM_ITERS = 10
             
 
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
-    
-    pilldata = pillcsv.read_pill_csv(data_file, min_unix_time)
-    pillcsv.sort_pill_data(pilldata)
+
+    task = 'evaluate'
+    if len(sys.argv) > 1:
+        task = sys.argv[1]
         
-    meas = segment_pill_data.process(pilldata)
-    
-    maxenergy = int(amax(array([amax(m[0, :]) for m in meas])))
-    maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
-
-    print 'max energy %d' % maxenergy
-    print 'max counts %d' % maxcounts
-
-    #state0 = not on bed
-    #state1 = on bed not sleeping
-    #state2 = on bed sleeping
-    N  = 3 #number of states
-    
-    A = array([[0.8, 0.2, 0.00001], 
-              [0.05, 0.35, 0.6], 
-              [0.00001, 0.001, 0.999],])
-              
-
-    B1 = zeros((N, maxenergy + 1))
-    B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
-    B1[1, 0:] = 1.0 #disturbed movement, cannot be zero energy
-    B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
-
- 
-    
-    B2 = zeros((N, int(maxcounts + 1)))
-    B2[0, 0] = 1.0
-    B2[1, 0:] = 1.0
-    B2[2, :] = array(range(maxcounts+1, 0, -1))    
-
-  
-    
-    x = array([0.9,0.05 , 0.05])
-    '''
-    B1 = array([[ 1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,0.   ,  0.   ,  0.   ,  0.   ],
-       [ 0.   ,  0.   ,  0.001,  0.021,  0.036,  0.022,  0.004,  0.609,0.175,  0.065,  0.065,  0.001],
-       [ 0.448,  0.001,  0.011,  0.141,  0.259,  0.06 ,  0.   ,  0.   , 0.   ,  0.066,  0.014,  0.   ]])
-       
-    B2 = array([[ 1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ],
-       [ 0.   ,  0.   ,  0.056,  0.07 ,  0.871,  0.002],
-       [ 0.624,  0.18 ,  0.145,  0.05 ,  0.001,  0.   ]])
-
-    A  = array( 
-    [[ 0.969 ,  0.031 ,  1e-6 ], 
-    [ 0.05 ,   0.896 ,  0.055], 
-    [ 1e-6   ,   0.012 ,  0.988]])
-    '''
-    #make rows sum to one
-    row_sums = A.sum(axis=1)
-    A = A / row_sums[:, newaxis]
-
-    row_sums = B1.sum(axis=1)
-    B1 = B1 / row_sums[:, newaxis]
-
-    row_sums = B2.sum(axis=1)
-    B2 = B2 / row_sums[:, newaxis]
-    
-    x = array([ 0.998 ,  0.001, 0.001])
-    
-    print A
-    print B1
-    print B2
-    
-    hmm2 = MultipleDiscreteHMM(A,x)
-    hmm2.addModel(B1)
-    hmm2.addModel(B2)
-    
-  
-    '''  
-    testmeas = zeros((2, 100))
-    
-    testmeas[0][20] = 5
-    testmeas[1][20] = 6
-    
-    
-    testmeas[0][90] = 5
-    testmeas[1][90] = 5
-    
-    testmeas[0][40:42] = 1
-    testmeas[0][40:42] = 1
-    
-    n = 45
-    
-    testmeas[0][n:n+2] = 1
-    testmeas[0][n:n+2] = 1
-    
-    print hmm2.decode(testmeas)
-    plot(hmm2.decode(meas[34]))
-    plot(meas[34][0])
-    plot(meas[34][1])
-
-    print [amin(m[0]) for m in meas]
-
-    show()
-
-    '''
-    
-#   '''
-    print "training on %d segments" % len(meas)
-    
-    hmm2.train(meas, NUM_ITERS)
-    #hmm2.force_no_zero_values(1e-9)
-    
-    result = {}
-    result['A'] = hmm2.A.tolist()
-    result['obsmodels'] = []
-    for model in hmm2.obsmodels:
-        result['obsmodels'].append(model.tolist())
+    isModelInitialized = False
+    if len(sys.argv) > 2:
+        isModelInitialized = True
+        f = open(sys.argv[2], 'r')
+        hmmdata = json.load(f)
+        f.close()
         
-    result['pi'] = hmm2.pi.tolist()
+        hmm2 = MultipleDiscreteHMM(array(hmmdata['A']),array(hmmdata['pi']))
+        
+        for B in hmmdata['obsmodels']:
+            B = array(B)
+            hmm2.addModel(B)
+            
+    if len(sys.argv) > 3:
+        NUM_ITERS = int(sys.argv[3])
+    
+        
+    f = open(data_file, 'r');
+    alldata = json.load(f)
+    f.close()
+    
+    joined = all_data.join_by_account_id(alldata,250)
+    meas = segment_all_data.process(joined)
+    
+    
+    
+            
+    if task == 'train':
+    
+        if not isModelInitialized:
+            maxenergy = int(amax(array([amax(m[0, :]) for m in meas])))
+            maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
+            maxlight = int(amax(array([amax(m[2, :]) for m in meas])))
+        
+        
+            print 'max energy val %d' % maxenergy
+            print 'max counts val %d' % maxcounts
+            print 'max light val %d' % maxlight
+        
+            #state0 = not on bed
+            #state1 = on bed not sleeping
+            #state2 = on bed sleeping
+            N  = 3 #number of states
+            
+            A = array([[0.95, 0.05, 0.0], 
+                      [0.05, 0.90, 0.05], 
+                      [0.0, 0.20, 0.80],])
+                      
+        
+            B1 = zeros((N, maxenergy + 1))
+            B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
+            B1[1, :] = array(range(maxenergy+1))      #disturbed movement, cannot be zero energy
+            B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
+        
+            B2 = zeros((N, int(maxcounts + 1)))
+            B2[0, 0] = 1.0
+            B2[1, :] = array(range(maxcounts+1))
+            B2[2, :] = array(range(maxcounts+1, 0, -1))    
+            
+            B3 = zeros((N, int(maxlight + 1)))
+            B3[0, :] = 1.0
+            B3[1, :] = array(range(1, maxlight + 2))
+            B3[2, 0] = 1.0
+        
+          
+        
+            #make rows sum to one
+            row_sums = A.sum(axis=1)
+            A = A / row_sums[:, newaxis]
+        
+            row_sums = B1.sum(axis=1)
+            B1 = B1 / row_sums[:, newaxis]
+        
+            row_sums = B2.sum(axis=1)
+            B2 = B2 / row_sums[:, newaxis]
+            
+            row_sums = B3.sum(axis=1)
+            B3 = B3 / row_sums[:, newaxis]
+            
+            x = array([ 0.998 ,  0.001, 0.001])
+            
+            print A
+            print B1
+            print B2
+            print B3
+        
+            
+            hmm2 = MultipleDiscreteHMM(A,x)
+            hmm2.addModel(B1)
+            hmm2.addModel(B2)
+            hmm2.addModel(B3)
+    
+        
+      
+        print "training on %d segments" % len(meas)
+        
+        hmm2.train(meas, NUM_ITERS)
+        #hmm2.force_no_zero_values(1e-9)
+        
+        
+    
+#    hmm2.A[0, 2] = 1e-6
+#    hmm2.A[2, 0] = 1e-6
+        result = {}
+        result['A'] = hmm2.A.tolist()
+        result['obsmodels'] = []
+        for model in hmm2.obsmodels:
+            result['obsmodels'].append(model.tolist())
+            
+        result['pi'] = hmm2.pi.tolist()
+    
+        f = open(strftime("HMM_%Y-%m-%d_%H:%M:%S.json"), 'w')
+        json.dump(result, f)
+        f.close()
     
     print hmm2.A
     for model in hmm2.obsmodels:
         print model
         
     print hmm2.pi
-
-
-    f = open(strftime("HMM_%Y-%m-%d_%H:%M:%S.json"), 'w')
-    json.dump(result, f)
-    f.close()
     
     for imeas in xrange(len(meas)):
         m = meas[imeas]
@@ -153,8 +153,10 @@ if __name__ == '__main__':
         plot(t, x, 'k.-')
         plot(t, m[0])
         plot(t, m[1])
+        plot(t, m[2])
+
         title('DATA SET %d, %f hours in mode 2' % (imeas, numhours))
-        legend(['state', 'energies', 'num times woken'])
+        legend(['state', 'energies', 'num times woken', 'log light range'])
         
 
         show()

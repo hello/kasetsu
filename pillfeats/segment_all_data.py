@@ -116,8 +116,18 @@ def compute_log_variance(x, logbase = 2.0, offset=1.0):
     return numpy.log(numpy.var(x) + offset) / numpy.log(logbase)
     
 def compute_log_range(x, logbase = 2.0, maxval=10.):
-    range = numpy.amax(x) - numpy.amin(x)
-    val =  numpy.ceil(numpy.log(range + 1) / numpy.log(logbase))
+    min = numpy.amin(x)
+    max = numpy.amax(x)
+    med = numpy.median(x)
+    range = max - min
+    fracchange = range / (min + 20)
+    fracchange = fracchange - 0.5
+    
+    if fracchange < 0:
+        fracchange = 0
+    
+    val =  numpy.ceil(numpy.log(fracchange + 1) / numpy.log(logbase))
+    
     if val > maxval:
         val = maxval
     
@@ -193,7 +203,7 @@ def summarize(segments, interval_in_minutes):
             if len(lightvals) == 0:
                 lightvals = numpy.array([0])
                 
-            y = int(compute_log_range(lightvals, 10))
+            y = int(compute_log_range(lightvals, 3, 6))
             
             mylight[idx] = y
 
@@ -215,8 +225,7 @@ def enforce_summary_limits(summary, min_length, max_length):
         return None
     
     for item in summary:
-        counts = copy(item[key_counts])
-        energies = copy(item[key_energies])
+        counts = item[key_counts]
         
         #reject
         if len(counts) < min_length:
@@ -228,31 +237,30 @@ def enforce_summary_limits(summary, min_length, max_length):
             #print "rejecting %d length item, which was greater than %d counts" % (len(counts), max_length)
             continue
             
-        
-        summary2.append({key_counts : counts,  key_energies : energies})
+        summary2.append(deepcopy(item))
         
     return summary2
     
 def prepend_zeros(summary, numzeros, numzeros2):
         for item in summary:
-            counts = item[key_counts]
-            energies = item[key_energies]
-            
-            item[key_counts] = numpy.concatenate((numpy.zeros((numzeros, )), counts, numpy.zeros((numzeros2, ))))
-            item[key_energies] = numpy.concatenate((numpy.zeros((numzeros, )), energies, numpy.zeros((numzeros2, ))))
-
+            for key in item:
+                thisvector = item[key]
+                
+                item[key] = numpy.concatenate((numpy.zeros((numzeros, )), thisvector, numpy.zeros((numzeros2, ))))
+           
     
 def vectorize_measurements(summary):
     meas = []
     for item in summary:
         e = item[key_energies]
         c = item[key_counts]
+        l = item[key_lightvar]
         
         if len(e) != len(c):
             print ("somehow, energies and counts are not the same length.")
             continue
         
-        arr = numpy.array([e, c])
+        arr = numpy.array([e, c, l])
                 
         meas.append(arr)
         
@@ -262,9 +270,9 @@ def vectorize_measurements(summary):
 
 def process(dict_of_lists):
     
-    segments2 = segment(dict_of_lists)
+    segments = segment(dict_of_lists)
     
-    summary = summarize(segments2,k_interval)
+    summary = summarize(segments,k_interval)
 
     summary2 = enforce_summary_limits(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
 
