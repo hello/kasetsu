@@ -48,6 +48,7 @@ def read_pill_csv(filename, min_unix_time):
             account_id = row[1]
             pill_id = row[2]
             value = int(row[3])
+            offset = int(row[5]) / 1000.0
             datestr = row[6]
             
             if value == -1:
@@ -59,7 +60,7 @@ def read_pill_csv(filename, min_unix_time):
             
             #2014-05-12 21:02:00
             thetime = datetime.datetime.strptime(datestr, '%Y-%m-%d %H:%M:%S')
-            timevalue = time.mktime(thetime.timetuple())
+            timevalue = time.mktime(thetime.timetuple()) + offset
 
             if min_unix_time is not None and timevalue < min_unix_time:
                 continue

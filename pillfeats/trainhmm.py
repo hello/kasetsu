@@ -16,7 +16,7 @@ import extract_last_week
 
 data_file = 'alldata.json'
 min_unix_time = 1414800000.0 #November 1, 2014
-NUM_ITERS = 10
+NUM_ITERS = 5
             
 def evaluate(hmm2, meas):
     print hmm2.A
@@ -35,6 +35,10 @@ def evaluate(hmm2, meas):
         plot(t, m[0])
         plot(t, m[1])
         plot(t, m[2])
+        
+        if len(m) > 3:
+            plot(t, m[3] / 23.0, 'm+')
+
 
         title('DATA SET %d, %f hours in mode 2' % (imeas, numhours))
         legend(['state', 'energies', 'num times woken', 'log light range'])
@@ -49,7 +53,6 @@ def initialize_model(meas):
     maxcounts = int(amax(array([amax(m[1, :]) for m in meas])))
     maxlight = int(amax(array([amax(m[2, :]) for m in meas])))
 
-
     print 'max energy val %d' % maxenergy
     print 'max counts val %d' % maxcounts
     print 'max light val %d' % maxlight
@@ -59,9 +62,9 @@ def initialize_model(meas):
     #state2 = on bed sleeping
     N  = 3 #number of states
     
-    A = array([[0.95, 0.05, 0.0], 
-              [0.05, 0.90, 0.05], 
-              [0.0, 0.20, 0.80],])
+    A = array([[0.90, 0.05, 0.05], 
+              [0.05, 0.9, 0.05], 
+              [0.05, 0.05, 0.9],])
               
 
     B1 = zeros((N, maxenergy + 1))
@@ -78,6 +81,8 @@ def initialize_model(meas):
     B3[0, :] = 1.0
     B3[1, :] = array(range(1, maxlight + 2))
     B3[2, 0] = 1.0
+    
+
 
   
 
@@ -94,19 +99,19 @@ def initialize_model(meas):
     row_sums = B3.sum(axis=1)
     B3 = B3 / row_sums[:, newaxis]
     
+
     x = array([ 0.998 ,  0.001, 0.001])
     
     print A
     print B1
     print B2
     print B3
-
     
     hmm2 = MultipleDiscreteHMM(A,x)
     hmm2.addModel(B1)
     hmm2.addModel(B2)
     hmm2.addModel(B3)
-    
+
     return hmm2
     
     
@@ -136,6 +141,8 @@ if __name__ == '__main__':
         sys.exit(0)
 
         
+    isModelInitialized = False
+
     if args.model is not None:
         isModelInitialized = True
         
@@ -156,7 +163,7 @@ if __name__ == '__main__':
         
     elif args.file is not None:
         #get data
-        f = open(data_file, 'r');
+        f = open(args.file, 'r');
         alldata = json.load(f)
         f.close()
         

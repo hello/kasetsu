@@ -3,6 +3,7 @@
 from hmm.discrete.DiscreteHMM import DiscreteHMM
 import numpy
 from hmm._BaseHMM import _BaseHMM
+import json
 
 '''
 Handles the case of multiple training sets 
@@ -12,15 +13,16 @@ and multiple independnet observation types
 k_min_loglik = -5
 
 class MultipleDiscreteHMM(_BaseHMM):
-    def __init__(self,A,pi,precision=numpy.double,verbose=False):
-        self.obsmodels = []
-
-        self.A = A
-        self.pi = pi
-        
-        self.precision = numpy.double
-        self.verbose = verbose
-        self.n = A.shape[0] #be square
+    def __init__(self,A = None,pi = None,precision=numpy.double,verbose=False):
+        if not A is None:
+            self.obsmodels = []
+    
+            self.A = A
+            self.pi = pi
+            
+            self.precision = numpy.double
+            self.verbose = verbose
+            self.n = A.shape[0] #be square
         
     def force_no_zero_values(self, min_val=1e-6):
         for B in self.obsmodels:
@@ -50,6 +52,13 @@ class MultipleDiscreteHMM(_BaseHMM):
                     self.B_map[istate][t] = self.B_map[istate][t] * self.obsmodels[imodel][istate][this_obs]
                              
 
+    def printme(self):
+        print self.A
+        for model in self.obsmodels:
+            print model
+        
+        print self.pi
+        
     def decode(self, observations):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
@@ -58,6 +67,30 @@ class MultipleDiscreteHMM(_BaseHMM):
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
         return self._viterbi(observations, len(observations[0]))
+        
+    def save_to_file(self, filename):
+        result = {}
+        result['A'] = self.A.tolist()
+        result['obsmodels'] = []
+        for model in self.obsmodels:
+            result['obsmodels'].append(model.tolist())
+            
+        result['pi'] = self.pi.tolist()
+    
+        f = open(filename, 'w')
+        json.dump(result, f)
+        f.close()
+        
+    def load_from_file(self, filename):
+        f = open(filename, 'r')
+        hmmdata = json.load(f)
+        f.close()
+        
+        self.__init__(numpy.array(hmmdata['A']),numpy.array(hmmdata['pi']))
+        
+        for B in hmmdata['obsmodels']:
+            B = numpy.array(B)
+            self.addModel(B)
         
         
     def reset(self):
@@ -195,8 +228,10 @@ class MultipleDiscreteHMM(_BaseHMM):
             if model_loglik[i] < k_min_loglik:
                 model_loglik[i] = k_min_loglik
         
-        weights = numpy.exp(-model_loglik)
-        weights = weights / numpy.sum(weights)
+        #weights = numpy.exp(-model_loglik)
+        #weights = weights / numpy.sum(weights)
+        M = len(self.obsmodels)
+        weights = numpy.ones((M, )) / M
                         
         newA = numpy.zeros(self.A.shape)
         newPi0 = numpy.zeros((self.n, ))

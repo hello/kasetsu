@@ -12,6 +12,7 @@ key_value = 'value'
 key_counts = 'counts'
 key_energies = 'energies'
 key_lightvar = 'lightvariance'
+key_timeofday = 'timeofday'
 
 k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
@@ -22,6 +23,11 @@ k_min_segment_length_in_intervals = 4*60/k_interval #intervals
 k_num_zeros_to_prepend = 20
 k_num_zeros_to_append = 20
 
+#hour 0-23, mode 0 - not sleepy times
+#mode 1 - possibly sleepy times
+#mode 2 - definitely sleep times
+
+k_hour_mode_lookup = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 
 
 def filter_bad_values(events):
@@ -116,17 +122,27 @@ def compute_log_variance(x, logbase = 2.0, offset=1.0):
     return numpy.log(numpy.var(x) + offset) / numpy.log(logbase)
     
 def compute_log_range(x, logbase = 2.0, maxval=10.):
-    min = numpy.amin(x)
-    max = numpy.amax(x)
-    med = numpy.median(x)
-    range = max - min
-    fracchange = range / (min + 10)
+    imin = numpy.argmin(x)
+    imax = numpy.argmax(x)
+    
+    min = x[imin]
+    max = x[imax]
+    
+    #if the max happened later than the min, then this was an increase
+    #we only are looking at lights out
+    if imax > imin:
+        range = 0
+    else:
+        range = max - min
+    
+    fracchange = range / (min + 20)
     fracchange = fracchange - 0.25
     
     if fracchange < 0:
         fracchange = 0
     
     val =  numpy.ceil(numpy.log(fracchange + 1) / numpy.log(logbase))
+    
     
     if val > maxval:
         val = maxval
@@ -171,12 +187,14 @@ def summarize(segments, interval_in_minutes):
         mycounts = []
         myenergies = []
         mylight = []
+        mytimeofday = []
         
         #create counts and energies arrays
         for i in xrange(maxidx+1):
             mycounts.append(0) 
             myenergies.append(0)
             mylight.append(0)
+            mytimeofday.append(0)
             
             
         #SUMMARIZE PILL DATA
@@ -194,6 +212,10 @@ def summarize(segments, interval_in_minutes):
             logval = int(numpy.ceil(numpy.log(mycounts[i] + 1.0)/numpy.log(2.0) ))
             mycounts[i] = logval
             
+        for i in range(len(mytimeofday)):
+            tt = t0 + interval_in_minutes*i*60
+            mytimeofday[i] = k_hour_mode_lookup[datetime.datetime.fromtimestamp(tt).hour] 
+             
 
         #SUMMARIZE SENSE DATA
         for idx in xrange(maxidx+1):
@@ -203,12 +225,12 @@ def summarize(segments, interval_in_minutes):
             if len(lightvals) == 0:
                 lightvals = numpy.array([0])
                 
-            y = int(compute_log_range(lightvals, 3, 6))
+            y = int(compute_log_range(lightvals, 3, 1.))
             
             mylight[idx] = y
 
         
-        summary.append({key_counts : mycounts,  key_energies : myenergies,  key_lightvar : mylight})
+        summary.append({key_counts : mycounts,  key_energies : myenergies,  key_lightvar : mylight,  key_timeofday : mytimeofday})
         
     return summary
     
@@ -255,12 +277,13 @@ def vectorize_measurements(summary):
         e = item[key_energies]
         c = item[key_counts]
         l = item[key_lightvar]
+        tod = item[key_timeofday]
         
         if len(e) != len(c):
             print ("somehow, energies and counts are not the same length.")
             continue
         
-        arr = numpy.array([e, c, l])
+        arr = numpy.array([e, c, l, tod])
                 
         meas.append(arr)
         
