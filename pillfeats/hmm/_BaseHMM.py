@@ -174,7 +174,7 @@ class _BaseHMM(object):
                 
                 
         qTstar = numpy.argmax(delta[numobs-1])
-        print delta
+        #print delta
         
         path = numpy.zeros((numobs, ))
         

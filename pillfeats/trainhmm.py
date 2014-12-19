@@ -92,8 +92,9 @@ def decode(hmm2, meas):
         title('DATA SET %d, %f hours in mode 2,model=%f,path=%f' % (imeas, numhours, model_lik,path_lik))
         legend(['state', 'energies', 'num times woken', 'log light range'])
         
-
-        show()
+        savefig('decode%0000d.png' % imeas)
+        close()
+        #show()
 
     
 def initialize_random_model(meas):
