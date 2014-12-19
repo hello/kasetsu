@@ -77,6 +77,21 @@ class _BaseHMM(object):
                 
         return (alpha, c)
 
+    def evaluate_path_log_likelihood(self, observations, path):
+        self._mapB(observations)
+        
+        p = numpy.log(self.B_map[path[0]][0])
+        
+        for t in xrange(1, len(path)):
+            istate = path[t-1]
+            istate2 = path[t]
+            ptransition = self.A[istate, istate2]
+            pobs = self.B_map[path[t]][t]
+            
+            p = p + numpy.log(ptransition) + numpy.log(pobs)
+            
+        return (p, p / len(path))
+
     def _calcbeta(self,observations, c):
         '''
         Calculates 'beta' the backward variable.
@@ -134,38 +149,42 @@ class _BaseHMM(object):
             delta[0][x] = self.pi[x]*self.B_map[x][0]
             psi[0][x] = 0
         
-        # induction
-        for t in xrange(1,numobs):
+        
+ 
+        transitioned_delta = numpy.zeros((self.n, ))
+        joint = numpy.zeros((self.n, ))
+        for t in xrange(1, numobs):
             for j in xrange(self.n):
                 for i in xrange(self.n):
-                    if (delta[t][j] < delta[t-1][i]*self.A[i][j]):
-                        delta[t][j] = delta[t-1][i]*self.A[i][j]
-                        psi[t][j] = i
+                    transitioned_delta[i] = delta[t-1][i] * self.A[i][j]
+                    joint[i] = transitioned_delta[i]*self.B_map[j][t]
+                    
+                psi[t][j] = numpy.argmax(transitioned_delta)
+                delta[t][j] = numpy.amax(joint)
                 
-                delta[t][j] *= self.B_map[j][t]
-                
-            normalizer = numpy.sum(delta[t][:])
+            thesum = numpy.sum(delta[t])
             
-            if normalizer < 1e-8:
-                normalizer = 1.0 / delta.shape[1]
-                delta[t][:] = 1
+            #reset if we run into an impossible path
+            if thesum <= 1e-15:
+                delta[t][0] = 1
+                print ('impossible path at t=%d, resetting decode' % t)
+            else:
+                #otherwise normalize
+                delta[t] = delta[t] / thesum
                 
                 
-            delta[t][:] = delta[t][:] / normalizer
-                
+        qTstar = numpy.argmax(delta[numobs-1])
+        print delta
         
-        # termination: find the maximum probability for the entire sequence (=highest prob path)
-        p_max = 0 # max value in time T (max)
-        path = numpy.zeros((numobs),dtype=self.precision)
-        for i in xrange(self.n):
-            if (p_max < delta[numobs-1][i]):
-                p_max = delta[numobs-1][i]
-                path[numobs-1] = i
+        path = numpy.zeros((numobs, ))
         
-        # path backtracing
-#        path = numpy.zeros((len(observations)),dtype=self.precision) ### 2012-11-17 - BUG FIX: wrong reinitialization destroyed the last state in the path
-        for i in xrange(1, numobs):
-            path[numobs-i-1] = psi[numobs-i][ path[numobs-i] ]
+        path[numobs-1] = qTstar
+        
+        prevQ = qTstar
+        for t in xrange(numobs-2, -1, -1):
+            path[t] = psi[t+1][prevQ]
+            prevQ =  path[t]
+            
         return path
      
     def _calcxi(self,observations,alpha=None,beta=None):

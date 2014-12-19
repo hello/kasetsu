@@ -13,6 +13,8 @@ import pillcsv
 k_uri = 'https://dev-api.hello.is/v1/datascience/pill/'
 k_uri_light = 'https://dev-api.hello.is/v1/room/light/week'
 
+#auth='1.968b8e23615447f9aef774553825a83f'
+#auth = '1.54320790d7444b648cb56a832df41777'
 auth = '1.631598871dbd4e4d8651d36392c1173f'
 days_in_a_week = 7
 
@@ -48,6 +50,11 @@ def get_week_info():
         
         
     alldata = {}
+    
+    if len(pilldata) == 0:
+        print 'no pill data found'
+        return None
+        
     account_id = str(pilldata[0]['account_id'])
     pill_id = str(pilldata[0]['tracker_id'])
     sense_id = '007'

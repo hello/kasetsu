@@ -99,6 +99,56 @@ class MultipleDiscreteHMM(_BaseHMM):
     def addModel(self, B):
         self.obsmodels.append(B)
         
+        
+    def evaluate_path_log_likelihood(self, path, observations):
+        
+        hmms = []
+        for imodel in range(len(self.obsmodels)):
+            B = self.obsmodels[imodel]
+            M = B.shape[1]
+            
+            #create HMM with model parameters
+            hmm = DiscreteHMM(self.n, M, self.A, B, self.pi, init_type='user', precision=self.precision, verbose=self.verbose)
+            hmms.append(hmm)
+            
+       
+            
+        p = 0
+
+        #initialize each model
+        for imodel in range(len(self.obsmodels)):
+            hmms[imodel]._mapB(observations[imodel])
+            
+            pobs = hmms[imodel].B_map[path[0]][0]
+            if pobs < 1e-10:
+                print 'what the hell?  zero on start of b_map'
+                return None
+                
+            p = p + numpy.log(pobs)
+            
+        #evaluate each model in the path
+        for t in xrange(1, len(path)):
+            
+            #transition
+            istate = path[t-1]
+            istate2 = path[t]
+            ptransition = self.A[istate, istate2]
+            p = p + numpy.log(ptransition) 
+
+            #contribution from each obs model
+            for imodel in range(len(self.obsmodels)):
+                pobs = self.B_map[path[t]][t]
+                if pobs < 1e-10:
+                    print "mode %d at t=%d was extremely unlikely" % (path[t], t)
+                    return 0
+                    
+                p = p + numpy.log(pobs)
+                
+        return p / len(observations[0])
+
+ 
+
+        
     def forwardbackward(self,observations,cache=False):
         total_loglik = 0.0
        

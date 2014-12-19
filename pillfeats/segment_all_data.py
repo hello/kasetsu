@@ -18,7 +18,7 @@ k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
 k_segment_split_duaration = 60.0 * 3.0 #minutes
 k_max_segment_length_in_intervals = 14*60/k_interval #intervals
-k_min_segment_length_in_intervals = 4*60/k_interval #intervals
+k_min_segment_length_in_intervals = 5*60/k_interval #intervals
 
 k_num_zeros_to_prepend = 20
 k_num_zeros_to_append = 20
@@ -84,6 +84,7 @@ def segment(dict_of_lists):
             
         if not is_one_segment_found:
             seg_t2 = last_t1
+            dt = seg_t2 - seg_t1
             t1_list.append(seg_t1)
             t2_list.append(seg_t2)
             seg_t1 = t2
@@ -127,7 +128,7 @@ def compute_log_range(x, logbase = 2.0, maxval=10.):
     
     min = x[imin]
     max = x[imax]
-    
+        
     #if the max happened later than the min, then this was an increase
     #we only are looking at lights out
     if imax > imin:
