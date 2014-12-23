@@ -117,16 +117,16 @@ class _BaseHMM(object):
         
         return beta
     
-    def decode(self, observations):
+    def decode(self, observations, nbest=1):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations, len(observations))
+        return self._viterbi(observations, len(observations), nbest)
     
-    def _viterbi(self, observations, numobs):
+    def _viterbi(self, observations, numobs, nbest=1):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
         very similar to the forward-backward algorithm, with the added step of maximization and eventual
@@ -146,8 +146,8 @@ class _BaseHMM(object):
         
         # init
         for x in xrange(self.n):
-            delta[0][x] = self.pi[x]*self.B_map[x][0]
-            psi[0][x] = 0
+            delta[:][0][x] = numpy.log(self.pi[x]*self.B_map[x][0])
+            psi[:][0][x] = 0
         
         
  
@@ -156,21 +156,11 @@ class _BaseHMM(object):
         for t in xrange(1, numobs):
             for j in xrange(self.n):
                 for i in xrange(self.n):
-                    transitioned_delta[i] = delta[t-1][i] * self.A[i][j]
-                    joint[i] = transitioned_delta[i]*self.B_map[j][t]
-                    
+                    transitioned_delta[i] = delta[t-1][i] + numpy.log(self.A[i][j] + 1e-15)
+                    joint[i] = transitioned_delta[i] + numpy.log(self.B_map[j][t] + 1e-15)
+                                        
                 psi[t][j] = numpy.argmax(transitioned_delta)
                 delta[t][j] = numpy.amax(joint)
-                
-            thesum = numpy.sum(delta[t])
-            
-            #reset if we run into an impossible path
-            if thesum <= 1e-15:
-                delta[t][0] = 1
-                print ('impossible path at t=%d, resetting decode' % t)
-            else:
-                #otherwise normalize
-                delta[t] = delta[t] / thesum
                 
                 
         qTstar = numpy.argmax(delta[numobs-1])
