@@ -19,11 +19,15 @@ meas = segment_all_data.process(joined)
 
 hmm.load_from_file('model2.json')
 
-for i in range(1):
-    m = meas[i + 20]
-
-    path, path2 = hmm.decode(m,4)
-
-    plot(path)
-    plot(path2, '.-')
+for i in range(100):
+    m = meas[i + 0]
+    
+    paths = hmm.decode(m,4)
+    print 'found %d paths' % len(paths)
+    q = 1.0
+    print paths.values()
+    for path in paths:
+        plot(array(path)*q)
+        q = q - 0.01
+    
     show()

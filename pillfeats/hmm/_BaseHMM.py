@@ -11,6 +11,12 @@ This code is based on:
 import numpy
 import pylab 
 import copy
+
+
+k_max_depth = 10
+k_percentage_of_best_cutoff = 0.02
+k_max_paths = 32
+
 class _BaseHMM(object):
     '''
     Implements the basis for all deriving classes, but should not be used directly.
@@ -128,7 +134,21 @@ class _BaseHMM(object):
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
         return self._viterbi(observations, len(observations), nbest)
     
-    def _get_second_best_path_costs(self, path,pathcost, phi,vi,numobs):
+    #given original viterbi path, deviate from it
+    #starting at tstart, and moving towards the max incming in state idxstart at that time
+    def _backtrace_viterbi_path(self, viterbi_path, vi, tstart, idxstart):
+        path = copy.deepcopy(viterbi_path)
+        state = idxstart
+        for t in xrange(tstart-1, -1, -1):
+            path[t] = state
+            state = vi[state][t-1]
+            
+        return path
+        
+    def _get_second_best_path_costs(self,depth, path_dict, path,viterbi_info):
+        
+        viterbi_path, vi, viterbi_pathcost, phi = viterbi_info
+        numobs = len(viterbi_path)
         second_best_merge_from_idx = numpy.zeros((numobs, )).astype(int)
         second_best_costs = numpy.zeros((numobs, ))
         
@@ -141,64 +161,61 @@ class _BaseHMM(object):
         
         for t in xrange(1, numobs):
             j = path[t]
+            
             obscost = -numpy.log(self.B_map[j][t] + 1e-15)
                 
             for i in xrange(self.n): #i means the incoming from ith hidden state
                 #compute incoming costs
                 
                 pc = -numpy.log(self.A[i][j] + 1e-15) + obscost
-                
+                minval = float("Inf")
+                minidx = -1
                 #if incoming state is not the previous viterbi path
                 if i != path[t-1]:
-                    cost[i] = pc + phi[i][t-1]
-                else:
-                    cost[i] = pc + second_best_costs[t-1]
+                    cost = pc + phi[i][t-1]
+                    if cost < minval:
+                        minidx = i;
+                        minval = cost
+               
+
+            second_best_costs[t] = minval
+            second_best_merge_from_idx[t] = minidx
+        
+        
+        second_best_costs =  second_best_costs - viterbi_pathcost
+        second_best_costs = second_best_costs - numpy.amin(second_best_costs)
+        
+        cost_idx = numpy.argsort(second_best_costs)
+
+        totcost = phi[0][numobs-1]
+        
+        paths = []
+        
+        for cidx in cost_idx:
+            if cidx < 20:
+                continue
                 
-            idx = numpy.argmin(cost)
-            if idx != path[t-1]:
-                print 'yippee!', t
-            second_best_costs[t] = cost[idx]
-            second_best_merge_from_idx[t] = idx
-        
-        
-        second_best_costs =  second_best_costs - pathcost
-        
-        mc = numpy.amax(second_best_costs)
-        second_best_costs[-20:] = mc
-        second_best_costs[0:20] = mc
-        
-        min_t = numpy.argmin(second_best_costs)
-        
-        #go backwards until the path merges from something non-viterbi
-        decrement_count = 0
-        t = min_t
-        while (t > 0):
-            merge_from_state = second_best_merge_from_idx[t]
+            cost = second_best_costs[cidx]
+            statestart = second_best_merge_from_idx[cidx]
             
-            if merge_from_state == path[t-1]:
-                t = t - 1
-                decrement_count = decrement_count + 1
+            relcost = cost/totcost
+            
+            if  relcost < k_percentage_of_best_cutoff: #within x% of original best cost
+                newpath = self._backtrace_viterbi_path(path, vi, cidx, statestart)
+                v = tuple(newpath.tolist())
+                if not path_dict.has_key(v):
+                    
+                    if len(path_dict) >= k_max_paths:
+                        return
+                        
+                    path_dict[v] = cost
+                    paths.append(newpath)
             else:
                 break
-                
-        min_t = t
-        
-        second_best_path = copy.deepcopy(path)
 
-        print decrement_count, min_t, merge_from_state, second_best_costs[min_t]
-      
-        state = merge_from_state
-        print 'merge state ', merge_from_state, 'viterbi state', path[min_t-1]
-        for t in xrange(min_t-1, -1, -1):
-            second_best_path[t] = state
-            state = vi[state][t-1]
-            
-
-        pylab.plot(second_best_costs/100.0)
-        pylab.plot(second_best_merge_from_idx)
-
-        pylab.show()
-        return second_best_path, second_best_costs, second_best_merge_from_idx
+        if depth > 0:
+            for p in paths:
+                self._get_second_best_path_costs(depth-1, path_dict, p,viterbi_info)
         
     def _viterbi(self, observations, numobs, nbest=1):
         '''
@@ -255,9 +272,16 @@ class _BaseHMM(object):
         for t in xrange(numobs - 2, -1, -1):
             path[t] = viterbi_indices[path[t+1]][t]
                
-        path2, pathcosts2, pathindices2 = self._get_second_best_path_costs(path, pathcost, phi,viterbi_indices,  numobs)
+        viterbi_info = path, viterbi_indices, pathcost, phi
         
-        return path, path2
+        path_dict = {}
+        v = tuple(path.tolist())
+        path_dict[v] = 0.0
+        
+        #recursive
+        self._get_second_best_path_costs(k_max_depth, path_dict, path,viterbi_info)
+        
+        return path_dict
      
     def _calcxi(self,observations,alpha=None,beta=None):
         '''
