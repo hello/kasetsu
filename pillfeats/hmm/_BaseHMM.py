@@ -9,7 +9,8 @@ This code is based on:
 '''
 
 import numpy
-
+import pylab 
+import copy
 class _BaseHMM(object):
     '''
     Implements the basis for all deriving classes, but should not be used directly.
@@ -77,20 +78,21 @@ class _BaseHMM(object):
                 
         return (alpha, c)
 
-    def evaluate_path_log_likelihood(self, observations, path):
+    def evaluate_path_cost(self, observations, path, numobs):
         self._mapB(observations)
+        p = numpy.zeros((numobs, ))
         
-        p = numpy.log(self.B_map[path[0]][0])
+        p[0] = -numpy.log(self.B_map[path[0]][0] + 1e-15) - numpy.log(self.pi[0] + 1e-15)
         
-        for t in xrange(1, len(path)):
+        for t in xrange(1, numobs):
             istate = path[t-1]
             istate2 = path[t]
             ptransition = self.A[istate, istate2]
             pobs = self.B_map[path[t]][t]
             
-            p = p + numpy.log(ptransition) + numpy.log(pobs)
+            p[t] = p[t - 1] - numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
             
-        return (p, p / len(path))
+        return p
 
     def _calcbeta(self,observations, c):
         '''
@@ -126,6 +128,78 @@ class _BaseHMM(object):
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
         return self._viterbi(observations, len(observations), nbest)
     
+    def _get_second_best_path_costs(self, path,pathcost, phi,vi,numobs):
+        second_best_merge_from_idx = numpy.zeros((numobs, )).astype(int)
+        second_best_costs = numpy.zeros((numobs, ))
+        
+        #just start and end at state zero
+        second_best_costs[0] = phi[0][0]
+        
+        #phi2(path[t][t]) = min [ phi2(path[t-1][t-1])  + cost[path[t-1][path[t]]; 
+        #                         min( phi[j][t-1] + cost[j][path[t]] j != path[t-1]
+        cost = numpy.zeros((self.n, ))
+        
+        for t in xrange(1, numobs):
+            j = path[t]
+            obscost = -numpy.log(self.B_map[j][t] + 1e-15)
+                
+            for i in xrange(self.n): #i means the incoming from ith hidden state
+                #compute incoming costs
+                
+                pc = -numpy.log(self.A[i][j] + 1e-15) + obscost
+                
+                #if incoming state is not the previous viterbi path
+                if i != path[t-1]:
+                    cost[i] = pc + phi[i][t-1]
+                else:
+                    cost[i] = pc + second_best_costs[t-1]
+                
+            idx = numpy.argmin(cost)
+            if idx != path[t-1]:
+                print 'yippee!', t
+            second_best_costs[t] = cost[idx]
+            second_best_merge_from_idx[t] = idx
+        
+        
+        second_best_costs =  second_best_costs - pathcost
+        
+        mc = numpy.amax(second_best_costs)
+        second_best_costs[-20:] = mc
+        second_best_costs[0:20] = mc
+        
+        min_t = numpy.argmin(second_best_costs)
+        
+        #go backwards until the path merges from something non-viterbi
+        decrement_count = 0
+        t = min_t
+        while (t > 0):
+            merge_from_state = second_best_merge_from_idx[t]
+            
+            if merge_from_state == path[t-1]:
+                t = t - 1
+                decrement_count = decrement_count + 1
+            else:
+                break
+                
+        min_t = t
+        
+        second_best_path = copy.deepcopy(path)
+
+        print decrement_count, min_t, merge_from_state, second_best_costs[min_t]
+      
+        state = merge_from_state
+        print 'merge state ', merge_from_state, 'viterbi state', path[min_t-1]
+        for t in xrange(min_t-1, -1, -1):
+            second_best_path[t] = state
+            state = vi[state][t-1]
+            
+
+        pylab.plot(second_best_costs/100.0)
+        pylab.plot(second_best_merge_from_idx)
+
+        pylab.show()
+        return second_best_path, second_best_costs, second_best_merge_from_idx
+        
     def _viterbi(self, observations, numobs, nbest=1):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
@@ -141,41 +215,49 @@ class _BaseHMM(object):
         # similar to the forward-backward algorithm, we need to make sure that we're using fresh data for the given observations.
         self._mapB(observations)
         
-        delta = numpy.zeros((numobs,self.n),dtype=self.precision)
-        psi = numpy.zeros((numobs,self.n),dtype=self.precision)
+        phi = numpy.zeros((self.n,numobs),dtype=self.precision)
+        viterbi_indices = numpy.zeros((self.n, numobs)).astype(int)
+        mergecount = numpy.zeros((numobs, ))
         
-        # init
-        for x in xrange(self.n):
-            delta[:][0][x] = numpy.log(self.pi[x]*self.B_map[x][0])
-            psi[:][0][x] = 0
-        
-        
- 
-        transitioned_delta = numpy.zeros((self.n, ))
-        joint = numpy.zeros((self.n, ))
+        # init 
+        for i in xrange(self.n):
+            phi[i][:] = -numpy.log(self.pi[i]+1e-15) - numpy.log(self.B_map[i][0] + 1e-15)
+      
+      
+        #do viterbi
+        cost = numpy.zeros((self.n, ))
+        pathcost = numpy.zeros((numobs, ))
         for t in xrange(1, numobs):
-            for j in xrange(self.n):
-                for i in xrange(self.n):
-                    transitioned_delta[i] = delta[t-1][i] + numpy.log(self.A[i][j] + 1e-15)
-                    joint[i] = transitioned_delta[i] + numpy.log(self.B_map[j][t] + 1e-15)
-                                        
-                psi[t][j] = numpy.argmax(transitioned_delta)
-                delta[t][j] = numpy.amax(joint)
+            for j in xrange(self.n): #"j" mean THIS (the jth) hidden state
+                obscost = -numpy.log(self.B_map[j][t] + 1e-15)
+                
+                for i in xrange(self.n): #i means the incoming from ith hidden state
+                    #compute incoming costs
+                    cost[i] = -numpy.log(self.A[i][j] + 1e-15) + obscost 
                 
                 
-        qTstar = numpy.argmax(delta[numobs-1])
-        #print delta
+                for i in xrange(self.n): 
+                    cost[i] = cost[i] + phi[i][t-1]
+                    
+                minidx = numpy.argmin(cost)
+                minval = cost[minidx]
+                pathcost[t] = minval
+                
+                phi[j][t] = minval
+                viterbi_indices[j][t] = minidx
+       
+        path = numpy.zeros((numobs, )).astype(int)
+        #let's just say you wind up in state zero at the end? 
+        path[numobs-1] = 0
         
-        path = numpy.zeros((numobs, ))
+
+        #backtrack to get optimal path
+        for t in xrange(numobs - 2, -1, -1):
+            path[t] = viterbi_indices[path[t+1]][t]
+               
+        path2, pathcosts2, pathindices2 = self._get_second_best_path_costs(path, pathcost, phi,viterbi_indices,  numobs)
         
-        path[numobs-1] = qTstar
-        
-        prevQ = qTstar
-        for t in xrange(numobs-2, -1, -1):
-            path[t] = psi[t+1][prevQ]
-            prevQ =  path[t]
-            
-        return path
+        return path, path2
      
     def _calcxi(self,observations,alpha=None,beta=None):
         '''
