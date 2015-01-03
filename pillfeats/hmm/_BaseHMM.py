@@ -364,6 +364,7 @@ class _BaseHMM(object):
         from one iteration to the other.
         '''        
         self._mapB(observations)
+
         
         for i in xrange(iterations):
             prob_old, prob_new = self.trainiter(observations)
