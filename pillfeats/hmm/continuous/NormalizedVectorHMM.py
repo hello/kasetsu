@@ -60,7 +60,7 @@ class NormalizedVectorHMM(_BaseHMM):
                 cos = numpy.sum(self.thetas[j] * observations[t])
                 sin = numpy.sqrt(1 - cos*cos)
                 tan_over_2 = sin/(numpy.abs((1 + cos)) + 1e-6)
-                self.B_map[j][t] = numpy.exp(-tan_over_2*tan_over_2*5)
+                self.B_map[j][t] = numpy.exp(-tan_over_2*tan_over_2*50)
                 
         #print self.B_map
                 
