@@ -4,7 +4,7 @@ import numpy.linalg
 import numpy.random
 import hmm.continuous.NormalizedVectorHMM
 
-def gen_hmm(A, thetas, noise, m):
+def gen_hmm(A, thetas, m):
     obs = numpy.zeros((m, 3))
     n = A.shape[0]
     
@@ -14,7 +14,9 @@ def gen_hmm(A, thetas, noise, m):
     for t in xrange(m):
         
         theta = thetas[s]
-        obs[t] = theta + numpy.random.randn(theta.shape[0])*noise
+        vec = theta[0]
+        var = theta[1]
+        obs[t] = vec + numpy.random.randn(vec.shape[0])*numpy.sqrt(var)
         obs[t] = obs[t] / numpy.linalg.norm(obs[t])
         p = numpy.random.rand()
         
@@ -51,10 +53,16 @@ if __name__ == '__main__':
     v1i = v1i / numpy.linalg.norm(v1i)
     v2i = v2i / numpy.linalg.norm(v2i)
 
-    thetas = [v1, v2]
-    thetasi = [v1i, v2i]
+    var1 = 0.0005
+    var2 = 0.02
     
-    obs = gen_hmm(A, thetas, 0.1, 10000)
+    var1i = 0.002
+    var2i = 0.002
+    
+    thetas = [[v1,var1], [v2, var2]]
+    thetasi = [[v1i,var1i] , [ v2i, var2i]]
+    
+    obs = gen_hmm(A, thetas, 10000)
    
     pi = numpy.zeros((n, ))
     pi[0] = 0.99

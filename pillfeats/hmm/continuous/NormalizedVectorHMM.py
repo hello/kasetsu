@@ -24,10 +24,13 @@ class NormalizedVectorHMM(_BaseHMM):
     - pi           initial state's PMF ([N] numpy array).
     - theta        model parameters
     
-  
+    thetas is a list of lists (or a list of tuples)
+    theta[0][0] == normalized vector of obs
+    theta[0][1] == angular variance of obs
+    
     '''
 
-    def __init__(self,n,d,A,pi,thetas, precision=numpy.double,verbose=False):
+    def __init__(self,n,d,A,pi,thetas,precision=numpy.double,verbose=False):
         '''
         Construct a new Continuous HMM.
         In order to initialize the model with custom parameters,
@@ -35,6 +38,8 @@ class NormalizedVectorHMM(_BaseHMM):
         
         Normal initialization uses a uniform distribution for all probablities,
         and is not recommended.
+        
+        
         '''
         _BaseHMM.__init__(self,n,0,precision,verbose) #@UndefinedVariable
         
@@ -50,17 +55,16 @@ class NormalizedVectorHMM(_BaseHMM):
         Implements the pdf, too.
         
         '''    
-        thetasq = []
-        for j in xrange(self.n):
-            thetasq.append(numpy.sum(self.thetas[j]*self.thetas[j]))
-            
+
         self.B_map = numpy.zeros( (self.n,len(observations)), dtype=self.precision)
         for j in xrange(self.n):
             for t in xrange(len(observations)):
-                cos = numpy.sum(self.thetas[j] * observations[t])
-                sin = numpy.sqrt(1 - cos*cos)
-                tan_over_2 = sin/(numpy.abs((1 + cos)) + 1e-6)
-                self.B_map[j][t] = numpy.exp(-tan_over_2*tan_over_2*50)
+                vec = self.thetas[j][0]
+                variance = self.thetas[j][1]
+                
+                dotprod = numpy.sum(vec * observations[t])
+                tan_over_2_sq = (1.0 - dotprod) / ( (1.0 + dotprod) + 1e-6 )
+                self.B_map[j][t] = numpy.exp(-tan_over_2_sq / variance)
                 
         #print self.B_map
                 
@@ -89,7 +93,7 @@ class NormalizedVectorHMM(_BaseHMM):
         Helper method that performs the Baum-Welch 'M' step
         for the mixture parameters - 'w', 'means', 'covars'.
         '''        
-        theta = numpy.zeros( (self.n,self.d), dtype=self.precision)
+        vecs = numpy.zeros( (self.n,self.d), dtype=self.precision)
     
         for j in xrange(self.n):
             numer = numpy.zeros( (self.d), dtype=self.precision)
@@ -98,12 +102,32 @@ class NormalizedVectorHMM(_BaseHMM):
                 #print gamma[t][j], observations[t]
                 numer += (gamma[t][j]*observations[t])
                 denom += (gamma[t][j])
-            theta[j] = numer/denom
             
+            vecs[j] = numer/denom
+            vecs[j] = vecs[j] / numpy.linalg.norm(vecs[j])
+
             #print j, numer, denom
-            theta[j] = theta[j] / numpy.linalg.norm(theta[j])
+                        
+        vars = numpy.zeros((self.n, ), dtype=self.precision)
+        for j in xrange(self.n):
+            numer = 0.0
+            denom = 0.0
+            for t in xrange(len(observations)):
+                v = self.thetas[j][0]
+                dotprod = numpy.sum(v * observations[t])
+                tan_over_2_sq = (1.0 - dotprod) / ((1.0 + dotprod) + 1e-6)
+                var = 2.0*tan_over_2_sq
+                numer += (gamma[t][j]*var)
+                denom += (gamma[t][j])
                 
-        return theta
+            vars[j] = numer/denom
+            
+            
+        thetas = []
+        for j in xrange(self.n):
+            thetas.append([vecs[j], vars[j]])
+            
+        return thetas
     
 
     
