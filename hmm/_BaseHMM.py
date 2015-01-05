@@ -497,3 +497,11 @@ class _BaseHMM(object):
         '''
         raise NotImplementedError("a mapping function for B(observable probabilities) must be implemented")
         
+    def to_dict(self):
+        raise NotImplementedError("a mapping function for B(observable probabilities) must be implemented")
+        
+        
+    def from_dict(self):
+        raise NotImplementedError("a mapping function for B(observable probabilities) must be implemented")
+
+

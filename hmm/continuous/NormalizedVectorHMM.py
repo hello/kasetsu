@@ -8,6 +8,8 @@ from hmm._BaseHMM import _BaseHMM
 import numpy
 import numpy.linalg
 
+k_min_variance = 1e-6
+
 class NormalizedVectorHMM(_BaseHMM):
     '''
     HMM for the continuous likelihood function
@@ -122,7 +124,13 @@ class NormalizedVectorHMM(_BaseHMM):
                 
             vars[j] = numer/denom
             
+            vars[j] = numpy.fabs(vars[j])
             
+            if vars[j] < k_min_variance:
+                vars[j] = k_min_variance
+            
+            
+        
         thetas = []
         for j in xrange(self.n):
             thetas.append([vecs[j], vars[j]])
@@ -130,5 +138,32 @@ class NormalizedVectorHMM(_BaseHMM):
         return thetas
     
 
-    
+    def to_dict(self):
+       
+        
+        mydict = {}
+        mydict['type'] = 'NormalizedVectorHMM'
+        mydict['A'] = self.A.tolist()
+        mydict['pi'] = self.pi.tolist()
+        mydict['vecs'] = []
+        mydict['vars'] = []
+
+        for theta in self.thetas:
+            mydict['vecs'].append(theta[0].tolist())
+            mydict['vars'].append(theta[1])
+        
+
+        return mydict
+        
+    def from_dict(self, mydict):
+        self.A = numpy.array(mydict['A'])
+        self.pi = numpy.array(mydict['pi'])
+        self.thetas = []
+        
+        for i in xrange(len(mydict['vecs'])):
+            vec = numpy.array(mydict['vecs'][i])
+            var = mydict['vars'][i]
+            
+            self.thetas.append([vec, var])
+
     
