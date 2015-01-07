@@ -3,50 +3,68 @@ import clusterfeats
 import hmm.continuous.NormalizedVectorHMM
 import numpy
 import numpy.linalg
+import numpy.random
 import sys
 import json
 
 k_feat_vec_len = 16
-k_num_iters = 20
+k_num_iters = 25
 
 def fit_model(filename, n_clusters, similarity_threshold):
-    clusterer = clusterfeats.AudioFeatureClustering()
-    clusterer.set_data(filename)
-    clusterer.compute_cluster_means(n_clusters, similarity_threshold)
     
-    vecs = clusterer.vectors
-    
-    thetas = []
-    var = 0.1
-    for v in vecs:
-        v2 = numpy.array(v)[0]
-        v2 = v2 / numpy.linalg.norm(v2)
-        thetas.append([v2, var])
+            
+    count = 0
+    while True:
         
-    Ai = numpy.zeros((n_clusters, n_clusters))
-    pi = numpy.zeros((n_clusters, ))
-    
-    Ai[:][:] = 0.2 / (n_clusters - 1)
-    
-    
-    for i in range(n_clusters):
-        Ai[i][i] = 0.8
+        clusterer = clusterfeats.AudioFeatureClustering()
+        clusterer.set_data(filename)
+        clusterer.compute_cluster_means(n_clusters, similarity_threshold)
         
-    pi[:] = 0.1 / (n_clusters - 1)
-    pi[0] = 0.9
+        vecs = clusterer.vectors
+        
+        thetas = []
+        var = 0.1
+        for i in range(n_clusters):
+            v = 2.0 * numpy.random.rand(k_feat_vec_len) - 1.0
+            v = v / numpy.linalg.norm(v)
+            thetas.append([v, var])
+            
+        Ai = numpy.zeros((n_clusters, n_clusters))
+        pi = numpy.zeros((n_clusters, ))
+        
+        Ai[:][:] = 0.2 / (n_clusters - 1)
         
         
-    print 'theta initial'
-    for theta in thetas:
-        print theta
-        
-        
-    myhmm = hmm.continuous.NormalizedVectorHMM.NormalizedVectorHMM(n_clusters, k_feat_vec_len, Ai, pi, thetas)
-        
+        for i in range(n_clusters):
+            Ai[i][i] = 0.8
+            
+        pi[:] = 0.1 / (n_clusters - 1)
+        pi[0] = 0.9
+            
+            
+        print 'theta initial'
+        for theta in thetas:
+            print theta
+            
+
+        obs = numpy.array(clusterer.x)
+
+        print 'iter %d' % count
+        myhmm = hmm.continuous.NormalizedVectorHMM.NormalizedVectorHMM(n_clusters, k_feat_vec_len, Ai, pi, thetas)
+        myhmm.train(obs, k_num_iters)
     
-    obs = numpy.array(clusterer.x)
+        isbad = False
+        for j in range(myhmm.n):
+            if myhmm.A[j][j] < 0.2:
+                isbad = True
+                
+        count = count + 1
+        
+        print myhmm.A
+
+        if not isbad or count > 100:
+            break;
     
-    myhmm.train(obs, k_num_iters)
     
     print ('results:')
     
