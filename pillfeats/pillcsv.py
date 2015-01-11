@@ -45,11 +45,13 @@ def read_pill_csv(filename, min_unix_time):
                 first = False 
                 continue
             
-            account_id = row[1]
+            #account_id = row[1]
             pill_id = row[2]
             value = int(row[3])
             offset = int(row[5]) / 1000.0
             datestr = row[6]
+            email = row[7]
+            account_id = email
             
             if value == -1:
                 continue

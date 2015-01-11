@@ -45,10 +45,12 @@ def read_sense_csv(filename, min_unix_time):
                 continue
             
             device_id = row[5]
-            account_id = row[4]
+            #account_id = row[4]
             temperature = int(row[0])
             humdity = int(row[1])
             light = int(row[2])
+            email = row[6]
+            account_id = email
             
             datestr = row[3]
          
