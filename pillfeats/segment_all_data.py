@@ -13,6 +13,10 @@ key_counts = 'counts'
 key_energies = 'energies'
 key_lightvar = 'lightvariance'
 key_timeofday = 'timeofday'
+key_id = 'id'
+key_survey = 'survey'
+key_interval = 'interval'
+key_label = 'label'
 
 k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
@@ -109,6 +113,8 @@ def segment(dict_of_lists):
 
             segment_dict['sense'] = (sensetimes[j1:j2],temperatures[j1:j2],humidities[j1:j2],lights[j1:j2])
             
+            segment_dict[key_id] = key
+            
             segments.append(segment_dict)
 
       
@@ -158,6 +164,7 @@ def summarize(segments, interval_in_minutes):
     for segment in segments:
         times = segment['pill'][0]
         values = segment['pill'][1]
+        id = segment[key_id]
         
         sensetimes = segment['sense'][0]
         humidities = segment['sense'][1]
@@ -168,6 +175,7 @@ def summarize(segments, interval_in_minutes):
             continue
             
         t0 = times[0]
+        tf = times[-1]
         
         #get time in minutes from first
         times = [(t - t0) * k_conversion_factor for t in times ]
@@ -231,7 +239,7 @@ def summarize(segments, interval_in_minutes):
             mylight[idx] = y
 
         
-        summary.append({key_counts : mycounts,  key_energies : myenergies,  key_lightvar : mylight,  key_timeofday : mytimeofday})
+        summary.append({key_counts : mycounts,  key_energies : myenergies,  key_lightvar : mylight, key_id : id,  key_interval : (t0, tf)})
         
     return summary
     
@@ -291,6 +299,60 @@ def vectorize_measurements(summary):
     return meas
         
             
+def get_labels(summary, dict_of_lists):
+
+    for id in dict_of_lists:
+        if not dict_of_lists[id].has_key(key_survey):
+            continue
+            
+        survey = dict_of_lists[id][key_survey]
+
+        #assume it's all sorted
+        matching_summaries = [s for s in summary if s[key_id] == id]
+        
+        if len(matching_summaries) == 0:
+            continue
+        
+        label_idx = 0
+        summary_idx = 0
+        N = len(survey[0])
+        while(summary_idx < len(matching_summaries) and label_idx < N):
+            
+            s = matching_summaries[summary_idx]
+            
+            t0_1 = s[key_interval][0]
+            tf_1 = s[key_interval][1]
+            
+            t0_2 = survey[0][label_idx]
+            tf_2 = survey[2][label_idx]
+            oof = t0_1
+            #print t0_1 - oof, (tf_1 -oof)/3600.0, (t0_2 - oof) / 3600.0, (tf_2 -oof)/3600.0
+            #end of segment 1 less than beginning of segment 2? move up segment 1
+            if tf_1 < t0_2:
+                print 'continue 1'
+                summary_idx = summary_idx + 1
+                continue
+                
+            
+            #beginning of segment 1 greater than end of segment2?  move up segment 2
+            if t0_1 > tf_2:
+                print 'idx++'
+                label_idx = label_idx + 1
+                continue
+                    
+            #neither end of seg1 < begin seg2 nor 
+            #        end of seg2 < begin of seg1
+            # overlap!
+            s[key_label] = [survey[0][label_idx], survey[1][label_idx], survey[2][label_idx]]
+                
+            summary_idx += 1
+            label_idx += 1
+            
+            
+        
+    #for d in 
+    #if dict_of_lists.has_key('')
+    foo = 3
 
 def process(dict_of_lists):
     
@@ -298,9 +360,13 @@ def process(dict_of_lists):
     
     summary = summarize(segments,k_interval)
 
+    get_labels(summary, dict_of_lists)
+
     summary2 = enforce_summary_limits(summary, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
 
     prepend_zeros(summary2, k_num_zeros_to_prepend, k_num_zeros_to_append)
+
+    
 
     meas = vectorize_measurements(summary2)
     return meas

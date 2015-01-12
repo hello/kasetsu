@@ -1,9 +1,12 @@
-
 #!/usr/bin/python
+
 import csv
 import datetime
 import time
 import json
+import sys
+import numpy
+
 
 #Timestamp, (of when the survey was received)
 #Username,
@@ -48,7 +51,7 @@ def sort_survey_data(survey_data):
             lists[i] = sorted_list
     
 
-def read_survey_data(filename, min_unix_time):
+def read_survey_data(filename, min_unix_time = 0):
     
     mydict = {}
     
@@ -72,8 +75,10 @@ def read_survey_data(filename, min_unix_time):
             time_asleep = '%s %s' % (day, row[4])
             time_wake = '%s %s' % (day, row[5])
             
-            times = [time_in_bed, time_asleep, time_wake]
             
+            
+            times = [time_in_bed, time_asleep, time_wake]
+                        
             account_id = email
             
            
@@ -88,6 +93,16 @@ def read_survey_data(filename, min_unix_time):
             for i in xrange(len(unix_times)):
                 unix_times[i] += offset
            
+           
+            #since these are all the same day, waking up at 8am is the next day...
+            if 'AM' in time_in_bed:
+                unix_times[0] += 86400
+                
+            if 'AM' in time_asleep:
+                unix_times[1] += 86400
+                
+            if 'AM' in time_wake:
+                unix_times[2] += 86400
 
             if min_unix_time is not None and unix_times[0] < min_unix_time:
                 continue
@@ -107,3 +122,19 @@ def read_survey_data(filename, min_unix_time):
     sort_survey_data(mydict)
             
     return mydict
+
+if __name__ == '__main__':
+    filename = sys.argv[1]
+
+    print ('opening %s' % filename)
+    survey_dict = read_survey_data(filename)
+    
+    foo = survey_dict['benejoseph@gmail.com']
+    foo = numpy.array(foo)
+    foo = foo - numpy.tile(foo[0], (3, 1))
+    foo = foo / 3600
+    print foo
+    
+    
+    
+    

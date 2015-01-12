@@ -5,6 +5,7 @@ import surveycsv
 import all_data
 import os.path
 import json
+import segment_all_data
 
 october_1_2014_unix_time = 1412121600.0
 
@@ -16,7 +17,23 @@ save_filename = 'foo.json'
 
 min_count_pill_data = 250
  
-def do_everything():
+bounds_in_seconds = 3600 * 2
+ 
+def filter_data_by_survey_period(data):
+    for key in data:
+        pilldata = data['pill']
+        sensedata = data['sense']
+        surveydata = data['survey']
+        
+        n = len(surveydata[0])
+        
+        for j in xrange(n):
+            bedtime_bounds = surveydata[j][0] - bounds_in_seconds;
+            waketime_bounds = surveydata[j][2] + bounds_in_seconds
+            
+            
+ 
+def pull_data():
     
     if not os.path.isfile(save_filename):
         print 'loading data from csv'
@@ -48,5 +65,7 @@ def do_everything():
         data2[key]['survey'] = data['survey'][key]
     
     return data2
-    
+
+if __name__ == '__main__':
+    pull_data()
  
