@@ -9,14 +9,18 @@ from pylab import *
 
 key_time = 'timestamp'
 key_value = 'value'
+
 key_counts = 'counts'
 key_energies = 'energies'
 key_lightvar = 'lightvariance'
-key_timeofday = 'timeofday'
+
 key_id = 'id'
 key_survey = 'survey'
 key_interval = 'interval'
 key_label = 'label'
+
+k_sensor_keys = [key_lightvar, key_counts, key_energies]
+
 
 k_conversion_factor = (1.0  / 60.0) # to minutes from seconds
 k_interval = 15.0 # minutes
@@ -275,28 +279,37 @@ def enforce_summary_limits(summary, min_length, max_length):
 def prepend_zeros(summary, numzeros, numzeros2):
         for item in summary:
             for key in item:
-                thisvector = item[key]
-                
-                item[key] = numpy.concatenate((numpy.zeros((numzeros, )), thisvector, numpy.zeros((numzeros2, ))))
+                if key in k_sensor_keys:
+                    thisvector = item[key]                
+                    item[key] = numpy.concatenate((numpy.zeros((numzeros, )), thisvector, numpy.zeros((numzeros2, ))))
            
     
 def vectorize_measurements(summary):
     meas = []
+    info = []
     for item in summary:
         e = item[key_energies]
         c = item[key_counts]
         l = item[key_lightvar]
-        tod = item[key_timeofday]
+        id = item[key_id]
+        interval = item[key_interval]
+        
+        label = None
+        if item.has_key(key_label):
+            label = item[key_label]
+        
+            
         
         if len(e) != len(c):
             print ("somehow, energies and counts are not the same length.")
             continue
         
-        arr = numpy.array([e, c, l, tod])
+        arr = numpy.array([e, c, l])
                 
         meas.append(arr)
+        info.append((id,interval,label))
         
-    return meas
+    return meas, info
         
             
 def get_labels(summary, dict_of_lists):
@@ -329,24 +342,37 @@ def get_labels(summary, dict_of_lists):
             #print t0_1 - oof, (tf_1 -oof)/3600.0, (t0_2 - oof) / 3600.0, (tf_2 -oof)/3600.0
             #end of segment 1 less than beginning of segment 2? move up segment 1
             if tf_1 < t0_2:
-                print 'continue 1'
+                #print 'continue 1'
                 summary_idx = summary_idx + 1
                 continue
                 
             
             #beginning of segment 1 greater than end of segment2?  move up segment 2
             if t0_1 > tf_2:
-                print 'idx++'
+                #print 'idx++'
                 label_idx = label_idx + 1
                 continue
                     
             #neither end of seg1 < begin seg2 nor 
             #        end of seg2 < begin of seg1
             # overlap!
-            s[key_label] = [survey[0][label_idx], survey[1][label_idx], survey[2][label_idx]]
+            
+            if t0_1 > t0_2:
+                tt1 = t0_1
+            else:
+                tt1 = t0_2
+                
+            if tf_1 < tf_2:
+                tt2 = tf_1
+            else:
+                tt2 = tf_2
+                
+            dt = tt2 - tt1
+            print 'dt overlap (hrs):', dt / 3600.0
+            s[key_label] = [dt, survey[0][label_idx], survey[1][label_idx], survey[2][label_idx]]
                 
             summary_idx += 1
-            label_idx += 1
+            #label_idx += 1
             
             
         
@@ -366,9 +392,8 @@ def process(dict_of_lists):
 
     prepend_zeros(summary2, k_num_zeros_to_prepend, k_num_zeros_to_append)
 
+    meas, info = vectorize_measurements(summary2)
     
-
-    meas = vectorize_measurements(summary2)
     return meas
     
     

@@ -8,7 +8,7 @@ from hmm._BaseHMM import _BaseHMM
 import numpy
 import numpy.linalg
 
-k_min_variance = 1e-6
+k_min_variance = 1e-4
 
 class NormalizedVectorHMM(_BaseHMM):
     '''
@@ -32,7 +32,7 @@ class NormalizedVectorHMM(_BaseHMM):
     
     '''
 
-    def __init__(self,n,d,A,pi,thetas,precision=numpy.double,verbose=False):
+    def __init__(self,n=None,d=None,A=None,pi=None,thetas=None,precision=numpy.double,verbose=False):
         '''
         Construct a new Continuous HMM.
         In order to initialize the model with custom parameters,
@@ -63,10 +63,13 @@ class NormalizedVectorHMM(_BaseHMM):
             for t in xrange(len(observations)):
                 vec = self.thetas[j][0]
                 variance = self.thetas[j][1]
-                
-                dotprod = numpy.sum(vec * observations[t])
+                myobs = observations[t]
+                myobs = myobs / numpy.linalg.norm(observations[t])
+                dotprod = numpy.sum(vec * myobs)
                 tan_over_2_sq = (1.0 - dotprod) / ( (1.0 + dotprod) + 1e-6 )
-                self.B_map[j][t] = numpy.exp(-tan_over_2_sq / variance)
+                arg = -tan_over_2_sq / variance
+                #print arg,dotprod, tan_over_2_sq,  variance
+                self.B_map[j][t] = numpy.exp(arg)
                 
         #print self.B_map
                 
@@ -101,8 +104,9 @@ class NormalizedVectorHMM(_BaseHMM):
             numer = numpy.zeros( (self.d), dtype=self.precision)
             denom = numpy.zeros( (self.d), dtype=self.precision)
             for t in xrange(len(observations)):
-                #print gamma[t][j], observations[t]
-                numer += (gamma[t][j]*observations[t])
+                myobs = observations[t]
+                myobs = myobs / numpy.linalg.norm(observations[t])
+                numer += (gamma[t][j]*myobs)
                 denom += (gamma[t][j])
             
             vecs[j] = numer/denom
@@ -115,8 +119,11 @@ class NormalizedVectorHMM(_BaseHMM):
             numer = 0.0
             denom = 0.0
             for t in xrange(len(observations)):
+                myobs = observations[t]
+                myobs = myobs / numpy.linalg.norm(observations[t])
+                
                 v = self.thetas[j][0]
-                dotprod = numpy.sum(v * observations[t])
+                dotprod = numpy.sum(v * myobs)
                 tan_over_2_sq = (1.0 - dotprod) / ((1.0 + dotprod) + 1e-6)
                 var = 2.0*tan_over_2_sq
                 numer += (gamma[t][j]*var)
@@ -160,10 +167,16 @@ class NormalizedVectorHMM(_BaseHMM):
         self.pi = numpy.array(mydict['pi'])
         self.thetas = []
         
+        
         for i in xrange(len(mydict['vecs'])):
             vec = numpy.array(mydict['vecs'][i])
             var = mydict['vars'][i]
             
             self.thetas.append([vec, var])
+            
+            
+        self.n = self.A.shape[0]
+        self.d = vec.shape[0]
+        
 
     

@@ -59,14 +59,14 @@ class MultipleDiscreteHMM(_BaseHMM):
         
         print self.pi
         
-    def decode(self, observations,nbest=1):
+    def decode(self, observations, npadding=0, path_cost_allowance = 3.0):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations, len(observations[0]),nbest)
+        return self._viterbi(observations, len(observations), npadding, path_cost_allowance)
         
     def save_to_file(self, filename):
         result = {}

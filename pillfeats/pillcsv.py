@@ -61,6 +61,7 @@ def read_pill_csv(filename, min_unix_time):
             
             
             #2014-05-12 21:02:00
+            offset = 0
             thetime = datetime.datetime.strptime(datestr, '%Y-%m-%d %H:%M:%S')
             timevalue = time.mktime(thetime.timetuple()) + offset
 

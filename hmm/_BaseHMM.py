@@ -19,6 +19,8 @@ k_cost_budget = 3.0
 k_max_paths = 2048
 k_nbest_in_branch = 10
 
+k_min_normalizing_value = 1e-6
+
 class _BaseHMM(object):
     '''
     Implements the basis for all deriving classes, but should not be used directly.
@@ -55,7 +57,7 @@ class _BaseHMM(object):
             self._mapB(observations)
         
         alpha, c = self._calcalpha(observations)
-        return numpy.sum(numpy.log(c))
+        return numpy.sum(-numpy.log(c +  1e-15))
     
     def _calcalpha(self,observations):
         '''
@@ -81,7 +83,12 @@ class _BaseHMM(object):
                 alpha[t][j] *= self.B_map[j][t]
                 
             c[t] = numpy.sum(alpha[t][:])
-                
+            
+            
+            if c[t] < k_min_normalizing_value:
+                c[t] = k_min_normalizing_value
+            
+            
             alpha[t][:] = alpha[t][:] / c[t] 
                 
         return (alpha, c)
@@ -127,14 +134,14 @@ class _BaseHMM(object):
         
         return beta
     
-    def decode(self, observations, npadding=0):
+    def decode(self, observations, npadding=0, path_cost_allowance = k_cost_budget):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations, len(observations), npadding)
+        return self._viterbi(observations, len(observations), npadding, path_cost_allowance)
     
     #given original viterbi path, deviate from it
     #starting at tstart, and moving towards the max incming in state idxstart at that time
@@ -149,7 +156,7 @@ class _BaseHMM(object):
         
     def _get_second_best_path_costs(self,depth, path_dict, path,viterbi_info):
         
-        viterbi_path, vi, viterbi_pathcost, phi, npadding = viterbi_info
+        viterbi_path, vi, viterbi_pathcost, phi, npadding, path_cost_allowance = viterbi_info
         numobs = len(viterbi_path)
         second_best_merge_from_idx = numpy.zeros((numobs, )).astype(int)
         second_best_costs = numpy.zeros((numobs, ))
@@ -208,7 +215,7 @@ class _BaseHMM(object):
                 break;
                         
             #if  relcost < k_percentage_of_best_cutoff: #within x% of original best cost
-            if costdiff < k_cost_budget:
+            if costdiff < path_cost_allowance:
                 #get new path (merged at min index)
                 newpath = self._backtrace_viterbi_path(path, vi, cidx, statestart)
                 
@@ -231,7 +238,8 @@ class _BaseHMM(object):
             for p in paths:
                 self._get_second_best_path_costs(depth-1, path_dict, p,viterbi_info)
         
-    def _viterbi(self, observations, numobs, npadding):
+
+    def _viterbi(self, observations, numobs, npadding, path_cost_allowance):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
         very similar to the forward-backward algorithm, with the added step of maximization and eventual
@@ -286,14 +294,15 @@ class _BaseHMM(object):
         for t in xrange(numobs - 2, -1, -1):
             path[t] = viterbi_indices[path[t+1]][t]
                
-        viterbi_info = path, viterbi_indices, pathcost, phi, npadding
+        viterbi_info = path, viterbi_indices, pathcost, phi, npadding, path_cost_allowance
         
         path_dict = {}
         v = tuple(path.tolist())
         path_dict[v] = 0.0
         
-        #recursive
-        self._get_second_best_path_costs(k_max_depth, path_dict, path,viterbi_info)
+        if path_cost_allowance >= 0.0:
+            #recursive
+            self._get_second_best_path_costs(k_max_depth, path_dict, path,viterbi_info)
         
         return path_dict
      

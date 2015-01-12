@@ -92,7 +92,7 @@ def read_survey_data(filename, min_unix_time = 0):
                 
             for i in xrange(len(unix_times)):
                 unix_times[i] += offset
-           
+                
            
             #since these are all the same day, waking up at 8am is the next day...
             if 'AM' in time_in_bed:
@@ -103,6 +103,12 @@ def read_survey_data(filename, min_unix_time = 0):
                 
             if 'AM' in time_wake:
                 unix_times[2] += 86400
+                
+            dt = unix_times[2] - unix_times[0]
+            dt = dt / 3600
+            
+            if dt < 3.0 or dt > 15.0:
+                continue
 
             if min_unix_time is not None and unix_times[0] < min_unix_time:
                 continue

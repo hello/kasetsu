@@ -6,6 +6,7 @@ import all_data
 import os.path
 import json
 import segment_all_data
+import myhmm
 
 october_1_2014_unix_time = 1412121600.0
 
@@ -13,25 +14,20 @@ pill_data_filename = 'csv/pill_data_2014_12_08.csv'
 light_data_filename = 'csv/light_data_2014_12_08.csv'
 survey_data_filename = 'csv/sleep_survey_2014_12_19.csv'
 
-save_filename = 'foo.json'
+save_filename = 'savedata.json'
 
 min_count_pill_data = 250
  
 bounds_in_seconds = 3600 * 2
+
+k_interval = 15.0 # minutes
+k_segment_split_duaration = 60.0 * 3.0 #minutes
+k_max_segment_length_in_intervals = 14*60/k_interval #intervals
+k_min_segment_length_in_intervals = 5*60/k_interval #intervals
+
+k_num_zeros_to_prepend = 20
+k_num_zeros_to_append = 20
  
-def filter_data_by_survey_period(data):
-    for key in data:
-        pilldata = data['pill']
-        sensedata = data['sense']
-        surveydata = data['survey']
-        
-        n = len(surveydata[0])
-        
-        for j in xrange(n):
-            bedtime_bounds = surveydata[j][0] - bounds_in_seconds;
-            waketime_bounds = surveydata[j][2] + bounds_in_seconds
-            
-            
  
 def pull_data():
     
@@ -67,5 +63,41 @@ def pull_data():
     return data2
 
 if __name__ == '__main__':
-    pull_data()
+    dict_of_lists = pull_data()
+    
+    '''
+    for key in dict_of_lists:
+        if dict_of_lists[key].has_key('survey'):
+            s = dict_of_lists[key]['survey']
+            n = len(s[0])
+            for i in xrange(n):
+                print 'yooo', (s[2][i] - s[0][i]) / 3600
+    '''
+    
+    segments = segment_all_data.segment(dict_of_lists)
+    
+    summary = segment_all_data.summarize(segments,k_interval)
+
+    segment_all_data.get_labels(summary, dict_of_lists)
+    
+    summary2 = []
+    for s in summary:
+        if s.has_key('label'):
+            label = s['label']
+            interval = s['interval']
+            
+            if label[0] > 4.0: #if dt overlap is greater than 4 hours
+                summary2.append(s)
+                
+    
+    summary3 = segment_all_data.enforce_summary_limits(summary2, k_min_segment_length_in_intervals, k_max_segment_length_in_intervals)
+    
+    segment_all_data.prepend_zeros(summary3, k_num_zeros_to_prepend, k_num_zeros_to_append)
+
+    meas, info = segment_all_data.vectorize_measurements(summary3)
+    hmm = myhmm.MyHmm()
+    print meas[0]
+    hmm.decode(meas[0], k_num_zeros_to_prepend, 5.0)
+        
+
  
