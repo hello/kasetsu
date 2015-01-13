@@ -15,9 +15,9 @@ on_bed_not_sleeping = 1
 on_bed_sleeping = 2
 
 k_alpha = 0.1#on_bed_sleeping threshold (above this value)
-k_beta = 0.8 #disturbance threshold (above this value)
-k_gamma = 0.15 #off bed threshold (below this value)
-k_num_periods_to_be_sleep = 4
+k_beta = 0.10 #disturbance threshold (above this value)
+k_gamma = 0.05 #off bed threshold (below this value)
+k_num_periods_to_be_sleep = 6
 
 def determine_sleep(liks):
     sleeps = logical_and(liks[on_bed_sleeping] > k_alpha, liks[on_bed_not_sleeping] < k_beta)
@@ -94,21 +94,6 @@ class MyHmm(object):
         liks = pdf(paths)
         path = determine_sleep(liks)
         
-        hrs_slept = sum(path == on_bed_sleeping) / 4.0
-        if True:
-            
-            #figure(1)
-            #for lik in liks:
-            #    plot(lik)
-            #    
-            #legend(['off bed', 'on bed', 'sleep'])
-            #grid('on')
-            
-            figure(2)
-            plot(path)
-            grid('on')
-            title('slept %d hours' % hrs_slept)
-            show()
-
+        return path, liks
 
 

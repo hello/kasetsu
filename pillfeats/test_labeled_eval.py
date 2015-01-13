@@ -7,6 +7,7 @@ import os.path
 import json
 import segment_all_data
 import myhmm
+from pylab import *
 
 october_1_2014_unix_time = 1412121600.0
 
@@ -95,9 +96,59 @@ if __name__ == '__main__':
     segment_all_data.prepend_zeros(summary3, k_num_zeros_to_prepend, k_num_zeros_to_append)
 
     meas, info = segment_all_data.vectorize_measurements(summary3)
+    
     hmm = myhmm.MyHmm()
-    print meas[0]
-    hmm.decode(meas[0], k_num_zeros_to_prepend, 5.0)
+    for i in xrange(len(meas)):
+        m = meas[i]
+        user, interval, label = info[i]
         
+        if label != None:
+            t1 = label[1] - interval[0] 
+            t2 = label[2] - interval[0] 
+            t3 = label[3] - interval[0]
+            t1 = t1 / 60.0 / k_interval
+            t2 = t2 / 60.0 / k_interval
+            t3 = t3 / 60.0 / k_interval
+            t1 += k_num_zeros_to_prepend
+            t2 += k_num_zeros_to_prepend
+            t3 += k_num_zeros_to_prepend
+            
+        
+        path, liks = hmm.decode(m, k_num_zeros_to_prepend, 1.0)
+        
+        hrs_slept = sum(path == 2) / 4.0
+        
+        if True:
+            
+            figure(1)
+            subplot(3, 1, 1)
+            title('slept %d hours' % hrs_slept)
+
+            for lik in liks:
+                plot(lik)
+                
+                
+            if label != None:
+                plot(t1, 0.001, 'k.')
+                plot(t2, 0.001, 'ko')
+                plot(t3, 0.001, 'ko')
+
+                
+            legend(['off bed', 'on bed', 'sleep'])
+            grid('on')
+            
+            subplot(3, 1, 2)
+            plot(path)
+            grid('on')
+            
+            
+            subplot(3, 1, 3)
+            t = range(len(m[0]))
+            plot(t, m[0])
+            plot(t, m[1])
+            plot(t, m[2])
+            
+            show()
+            
 
  
