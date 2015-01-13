@@ -66,7 +66,7 @@ class MultipleDiscreteHMM(_BaseHMM):
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations, len(observations), npadding, path_cost_allowance)
+        return self._viterbi(observations, len(observations[0]), npadding, path_cost_allowance)
         
     def save_to_file(self, filename):
         result = {}
