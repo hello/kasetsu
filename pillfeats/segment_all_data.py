@@ -28,8 +28,8 @@ k_segment_split_duaration = 60.0 * 3.0 #minutes
 k_max_segment_length_in_intervals = 14*60/k_interval #intervals
 k_min_segment_length_in_intervals = 5*60/k_interval #intervals
 
-k_num_zeros_to_prepend = 20
-k_num_zeros_to_append = 20
+k_num_zeros_to_prepend = 6
+k_num_zeros_to_append = 6
 
 #hour 0-23, mode 0 - not sleepy times
 #mode 1 - possibly sleepy times

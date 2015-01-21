@@ -14,10 +14,10 @@ off_bed = 0
 on_bed_not_sleeping = 1
 on_bed_sleeping = 2
 
-k_alpha = 0.1#on_bed_sleeping threshold (above this value)
-k_beta = 0.10 #disturbance threshold (above this value)
+k_alpha = 0.95#on_bed_sleeping threshold (above this value)
+k_beta = 0.333 #disturbance threshold (above this value)
 k_gamma = 0.05 #off bed threshold (below this value)
-k_num_periods_to_be_sleep = 6
+k_num_periods_to_be_sleep = 1
 
 def determine_sleep(liks):
     sleeps = logical_and(liks[on_bed_sleeping] > k_alpha, liks[on_bed_not_sleeping] < k_beta)

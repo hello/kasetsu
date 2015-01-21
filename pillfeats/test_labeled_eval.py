@@ -26,8 +26,8 @@ k_segment_split_duaration = 60.0 * 3.0 #minutes
 k_max_segment_length_in_intervals = 14*60/k_interval #intervals
 k_min_segment_length_in_intervals = 5*60/k_interval #intervals
 
-k_num_zeros_to_prepend = 20
-k_num_zeros_to_append = 20
+k_num_zeros_to_prepend = 6
+k_num_zeros_to_append = 6
  
  
 def pull_data():
@@ -114,9 +114,9 @@ if __name__ == '__main__':
             t3 += k_num_zeros_to_prepend
             
         
-        path, liks = hmm.decode(m, k_num_zeros_to_prepend, 1.0)
+        path, liks = hmm.decode(m, k_num_zeros_to_prepend, 2.0)
         
-        hrs_slept = sum(path == 2) / 4.0
+        hrs_slept = sum(path == 2) / 1.0
         
         if True:
             

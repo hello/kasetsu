@@ -16,7 +16,7 @@ import copy
 
 data_file = 'alldata.json'
 min_unix_time = 1414800000.0 #November 1, 2014
-NUM_ITERS = 15
+NUM_ITERS = 20
 N  = 3 #number of states
 
 def cleanup_state_history(x):
@@ -38,7 +38,8 @@ def evaluate(hmm2, meas):
     transitions = []
     for imeas in xrange(len(meas)):
         m = meas[imeas]
-        x = hmm2.decode(m)
+        x = hmm2.decode(m, 20, -1)
+        x = x.keys()[0]
       
         transitioncount = 0
         for i in range(1, len(x)):
@@ -67,7 +68,7 @@ def decode(hmm2, meas):
         
     for imeas in xrange(len(meas)):
         m = meas[imeas]
-        x = hmm2.decode(m)
+        x = hmm2.decode(m, 20, -1).keys()[0]
         
         model_lik = hmm2.forwardbackward([m])
         model_lik = model_lik / len(m)
@@ -92,9 +93,9 @@ def decode(hmm2, meas):
         title('DATA SET %d, %f hours in mode 2,model=%f,path=%f' % (imeas, numhours, model_lik,path_lik))
         legend(['state', 'energies', 'num times woken', 'log light range'])
         
-        savefig('decode%0000d.png' % imeas)
-        close()
-        #show()
+        #savefig('decode%0000d.png' % imeas)
+        #close()
+        show()
 
     
 def initialize_random_model(meas):
@@ -149,20 +150,23 @@ def initialize_model(meas):
     #state1 = on bed not sleeping
     #state2 = on bed sleeping
     
-    A = array([[0.8, 0.2, 0.00], 
+    A = array([[0.8, 0.2, 0.05], 
               [0.05, 0.7, 0.25], 
-              [0.00, 0.15, 0.85],])
+              [0.05, 0.15, 0.85],])
               
 
     B1 = zeros((N, maxenergy + 1))
     B1[0,0] = 1.0 #NOT on bed, no energy (index1) is all this state can be
-    B1[1, :] = array(range(maxenergy+1))      #disturbed movement, cannot be zero energy
-    B1[2, :] = array(range(maxenergy+1, 0, -1)) #on bed--some other distribution, higher probability of lower energy
+    B1[1, -1] = 1.0
+    B1[1, -2] = 1.0 
+    B1[2, :] = array(range(maxenergy+1))
+
 
     B2 = zeros((N, int(maxcounts + 1)))
     B2[0, 0] = 1.0
-    B2[1, :] = array(range(maxcounts+1))
-    B2[2, :] = array(range(maxcounts+1, 0, -1))    
+    B2[1, -1] = 1
+    B2[1, -2] = 1
+    B2[2, :] = array(range(maxcounts+1))
     
     B3 = zeros((N, int(maxlight + 1)))
     B3[0, :] = 1.0
