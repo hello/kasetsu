@@ -115,7 +115,47 @@ def do_gmm(x, n, mytitle, plotme = False):
             
     return (gmm.means_, gmm.covars_, gmm.weights_)
         
+
+def pill_data_to_windows(pilldata, period_in_seconds):
+    t = array(pilldata[0]).copy().astype(int)
+    m = array(pilldata[1]).copy()
     
+    indices = t / int(period_in_seconds)
+    indices -= indices[0]
+    
+    unique_indices = unique(indices)
+    
+    N = len(unique_indices)
+    energies = zeros((N, ))
+    counts = zeros((N, ))
+    
+    datadict = {}
+    
+    for ut in unique_indices:
+        datadict[ut] = [0, 0]
+    
+    for i in xrange(len(indices)):
+        idx = indices[i]
+        mval = m[i]
+        datadict[idx][0] += mval
+        datadict[idx][1] += 1
+        
+        
+    indices2 = []
+    maccumulation = []
+    counts = []
+
+    for key in sorted(datadict.keys()):
+        val = datadict[key]
+        indices2.append(key)
+        maccumulation.append(val[0])
+        counts.append(val[1])
+        
+    
+    return (indices2,maccumulation, counts)
+    
+    
+
 #assume 1-d likelihood function
 def evaluate_log_likelihood(params, x):
     evals = []
@@ -144,6 +184,41 @@ if __name__ == '__main__':
     min_m = 10.0
 
     d = pull_data()
+    
+    mm = []
+    cts = []
+    for key in d:
+        pilldata = d[key]['pill']
+        indices, mdata, counts = pill_data_to_windows(pilldata, 60.0 * 15.0)
+        mm.extend(mdata)
+        cts.extend(counts)
+        
+        '''
+        figure(1)
+        ax = subplot(2, 1, 1)
+        plot(indices, mdata, '.-')
+        title(key)
+        grid('on')
+        subplot(2, 1, 2, sharex=ax)
+        plot(indices, counts, '.-')
+        grid('on')
+        show()
+        '''
+        
+    mm = array(mm)
+    mm2 = delete(mm, where(mm < 10))
+    cts2 = delete(cts, where(mm < 10))
+    hist(log(mm2), 50)
+    title('histogram of log(sum(accnorm^2)) for interval')
+    show()
+    
+    hist((cts2), max(cts2))
+    title('histogram of counts per interval')
+    show()
+    
+    
+    
+    sys.exit(0)
     dt_list, m_list = get_dt_list(d)
     
     idx = where(dt_list > max_dt)
@@ -170,16 +245,14 @@ if __name__ == '__main__':
     #means,variances,weights
     
     #low accel population, high accel population
-    gmm1_params = [ 27.034,  71.619], [127.459,  1081.686],[ 0.749 ,  0.251]
-    
+    #gmm1_params = [71.619, 27.034], [1081.686, 127.459],[0.251, 0.749]
+    gmm1_params = [100.0, 50.034], [1081.686, 1000.0],[0.5, 0.5]
+
     #long dt population, short dt population
-    gmm2_params = [ 24.649,   2.421],  [706.153,3.18 ], [0.336,0.664]
-
-
-
+    gmm2_params = [2.421, 24.649],  [3.18, 706.153], [0.664, 0.336]
 
     
-    MIN_LOG_PROB = log(0.001)
+    MIN_LOG_PROB = log(0.0001)
     
     for key in d.keys():
         x = d[key]['pill']
@@ -206,7 +279,6 @@ if __name__ == '__main__':
         prob_long_dt_given_sleeps = array([0.1, 0.9])
         prob_disturbance_given_sleeps = array([0.8,  0.2])
         
-        EVENT_LOGLIK_THRESHOLD = 3.0
         
         for idata in xrange(n-1):
             t0 = t[idata]
@@ -222,21 +294,25 @@ if __name__ == '__main__':
                 ldt = array([dt_evals[0][idata], dt_evals[1][idata]])
                 lm = array([m_evals[0][idata + 1], m_evals[1][idata + 1]])
     
-                
-                log_lik_ratio_dt = ldt[0] - ldt[1]
+                '''
+                log_lik_ratio_dt = ldt[1] - ldt[0]
                 log_lik_ratio_m = lm[0] - lm[1]
                 
-                if log_lik_ratio_dt < -EVENT_LOGLIK_THRESHOLD:
+                if log_lik_ratio_dt > 3.0:
                     log_probs += log(prob_short_dt_given_sleeps)
                     
-                if log_lik_ratio_dt > EVENT_LOGLIK_THRESHOLD:
+                if log_lik_ratio_dt < 0.0:
                     log_probs += log(prob_long_dt_given_sleeps)
                     
-                if log_lik_ratio_m < -EVENT_LOGLIK_THRESHOLD:
+                if log_lik_ratio_m > 5.0:
                     log_probs += log(prob_disturbance_given_sleeps)
+                '''
                 
-               
+                log_probs += 0.2*ldt
                 
+                if m2[idata + 1] > 80.0:
+                    log_probs += log(prob_disturbance_given_sleeps)
+            
                 #normalize
                 log_probs -= amax(log_probs)
                 
