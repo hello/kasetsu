@@ -3,7 +3,7 @@ import numpy
 import numpy.linalg
 import numpy.random
 from scipy.stats import poisson
-
+import pylab
 def fit_poisson(n_components, x, n_iter):
     #data must be 1-d
     max = numpy.amax(x)
@@ -54,7 +54,11 @@ def fit_poisson(n_components, x, n_iter):
     
     means_out = means[indices]
     mixture_weights_out = mixture_weights[indices]
-    
+   
+    for i in range(2):
+        pylab.plot(psn[i].pmf(numpy.array(range(0,15))))
+    pylab.show()
+ 
     return means_out, mixture_weights_out
     
     
@@ -62,6 +66,7 @@ def fit_poisson(n_components, x, n_iter):
 if __name__ == '__main__':
     
     x = numpy.load('flat_seg.npy')
+    x = numpy.delete(x,numpy.where(x == 0))
     means, weights = fit_poisson(2, x, 20)
     print means, weights
     

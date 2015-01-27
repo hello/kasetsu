@@ -3,6 +3,7 @@
 import psycopg2
 import time
 import datetime
+import json
 
 k_pill_table = 'tracker_motion_master'
 k_sensor_table = 'device_sensors_master'
@@ -27,7 +28,7 @@ class DataGetter(object):
             self.conn = psycopg2.connect(dbname=self.dbname,user=self.user,host=self.host)
         
     def deinitialize(self):
-        conn.close()
+        self.conn.close()
         
     
     def get_users(self):
@@ -113,19 +114,19 @@ class DataGetter(object):
         
         return cur.fetchall() 
         
-    def do_all(self, min_num_pill_data):
+    def do_all(self, min_num_pill_data, datestr):
         print ('getting significant light data')
-        self.light = self.get_significant_light_events('2015-01-01')
+        self.light = self.get_significant_light_events(datestr)
         
         print ('getting pill data')
-        self.pill = self.get_all_pill_data_after_date('2015-01-01')
+        self.pill = self.get_all_pill_data_after_date(datestr)
         
         self.data = self.join_pill_and_light(self.pill, self.light)
         
         badkeys = []
         for key in self.data:
             if len(self.data[key]['pill'][0]) < min_num_pill_data:
-                badkeys.append(self.data[key])
+                badkeys.append(key)
                 
         for key in badkeys:
             del(self.data[key])
@@ -161,4 +162,12 @@ class DataGetter(object):
 
         return mydict
                 
-                
+    def save(self, filename):
+        f = open(filename, 'w')
+        json.dump(self.data, f)
+        f.close()
+        
+    def load(self, filename):
+        f = open(filename, 'r')
+        self.data = json.load(f)
+        f.close()

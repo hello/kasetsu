@@ -25,6 +25,7 @@ class PoissonHMM(_BaseHMM):
     - A            hidden states transition probability matrix ([NxN] numpy array)
     - pi           initial state's PMF ([N] numpy array).
     - theta        model parameters (MEAN)
+    - w            model absolute weights
     
     thetas is a list of lists (or a list of tuples)
     theta[0][0] == normalized vector of obs
@@ -32,7 +33,7 @@ class PoissonHMM(_BaseHMM):
     
     '''
 
-    def __init__(self,n=None,A=None,pi=None,thetas=None,precision=numpy.double,verbose=False):
+    def __init__(self,n=None, A=None,pi=None,thetas=None,w=None, precision=numpy.double,verbose=False):
         '''
         Construct a new Continuous HMM.
         In order to initialize the model with custom parameters,
@@ -47,7 +48,8 @@ class PoissonHMM(_BaseHMM):
         
         self.A = A
         self.pi = pi
-        self.thetas = thetas
+        self.thetas = numpy.array(thetas)
+        self.w = numpy.array(w)
 
     
     def _mapB(self,observations):
@@ -63,7 +65,7 @@ class PoissonHMM(_BaseHMM):
                 mean = self.thetas[j]
                 myobs = observations[t]
                 
-                self.B_map[j][t] = scipy.stats.poisson.pmf(myobs, mean)
+                self.B_map[j][t] = scipy.stats.poisson.pmf(myobs, mean) * self.w[j]
                 
         #print self.B_map
                 
@@ -114,6 +116,7 @@ class PoissonHMM(_BaseHMM):
         mydict['A'] = self.A.tolist()
         mydict['pi'] = self.pi.tolist()
         mydict['means'] = self.thetas.tolist()
+        mydict['absweights'] = self.w.tolist()
         
         return mydict
         
@@ -122,6 +125,7 @@ class PoissonHMM(_BaseHMM):
         self.pi = numpy.array(mydict['pi'])
         self.thetas = numpy.array(mydict['means'])
         self.n = self.A.shape[0]
+        self.w = numpy.array(mydict['absweights'])
         
 
     

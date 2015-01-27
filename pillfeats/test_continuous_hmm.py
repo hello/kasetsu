@@ -12,53 +12,33 @@ import sys
 from hmm.continuous.PoissonHMM import PoissonHMM
 from time import strftime
 
-october_1_2014_unix_time = 1412121600.0
 
-pill_data_filename = 'csv/pill_data_2014_12_08.csv'
-light_data_filename = 'csv/light_data_2014_12_08.csv'
-survey_data_filename = 'csv/sleep_survey_2014_12_19.csv'
 
 save_filename = 'savedata.json'
 
 k_min_count_pill_data = 250
-
-k_min_m_val = 10.0
+k_min_date = '2015-01-01'
+k_min_m_val = 4.0
 
 k_default_energy = 50
 
 k_period_in_seconds = 15 * 60.0
-k_segment_spacing_in_seconds = 180 * 60.0
+k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
  
 def pull_data():
+    import dbdata
+    import os.path
+    d = dbdata.DataGetter('benjo','benjo','localhost')
     
-    if not os.path.isfile(save_filename):
-        print 'loading data from csv'
-        survey_dict = surveycsv.read_survey_data(survey_data_filename,october_1_2014_unix_time )
-        pill_dict = pillcsv.read_pill_csv(pill_data_filename,october_1_2014_unix_time)
-        sense_dict = sensecsv.read_sense_csv(light_data_filename, october_1_2014_unix_time)
-        
-        
-        data = {'survey' : survey_dict,  'pill' : pill_dict,  'sense' : sense_dict}
-        
-        f = open(save_filename, 'w')
-        json.dump(data, f)
-        f.close()
+    if os.path.isfile(save_filename):
+        d.load(save_filename)
     else:
-        print 'loading data from %s' % save_filename
-        f = open(save_filename)
-        data = json.load(f)
-        f.close()
-    
-    data2 = all_data.join_by_account_id(data, k_min_count_pill_data)
-        
-    for key in data2:
-        if data['survey'].has_key(key):
-            data2[key]['survey'] = data['survey'][key]
-    
-    return data2
+        d.do_all(k_min_count_pill_data, k_min_date)
+        d.save(save_filename)
 
+    return d.data
 
 def pill_data_to_windows(pilldata, period_in_seconds, min_m_val):
     t = array(pilldata[0]).copy().astype(int)
@@ -148,7 +128,7 @@ def windows_to_segments(indices2,counts, period_in_seconds, segment_spacing_in_s
         
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
-
+    nargs = len(sys.argv)
     d = pull_data()
    
     all_times = []
@@ -175,15 +155,16 @@ if __name__ == '__main__':
     '''
                
     A = array([[0.8, 0.15,0.05], 
-                [0.1, 0.8, 0.1], 
-                [0.05, 0.15, 0.8]]) 
+                [0.001, 0.8, 0.199], 
+                [0, 0.1, 0.9]]) 
              
                
     pi0 = array([0.95, 0.05, 0.05])
         
-    means = [0.05, 6.0, 1.0]
+    means = [0.1, 6.0, 2.0]
+    weights = [0.7, 1.0, 1.0]
     
-    hmm = PoissonHMM(3,A,pi0, means, verbose=True )
+    hmm = PoissonHMM(3,A,pi0, means, weights, verbose=True )
     
     flat_seg = []
     for seg in all_segments:
@@ -192,7 +173,7 @@ if __name__ == '__main__':
     save('flat_seg', flat_seg)
 
 
-    hmm.train(flat_seg, 3)
+    hmm.train(flat_seg, 10)
     
     filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
     print ('saving to %s' % filename)
