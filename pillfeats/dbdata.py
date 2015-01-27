@@ -11,6 +11,21 @@ k_sensor_table = 'device_sensors_master'
 def get_as_unix_time(date_time):
     return time.mktime(date_time.timetuple())
 
+def get_common(a, b, keya, keyb):
+    newdict = {}
+    
+    sa = set(a.keys())
+    sb = set(b.keys())
+    
+    goodkeys = sa.intersection(sb)
+    
+    for key in goodkeys:
+        newdict[key] = {}
+        newdict[key][keya] = a[key]
+        newdict[key][keyb]=  b[key]
+        
+    return newdict
+
 class DataGetter(object):
     def __init__(self, dbname, user, host, pw = None):
         self.conn = None
@@ -42,7 +57,62 @@ class DataGetter(object):
         
         return users
         
-    def get_all_pill_data_after_date(self, datestr):
+    def get_all_minute_data(self, datestr, min_num_records):
+        self.reinitialize()
+        
+        cur = self.conn.cursor()
+        
+        query = """
+         
+        SELECT 
+            device_sensors_master.account_id,
+            device_sensors_master.ts,
+            device_sensors_master.ambient_light,
+            tracker_motion_master.svm_no_gravity
+        FROM
+            device_sensors_master
+            
+            LEFT OUTER JOIN tracker_motion_master ON 
+                device_sensors_master.account_id = tracker_motion_master.account_id
+                AND 
+                device_sensors_master.ts = tracker_motion_master.ts
+                
+        WHERE
+            device_sensors_master.ts > \'%s\'
+        ORDER BY
+            device_sensors_master.account_id,device_sensors_master.ts
+            
+        """ % (datestr)
+        
+        #print query
+        
+        cur.execute(query)
+        records = cur.fetchall()
+        
+        datadict = {}
+        for record in records:
+            key = record[0]
+            if not datadict.has_key(record[0]):
+                datadict[key] = [[], [], []]
+                
+            datadict[key][0].append(record[1])
+            datadict[key][1].append(record[2])
+            datadict[key][2].append(record[3])
+
+            
+        badkeys = []
+        for key in datadict:
+            if len(datadict[key][0]) < min_num_records:
+                badkeys.append(key)
+                
+        for key in badkeys:
+            del datadict[key]
+
+        return datadict
+
+        
+        
+    def get_all_pill_data_after_date(self, datestr, min_num_records = 0):
         
         self.reinitialize()
         
@@ -50,20 +120,73 @@ class DataGetter(object):
             
         cur.execute("""SELECT account_id,ts,svm_no_gravity FROM %s WHERE ts > \'%s\' AND svm_no_gravity > 0 """ % (k_pill_table, datestr))
         
+        records = cur.fetchall() 
         
-        return cur.fetchall() 
+        datadict = {}
+        for record in records:
+            key = record[0]
+            if not datadict.has_key(record[0]):
+                datadict[key] = [[], []]
+                
+            datadict[key][0].append(record[1])
+            datadict[key][1].append(record[2])
+            
+        badkeys = []
+        for key in datadict:
+            if len(datadict[key][0]) < min_num_records:
+                badkeys.append(key)
+                
+        for key in badkeys:
+            del datadict[key]
+
+        return datadict
         
         
-    def get_all_sensor_data_after_date(self, datestr):
+        
+        
+    def get_all_sensor_data_after_date(self, datestr, min_num_records = 0):
         self.reinitialize()
         
         cur = self.conn.cursor()
             
-        cur.execute("""SELECT account_id,ts,ambient_light FROM %s WHERE ts > \'%s\' ORDER BY account_id,ts""" % (k_sensor_table, datestr))
+        query = """ 
+          
+                SELECT
+                    account_id,ts,ambient_light
+                FROM
+                    %s
+                WHERE 
+                    ts >  \'%s\'
+                ORDER BY
+                    account_id,ts
+            
+            
+        
+                """ % (k_sensor_table, datestr)
+        
+        cur.execute(query)
         
         
-        return cur.fetchall() 
+        records = cur.fetchall() 
         
+        datadict = {}
+        for record in records:
+            key = record[0]
+            if not datadict.has_key(record[0]):
+                datadict[key] = [[], []]
+                
+            datadict[key][0].append(record[1])
+            datadict[key][1].append(record[2])
+            
+        badkeys = []
+        for key in datadict:
+            if len(datadict[key][0]) < min_num_records:
+                badkeys.append(key)
+                
+        for key in badkeys:
+            del datadict[key]
+
+        return datadict
         
     def get_all_sensor_data_after_date_by_account_id(self, datestr, accountid):
         self.reinitialize()
