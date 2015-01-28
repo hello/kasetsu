@@ -11,6 +11,7 @@ import sklearn.mixture
 import sys
 from hmm.continuous.PoissonHMM import PoissonHMM
 from time import strftime
+import datetime
 
 import data_windows
 
@@ -52,7 +53,30 @@ def pull_data():
     return data
 
 
+def get_sleep_times(t, path):
+    n = len(path)
+    
+    sleep_times = []
+    wake_times = []
+    
+    for i in xrange(1, n):
+        prev = path[i-1]
+        current = path[i]
+        tprev = t[i-1]
+        tcurrent = t[i]
         
+        if current == 2 and (prev == 0 or prev == 1):
+            sleep_times.append(tcurrent)
+            
+        if (current == 5 or current == 6) and (prev == 4):
+            wake_times.append(tprev)
+            
+    return sleep_times, wake_times
+
+def get_unix_time_as_datetime(unix_time):
+    return datetime.datetime.fromtimestamp(unix_time)
+        
+
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     nargs = len(sys.argv)
@@ -133,10 +157,13 @@ if __name__ == '__main__':
         f.close()
     print hmm.A
     print hmm.thetas
- 
     
-
-    for key in data:
+    if nargs > 2:
+        keys = [sys.argv[2]]
+    else:
+        keys = data.keys()
+    
+    for key in keys:
         
         t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
@@ -153,7 +180,15 @@ if __name__ == '__main__':
         
         seg = array(seg)
         path = hmm.decode(seg)
-  
+        
+        sleep_times, wake_times = get_sleep_times(t, path)
+        sleeps = [get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in sleep_times]
+        wakes = [get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in wake_times]
+        
+        print sleeps
+        print wakes
+
+        
         figure(1)
         ax = subplot(2, 1, 1)
         plot(t, l)
