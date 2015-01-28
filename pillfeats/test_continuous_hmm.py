@@ -27,6 +27,8 @@ k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
+
+NUMITER = 10
  
 def pull_data():
     import dbdata
@@ -88,25 +90,41 @@ if __name__ == '__main__':
                 [0.001, 0.8, 0.199], 
                 [0, 0.1, 0.9]]) 
     '''
-         
-    A = array([[0.6,0.2, 0.15,0.05],
-                [0.2, 0.6, 0.15, 0.05],  
-            [0.001,0.001 , 0.8, 0.198], 
-            [0.0, 0.0, 0.1, 0.9]]) 
+    
+    #states
+    # 0 - off bed (dark, no activity)
+    # 1 - reading on bed (light, high activity)
+    # 2 - sleep (dark, low activity)
+    # 3 - tossing / turning (dark, high activity)
+    # 4 - waking up (light, low activity)
+    # 5 - lazy sunday (light, high activity) 
+    # 6 - woke up (light, no activity)
+    
+    A = array([
+    [0.89, 0.05, 0.05, 0.00, 0.00, 0.00, 0.01],
+    [0.00, 0.80, 0.20, 0.00, 0.00, 0.00, 0.00],
+    [0.00, 0.00, 0.85, 0.10, 0.05, 0.00, 0.00], 
+    [0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00, 0.90, 0.05, 0.05], 
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.10], 
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90]
+
+    ])
              
-    pi0 = array([0.95, 0.05, 0.05, 0.05])
+             
+    pi0 = array([0.70, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts
-    means = [[3.0,4.0, 3.0, 3.0],
-             [0.1,0.1, 6.0, 1.0]]
+    means = [[1.0, 6.0, 1.0, 1.0, 6.0, 6.0, 6.0],
+             [0.1, 6.0, 1.0, 4.0, 1.0, 8.0, 0.1]]
     
-    hmm = PoissonHMM(4,2, A,pi0, means, verbose=True )
+    hmm = PoissonHMM(7,2, A,pi0, means, verbose=True )
     
     if nargs > 1:
         f = open(sys.argv[1], 'r')
         hmm.from_dict(json.load(f))
     else:
-        hmm.train(flat_seg, 5)
+        hmm.train(flat_seg, NUMITER)
         filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
         print ('saving to %s' % filename)
 
