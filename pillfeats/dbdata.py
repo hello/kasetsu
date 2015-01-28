@@ -57,7 +57,7 @@ class DataGetter(object):
         
         return users
         
-    def get_all_minute_data(self, datestr, min_num_records):
+    def get_all_minute_data(self, datestr, min_num_records, min_num_pill_records):
         self.reinitialize()
         
         cur = self.conn.cursor()
@@ -95,7 +95,7 @@ class DataGetter(object):
             if not datadict.has_key(record[0]):
                 datadict[key] = [[], [], []]
                 
-            datadict[key][0].append(record[1])
+            datadict[key][0].append(get_as_unix_time(record[1]))
             datadict[key][1].append(record[2])
             datadict[key][2].append(record[3])
 
@@ -103,6 +103,16 @@ class DataGetter(object):
         badkeys = []
         for key in datadict:
             if len(datadict[key][0]) < min_num_records:
+                badkeys.append(key)
+                continue
+                
+            pill_data = datadict[key][2]
+            pill_counts = 0
+            for p in pill_data:
+                if p != None:
+                    pill_counts += 1;
+                    
+            if pill_counts < min_num_pill_records:
                 badkeys.append(key)
                 
         for key in badkeys:

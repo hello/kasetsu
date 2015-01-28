@@ -26,6 +26,7 @@ class PoissonHMM(_BaseHMM):
     - pi           initial state's PMF ([N] numpy array).
     - theta        model parameters (MEAN)
     - w            model absolute weights
+    - d            number independent models (obs vector is d x 1 per time instant)
     
     thetas is a list of lists (or a list of tuples)
     theta[0][0] == normalized vector of obs
@@ -33,7 +34,7 @@ class PoissonHMM(_BaseHMM):
     
     '''
 
-    def __init__(self,n=None, A=None,pi=None,thetas=None,w=None, precision=numpy.double,verbose=False):
+    def __init__(self,n=None, d = 1, A=None,pi=None,thetas=None, precision=numpy.double,verbose=False):
         '''
         Construct a new Continuous HMM.
         In order to initialize the model with custom parameters,
@@ -49,7 +50,7 @@ class PoissonHMM(_BaseHMM):
         self.A = A
         self.pi = pi
         self.thetas = numpy.array(thetas)
-        self.w = numpy.array(w)
+        self.d = d
 
     
     def _mapB(self,observations):
@@ -60,14 +61,22 @@ class PoissonHMM(_BaseHMM):
         '''    
 
         self.B_map = numpy.zeros( (self.n,len(observations)), dtype=self.precision)
-        for j in xrange(self.n):
-            for t in xrange(len(observations)):
-                mean = self.thetas[j]
+        for t in xrange(len(observations)):
+
+            for j in xrange(self.n):
                 myobs = observations[t]
+                joint = 1.0
+
+                for d in xrange(self.d):
+                    mean = self.thetas[d][j]
+                    eval = scipy.stats.poisson.pmf(myobs[d], mean)
+                    #if eval < 1e-6:
+                    #    print eval, mean, myobs[d]
+                        
+                    joint *= eval
+               
+                self.B_map[j][t] = joint
                 
-                self.B_map[j][t] = scipy.stats.poisson.pmf(myobs, mean) * self.w[j]
-                
-        #print self.B_map
                 
             
     def _updatemodel(self,new_model):
@@ -94,19 +103,20 @@ class PoissonHMM(_BaseHMM):
         Helper method that performs the Baum-Welch 'M' step
         for the mixture parameters - 'w', 'means', 'covars'.
         '''        
-        newmeans = numpy.zeros( (self.n,), dtype=self.precision)
+        newmeans = numpy.zeros( (self.d, self.n), dtype=self.precision)
     
         for j in xrange(self.n):
-            numer = numpy.zeros( 1, dtype=self.precision)
-            denom = numpy.zeros( 1, dtype=self.precision)
-            for t in xrange(len(observations)):
-                myobs = observations[t]
-                numer += (gamma[t][j]*myobs)
-                denom += (gamma[t][j])
+            for d in xrange(self.d):
+                numer = numpy.zeros( 1, dtype=self.precision)
+                denom = numpy.zeros( 1, dtype=self.precision)
+                for t in xrange(len(observations)):
+                    myobs = observations[t][d]
+                    numer += (gamma[t][j]*myobs)
+                    denom += (gamma[t][j])
             
-            newmeans[j] = numer/denom
-            #print j, numer, denom
+                newmeans[d][j] = numer/denom
         
+        print newmeans
         return newmeans
     
 
@@ -116,7 +126,7 @@ class PoissonHMM(_BaseHMM):
         mydict['A'] = self.A.tolist()
         mydict['pi'] = self.pi.tolist()
         mydict['means'] = self.thetas.tolist()
-        mydict['absweights'] = self.w.tolist()
+        mydict['nummodels'] = self.d
         
         return mydict
         
@@ -125,7 +135,6 @@ class PoissonHMM(_BaseHMM):
         self.pi = numpy.array(mydict['pi'])
         self.thetas = numpy.array(mydict['means'])
         self.n = self.A.shape[0]
-        self.w = numpy.array(mydict['absweights'])
-        
+        self.d = mydict['nummodels']
 
     
