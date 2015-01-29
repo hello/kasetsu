@@ -13,6 +13,7 @@ from hmm.continuous.PoissonHMM import PoissonHMM
 from time import strftime
 import datetime
 import csv
+import argparse
 
 import data_windows
 
@@ -79,42 +80,17 @@ def get_unix_time_as_datetime(unix_time):
         
 
 if __name__ == '__main__':
-    set_printoptions(precision=3, suppress=True, threshold=np.nan)
-    nargs = len(sys.argv)
     
-    data = pull_data()
-   
-    all_times = []
-    flat_seg = []
-    packaged_info = []
-    count = 0
-    for key in data:
-        
-        t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        l[where(l < 0)] = 0.0
-        l = (log(l + 1.0)).astype(int)
-        '''
-        plot(t, c)
-        plot(t, log(l + 10.0))
-        show()
-        '''
-        
-        for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i]])
-
-        count += 1
-        
-        #if count > 4:
-        #    break;
-       
-        
-    flat_seg = array(flat_seg)
-    print flat_seg.shape
-    '''
-    A = array([[0.8, 0.15,0.05], 
-                [0.001, 0.8, 0.199], 
-                [0, 0.1, 0.9]]) 
-    '''
+    parser = argparse.ArgumentParser()
+    #parser.add_argument("-t",  "--train",help="evaluate,train", required=True, type=str)
+    parser.add_argument('-t', '--train', action='store_true', default=False)
+    parser.add_argument("-f",  "--file", help="output file of predicted sleep / wake times")
+    parser.add_argument("-m",  "--model", help="model file (usually a .json)")
+    parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
+    parser.add_argument("--iter", help="number of training iterations", default=8)
+    args = parser.parse_args()
+    set_printoptions(precision=3, suppress=True, threshold=np.nan)
+    
     
     #states
     # 0 - off bed (dark, no activity)
@@ -147,10 +123,55 @@ if __name__ == '__main__':
     
     hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
     
-    if nargs > 1:
-        f = open(sys.argv[1], 'r')
+    
+    data = pull_data()
+   
+    all_times = []
+    flat_seg = []
+    packaged_info = []
+    count = 0
+    
+    if args.user != None:
+        if not data.has_key(args.user):
+            print ('user does not exist in data set! quitting....')
+            sys.exit(0)
+        else:
+            data = {args.user : data[args.user]}
+    
+    
+    keys = data.keys()
+    
+    
+    for key in data:
+        
+        t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        l[where(l < 0)] = 0.0
+        l = (log(l + 1.0)).astype(int)
+        '''
+        plot(t, c)
+        plot(t, log(l + 10.0))
+        show()
+        '''
+        
+        for i in xrange(len(t)):
+            flat_seg.append([l[i], c[i]])
+
+        count += 1
+        
+        #if count > 4:
+        #    break;
+       
+        
+    flat_seg = array(flat_seg)
+    print flat_seg.shape
+    
+    if args.model != None:
+        f = open(args.model, 'r')
         hmm.from_dict(json.load(f))
-    else:
+    
+    
+    if args.train != None and args.train != False:
+        print ('TRAINING')
         hmm.train(flat_seg, NUMITER)
         filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
         print ('saving to %s' % filename)
@@ -158,21 +179,14 @@ if __name__ == '__main__':
         f = open(filename, 'w')
         json.dump(hmm.to_dict(), f)
         f.close()
+    
     print hmm.A
     print hmm.thetas
     
-    if nargs > 2:
-        keys = [sys.argv[2]]
-        if keys[0] == '*':
-            keys = data.keys()
-    else:
-        keys = data.keys()
+  
     
-    
-    if nargs > 3:
-        outfile = sys.argv[3]
-    else:
-        outfile = None
+    outfile = args.file
+   
         
     sleep_segments = []
     for key in keys:
