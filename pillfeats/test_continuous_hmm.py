@@ -12,6 +12,7 @@ import sys
 from hmm.continuous.PoissonHMM import PoissonHMM
 from time import strftime
 import datetime
+import csv
 
 import data_windows
 
@@ -65,10 +66,10 @@ def get_sleep_times(t, path):
         tprev = t[i-1]
         tcurrent = t[i]
         
-        if current == 2 and (prev == 0 or prev == 1):
+        if current == 3 and (prev == 0 or prev == 1 or prev == 2):
             sleep_times.append(tcurrent)
             
-        if (current == 5 or current == 6) and (prev == 4):
+        if (current == 6 or current == 7) and (prev == 5):
             wake_times.append(tprev)
             
     return sleep_times, wake_times
@@ -118,31 +119,33 @@ if __name__ == '__main__':
     #states
     # 0 - off bed (dark, no activity)
     # 1 - reading on bed (light, high activity)
-    # 2 - sleep (dark, low activity)
-    # 3 - tossing / turning (dark, high activity)
-    # 4 - waking up (light, low activity)
-    # 5 - lazy sunday (light, high activity) 
-    # 6 - woke up (light, no activity)
+    # 2 - watching movie on bed (dark, high activity)
+    # 3 - sleep (dark, low activity)
+    # 4 - tossing / turning (dark, high activity)
+    # 5 - waking up (light, low activity)
+    # 6 - lazy sunday (light, high activity) 
+    # 7 - woke up (light, no activity)
     
     A = array([
-    [0.89, 0.05, 0.05, 0.00, 0.00, 0.00, 0.01],
-    [0.00, 0.80, 0.20, 0.00, 0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.85, 0.10, 0.05, 0.00, 0.00], 
-    [0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.00, 0.90, 0.05, 0.05], 
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.10], 
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90]
+    [0.84, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.01],
+    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00],
+    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.85, 0.10, 0.05, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.05, 0.05], 
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.10], 
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90]
 
     ])
              
              
-    pi0 = array([0.70, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts
-    means = [[1.0, 6.0, 1.0, 1.0, 6.0, 6.0, 6.0],
-             [0.1, 6.0, 1.0, 4.0, 1.0, 8.0, 0.1]]
+    means = [[1.0, 6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0],
+             [0.1, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.1]]
     
-    hmm = PoissonHMM(7,2, A,pi0, means, verbose=True )
+    hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
     
     if nargs > 1:
         f = open(sys.argv[1], 'r')
@@ -160,9 +163,18 @@ if __name__ == '__main__':
     
     if nargs > 2:
         keys = [sys.argv[2]]
+        if keys[0] == '*':
+            keys = data.keys()
     else:
         keys = data.keys()
     
+    
+    if nargs > 3:
+        outfile = sys.argv[3]
+    else:
+        outfile = None
+        
+    sleep_segments = []
     for key in keys:
         
         t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
@@ -181,29 +193,52 @@ if __name__ == '__main__':
         seg = array(seg)
         path = hmm.decode(seg)
         
-        sleep_times, wake_times = get_sleep_times(t, path)
-        sleeps = [get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in sleep_times]
-        wakes = [get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in wake_times]
-        
-        print sleeps
-        print wakes
-
-        
-        figure(1)
-        ax = subplot(2, 1, 1)
-        plot(t, l)
-        plot(t, c)
-        
-        title(key)
-        grid('on')
-        
-        subplot(2, 1, 2, sharex=ax)
-        plot(t, path, 'k.-')
-        grid('on')
-        show()
+        sleep_times, wake_times = get_sleep_times(t, path)        
+        sleeps = array([get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in sleep_times])
+        wakes = array([get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in wake_times])
         
        
+
+        if outfile == None:
+            figure(1)
+            ax = subplot(2, 1, 1)
+            plot(t, l)
+            plot(t, c)
+            
+            title(key)
+            grid('on')
+            
+            subplot(2, 1, 2, sharex=ax)
+            plot(t, path, 'k.-')
+            grid('on')
+            show()
+        
+        if len(sleeps) != len(wakes):
+            print 'error for user %d, number of sleeps does not equal number of wakes' % int(key)
+            continue
+        
+        durations_in_hours =  (array(wake_times) - array(sleep_times)) / 3600.0
+        bad_idx = where(durations_in_hours < 2)
+        
+        sleeps = delete(sleeps, bad_idx)
+        wakes = delete(wakes, bad_idx)
+        durations_in_hours = delete(durations_in_hours, bad_idx)
+        
+        print durations_in_hours
+        
+
+        for i in xrange(len(sleeps)):
+            sleep_segments.append((key, sleeps[i], wakes[i]))
         
     
+    if outfile != None:
+        with open(outfile, 'wb') as csvfile:
+            mywriter = csv.writer(csvfile, delimiter=',')
+            
+            for seg in sleep_segments:
+                mywriter.writerow(seg)
+                
+        csvfile.close()
+            
         
     
