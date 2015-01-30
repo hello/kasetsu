@@ -68,6 +68,7 @@ class DataGetter(object):
             device_sensors_master.account_id,
             device_sensors_master.ts,
             device_sensors_master.ambient_light,
+            device_sensors_master.audio_num_disturbances,
             tracker_motion_master.svm_no_gravity
         FROM
             device_sensors_master
@@ -93,11 +94,12 @@ class DataGetter(object):
         for record in records:
             key = record[0]
             if not datadict.has_key(record[0]):
-                datadict[key] = [[], [], []]
+                datadict[key] = [[], [], [], []]
                 
             datadict[key][0].append(get_as_unix_time(record[1]))
             datadict[key][1].append(record[2])
             datadict[key][2].append(record[3])
+            datadict[key][3].append(record[4])
 
             
         badkeys = []
@@ -106,7 +108,7 @@ class DataGetter(object):
                 badkeys.append(key)
                 continue
                 
-            pill_data = datadict[key][2]
+            pill_data = datadict[key][3]
             pill_counts = 0
             for p in pill_data:
                 if p != None:

@@ -14,6 +14,7 @@ from time import strftime
 import datetime
 import csv
 import argparse
+import copy
 
 import data_windows
 
@@ -31,8 +32,17 @@ k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
 
-NUMITER = 10
- 
+not_on_bed_states = [0, 7]
+on_bed_states = [1, 2, 3, 4, 5, 6]
+wake_states = [0, 1, 2, 6, 7]
+sleep_states = [3, 4, 5]
+
+def get_unix_time_as_datetime(unix_time):
+    return datetime.datetime.fromtimestamp(unix_time)
+    
+def get_unix_time_as_string(unix_time): 
+    return get_unix_time_as_datetime(unix_time).isoformat(' ')   
+
 def pull_data():
     import dbdata
     import os.path
@@ -54,12 +64,18 @@ def pull_data():
 
     return data
 
+on_bed = 'on_bed'
+off_bed = 'off_bed'
+on_sleep = 'on_sleep'
+off_sleep = 'wake'
 
 def get_sleep_times(t, path):
     n = len(path)
     
-    sleep_times = []
-    wake_times = []
+    line = []
+    events = []
+    
+    first = False
     
     for i in xrange(1, n):
         prev = path[i-1]
@@ -67,16 +83,24 @@ def get_sleep_times(t, path):
         tprev = t[i-1]
         tcurrent = t[i]
         
-        if current == 3 and (prev == 0 or prev == 1 or prev == 2):
-            sleep_times.append(tcurrent)
-            
-        if (current == 6 or current == 7) and (prev == 5):
-            wake_times.append(tprev)
-            
-    return sleep_times, wake_times
+        if current in on_bed_states and prev in not_on_bed_states:
+            line.append((tprev))
+            first = True
 
-def get_unix_time_as_datetime(unix_time):
-    return datetime.datetime.fromtimestamp(unix_time)
+        if current in sleep_states and prev in wake_states and first:
+            line.append((tprev))
+
+        if current in wake_states and prev in sleep_states and first:
+            line.append((tprev))
+            
+        if current in not_on_bed_states and prev in on_bed_states and first:
+            line.append((tprev))
+            events.append(copy.deepcopy(line))
+            line = []
+            
+    return events
+
+
         
 
 if __name__ == '__main__':
@@ -87,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument("-f",  "--file", help="output file of predicted sleep / wake times")
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
-    parser.add_argument("--iter", help="number of training iterations", default=8)
+    parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
@@ -103,14 +127,14 @@ if __name__ == '__main__':
     # 7 - woke up (light, no activity)
     
     A = array([
-    [0.84, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.01],
+    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.10],
     [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00],
     [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.85, 0.10, 0.05, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.80, 0.10, 0.05, 0.05, 0.00], 
     [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.05, 0.05], 
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90, 0.10], 
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.90]
+    [0.05, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05], 
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.10], 
+    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.75]
 
     ])
              
@@ -132,19 +156,20 @@ if __name__ == '__main__':
     count = 0
     
     if args.user != None:
+        print args.user
         if not data.has_key(args.user):
             print ('user does not exist in data set! quitting....')
             sys.exit(0)
         else:
             data = {args.user : data[args.user]}
     
-    
     keys = data.keys()
-    
+    print keys
+
     
     for key in data:
         
-        t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
         l = (log(l + 1.0)).astype(int)
         '''
@@ -172,7 +197,7 @@ if __name__ == '__main__':
     
     if args.train != None and args.train != False:
         print ('TRAINING')
-        hmm.train(flat_seg, NUMITER)
+        hmm.train(flat_seg, args.iter)
         filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
         print ('saving to %s' % filename)
 
@@ -191,7 +216,7 @@ if __name__ == '__main__':
     sleep_segments = []
     for key in keys:
         
-        t, l, c = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
         l = (log(l + 1.0)).astype(int)
         '''
@@ -207,49 +232,55 @@ if __name__ == '__main__':
         seg = array(seg)
         path = hmm.decode(seg)
         
-        sleep_times, wake_times = get_sleep_times(t, path)        
-        sleeps = array([get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in sleep_times])
-        wakes = array([get_unix_time_as_datetime(f).strftime('%Y-%m-%d %H:%M:%S') for f in wake_times])
+        events = get_sleep_times(t, path)   
         
-       
+        timezone_offset = -8 * 3600.0 
+
+        sleep_time_strings = []
+        for e in events:
+            sleep_time_strings.append(  [get_unix_time_as_string(e[0] + timezone_offset), 
+                                         get_unix_time_as_string(e[1] + timezone_offset), 
+                                         get_unix_time_as_string(e[2] + timezone_offset), 
+                                         get_unix_time_as_string(e[3] + timezone_offset), 
+                                         (e[2] - e[1]) / 3600.0] )
+        
+        good_times = []
+        for s in sleep_time_strings:
+            if s[4] > 3.0:
+                good_times.append(s)
+                
+        for s in good_times:
+            print s
 
         if outfile == None:
+            t2 = [get_unix_time_as_datetime(tt + timezone_offset) for tt in t]
             figure(1)
             ax = subplot(2, 1, 1)
-            plot(t, l)
-            plot(t, c)
+            plot(t2, l)
+            plot(t2, c)
+            plot(t2, log2(sc + 1.0))
+            plot(t2, log(energy + 1.0))
+            legend(['log light', 'pill wake counts', 'log sound counts', 'log energy'])
             
             title(key)
             grid('on')
             
             subplot(2, 1, 2, sharex=ax)
-            plot(t, path, 'k.-')
+            plot(t2, path, 'k.-')
             grid('on')
             show()
         
-        if len(sleeps) != len(wakes):
-            print 'error for user %d, number of sleeps does not equal number of wakes' % int(key)
-            continue
-        
-        durations_in_hours =  (array(wake_times) - array(sleep_times)) / 3600.0
-        bad_idx = where(durations_in_hours < 2)
-        
-        sleeps = delete(sleeps, bad_idx)
-        wakes = delete(wakes, bad_idx)
-        durations_in_hours = delete(durations_in_hours, bad_idx)
-        
-        print durations_in_hours
+      
+
         
 
-        for i in xrange(len(sleeps)):
-            sleep_segments.append((key, sleeps[i], wakes[i]))
-        
+       
     
     if outfile != None:
         with open(outfile, 'wb') as csvfile:
             mywriter = csv.writer(csvfile, delimiter=',')
             
-            for seg in sleep_segments:
+            for seg in events:
                 mywriter.writerow(seg)
                 
         csvfile.close()
