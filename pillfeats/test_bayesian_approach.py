@@ -18,6 +18,8 @@ survey_data_filename = 'csv/sleep_survey_2014_12_19.csv'
 save_filename = 'savedata_for_bayes.json'
 
 min_count_pill_data = 250
+
+default_energy = 0
  
 def pull_data():
     
@@ -73,6 +75,7 @@ def get_dt_list(d):
     return array(dt_list), array(m_list)
 
 def do_gmm(x, n, mytitle, plotme = False):
+    
     gmm = sklearn.mixture.GMM(n_components=n, covariance_type='full')
     gmm.fit(x)
 
@@ -110,18 +113,21 @@ def do_gmm(x, n, mytitle, plotme = False):
             for gg in g:
                 plot(gg[0, :, 0], gg[0, :, 1],'.')
                 
+            ylabel('count')
+            xlabel('log energy')
             grid('on')
             show()
             
     return (gmm.means_, gmm.covars_, gmm.weights_)
         
 
-def pill_data_to_windows(pilldata, period_in_seconds):
+
+def pill_data_to_windows(pilldata, period_in_seconds, min_m_val):
     t = array(pilldata[0]).copy().astype(int)
     m = array(pilldata[1]).copy()
     
     indices = t / int(period_in_seconds)
-    indices -= indices[0]
+    #indices -= indices[0]
     
     unique_indices = unique(indices)
     
@@ -137,9 +143,22 @@ def pill_data_to_windows(pilldata, period_in_seconds):
     for i in xrange(len(indices)):
         idx = indices[i]
         mval = m[i]
+        
+        if mval < min_m_val:
+            continue
+        
+        datadict[idx][0] += default_energy
         datadict[idx][0] += mval
         datadict[idx][1] += 1
         
+    
+    badkeys = []
+    for key in datadict:
+        if datadict[key][1] == 0:
+            badkeys.append(key)
+
+    for key in badkeys:
+        del datadict[key]
         
     indices2 = []
     maccumulation = []
@@ -148,48 +167,85 @@ def pill_data_to_windows(pilldata, period_in_seconds):
     for key in sorted(datadict.keys()):
         val = datadict[key]
         indices2.append(key)
-        maccumulation.append(val[0])
+        
+        
+        tot_energy = val[0]
+        #if val[1] > 0:
+        #    avg_energy /= val[1]
+        
+        maccumulation.append(tot_energy)
         counts.append(val[1])
         
     
     return (indices2,maccumulation, counts)
     
     
+def windows_to_segments(indices2,maccumulation, period_in_seconds, segment_spacing_in_seconds, min_segment_length_in_seconds, segment_padding_in_seconds):
+    diff_in_seconds = diff(indices2) * period_in_seconds
+    segment_idx = where(diff_in_seconds > segment_spacing_in_seconds)[0]
 
-#assume 1-d likelihood function
-def evaluate_log_likelihood(params, x):
-    evals = []
-    means, covars, weights = params
-    nmodels = len(weights)
-    for i in xrange(nmodels):
+    output_times = []
+    output_segments = []
 
-        m  = array(means[i])
-        P = array(covars[i])
-        w = array(weights[i])
+    for i in xrange(len(segment_idx) - 1):
+        idx1 = segment_idx[i] + 1
+        idx2 = segment_idx[i+1]
         
-        #x2 could be a list
-        x2 = x - m
-        r = -0.5 * x2 / P * x2
-        r -= log(sqrt(P))
-        r += log(w)
-        #return log liklihoods
-        #eval = exp(r) / sqrt(P)
-        evals.append(r)
+        i1 = indices2[idx1]
+        i2 = indices2[idx2]
+
+        dt = (i2 - i1) * period_in_seconds
         
-    return evals
+        if dt < min_segment_length_in_seconds:
+            continue
+    
+        segment_len = i2 - i1 + 1
+        segment = zeros((segment_len, ))
+        times = array(range(i1, i2+1)) 
+        times += 1
+        times *= period_in_seconds
+
+        for iseg in xrange(idx1, idx2+1):
+            seg_idx = indices2[iseg] - i1
+            segment[seg_idx] = log(maccumulation[iseg] + 1.0) # LOG LOG LOG
+            
+        output_times.append(array(times))
+        output_segments.append(array(segment))
+        
+    return output_times, output_segments
     
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     max_dt = 180 #minutes
     min_m = 10.0
+    period = 15 * 60.0
+    segspace = 180 * 60.0
+    minseglen = 240 * 60.0
+    segpad = 0
 
     d = pull_data()
+    
+    
+    
     
     mm = []
     cts = []
     for key in d:
         pilldata = d[key]['pill']
-        indices, mdata, counts = pill_data_to_windows(pilldata, 60.0 * 15.0)
+        indices, mdata, counts = pill_data_to_windows(pilldata, period, min_m)
+        times, segments = windows_to_segments(indices, mdata, period, segspace, minseglen, segpad)
+        
+        if key == 'benejoseph@gmail.com':
+            for kseg in xrange(len(times)):
+                break
+                t = times[kseg]
+                md = segments[kseg]
+                
+                plot(array(t)/3600.0, md, '.-')
+                title('%s %d' % (key, kseg))
+                show()
+        
+        #aggregate
         mm.extend(mdata)
         cts.extend(counts)
         
@@ -206,17 +262,24 @@ if __name__ == '__main__':
         '''
         
     mm = array(mm)
-    mm2 = delete(mm, where(mm < 10))
-    cts2 = delete(cts, where(mm < 10))
-    hist(log(mm2), 50)
-    title('histogram of log(sum(accnorm^2)) for interval')
-    show()
+    cts = array(cts)
+    mm = log(mm + 1.0)
     
-    hist((cts2), max(cts2))
+    
+    x = array([mm, cts])
+    x = x.transpose()
+    
+    print 'got here'
+    print x.shape
+    gmm1_params = do_gmm(mm,  2,  'log energy window', True)
+
+    gmm1_params = do_gmm(x, 1,  '2-d', True)
+
+    hist((cts), max(cts))
     title('histogram of counts per interval')
     show()
     
-    
+
     
     sys.exit(0)
     dt_list, m_list = get_dt_list(d)

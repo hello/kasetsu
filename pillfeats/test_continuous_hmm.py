@@ -20,9 +20,9 @@ import data_windows
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 50
+k_min_count_pill_data = 250
 k_min_num_days_of_sense_data = 5
-k_min_date = '2015-01-15'
+k_min_date = '2015-01-1'
 
 k_default_energy = 50
 
@@ -117,12 +117,13 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     #parser.add_argument("-t",  "--train",help="evaluate,train", required=True, type=str)
-    parser.add_argument('-t', '--train', action='store_true', default=False)
     parser.add_argument("-f",  "--file", help="output file of predicted sleep / wake times")
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
     parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
-    parser.add_argument("--nosave", action='store_true', default=False)
+    parser.add_argument("--adapt", action='store_true', default=False)
+    parser.add_argument('--train', action='store_true', default=False)
+
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
@@ -206,17 +207,16 @@ if __name__ == '__main__':
         hmm.from_dict(json.load(f))
     
     
-    if args.train != None and args.train == True:
+    if args.train == True:
         print ('TRAINING')
         hmm.train(flat_seg, args.iter)
         
-        if args.nosave == False:
-            filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
-            print ('saving to %s' % filename)
-    
-            f = open(filename, 'w')
-            json.dump(hmm.to_dict(), f)
-            f.close()
+        filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
+        print ('saving to %s' % filename)
+
+        f = open(filename, 'w')
+        json.dump(hmm.to_dict(), f)
+        f.close()
     
     print hmm.A
     print hmm.thetas
@@ -224,7 +224,10 @@ if __name__ == '__main__':
   
     
     outfile = args.file
-   
+    
+    if outfile != None and os.path.isfile(outfile):
+        os.remove(outfile)
+
         
     sleep_segments = []
     for key in keys:
@@ -243,32 +246,33 @@ if __name__ == '__main__':
             seg.append([l[i], c[i]])
         
         seg = array(seg)
-        path = hmm.decode(seg)
-        model_cost = hmm.forwardbackward(seg)
-        path_cost = hmm.evaluate_path_cost(seg, path, len(seg))
+        
+        myhmm = copy.deepcopy(hmm)
+
+        if args.adapt:
+            print ('ADAPTING for %s' % str(key))
+            myhmm.train(seg, args.iter)
+            
+        
+        path = myhmm.decode(seg)
+        model_cost = myhmm.forwardbackward(seg)
+        model_cost /= len(seg)
+        path_cost = myhmm.evaluate_path_cost(seg, path, len(seg))
         limit = 3.0 * mean(path_cost)
         score = sum(path_cost > limit)
         
         events, transition_indices = get_sleep_times(t, path)   
 
-        
-        print path_cost[transition_indices]
-        
         sleep_time_strings = []
         for e in events:
-            
-            sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
+            if len(e) >= 4:
+                sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
                                          get_unix_time_as_string(e[1]), 
                                          get_unix_time_as_string(e[2]), 
                                          get_unix_time_as_string(e[3]), 
                                          (e[2] - e[1]) / 3600.0] )
         
-        good_times = []
         for s in sleep_time_strings:
-            if s[4] > 2.0:
-                good_times.append(s)
-                
-        for s in good_times:
             print s
 
         if outfile == None:
@@ -298,11 +302,14 @@ if __name__ == '__main__':
        
     
     if outfile != None:
-        with open(outfile, 'wb') as csvfile:
+        with open(outfile, 'wa') as csvfile:
             mywriter = csv.writer(csvfile, delimiter=',')
             
-            for seg in events:
-                mywriter.writerow(seg)
+            for item in events:
+                row = [key]
+                row.extend(item)
+                
+                mywriter.writerow(row)
                 
         csvfile.close()
             
