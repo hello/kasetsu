@@ -295,23 +295,19 @@ if __name__ == '__main__':
             
             show()
         
-      
 
-        
-
-       
     
-    if outfile != None:
-        with open(outfile, 'wa') as csvfile:
-            mywriter = csv.writer(csvfile, delimiter=',')
-            
-            for item in events:
-                row = [key]
-                row.extend(item)
+        if outfile != None:
+            with open(outfile, 'wa') as csvfile:
+                mywriter = csv.writer(csvfile, delimiter=',')
                 
-                mywriter.writerow(row)
+                for item in events:
+                    row = [key]
+                    row.extend(item)
+                    
+                    mywriter.writerow(row)
+                    
+            csvfile.close()
                 
-        csvfile.close()
-            
         
     
