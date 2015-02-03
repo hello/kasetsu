@@ -60,6 +60,23 @@ class DataGetter(object):
         
         return users
         
+    def get_user_email_map(self):
+        self.reinitialize()
+        
+        cur = self.conn.cursor()
+                
+        query = """
+        SELECT id,email from ACCOUNTS;
+        """
+        cur.execute(query)
+        records = cur.fetchall()
+        
+        datadict = {}
+        for line in records:
+            datadict[line[0]] = line[1]
+            
+        return datadict
+        
     def get_all_minute_data(self, datestr, min_num_records, min_num_pill_records):
         self.reinitialize()
         

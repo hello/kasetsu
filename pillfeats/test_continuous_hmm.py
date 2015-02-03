@@ -63,10 +63,6 @@ def pull_data():
 
     return data
 
-on_bed = 'on_bed'
-off_bed = 'off_bed'
-on_sleep = 'on_sleep'
-off_sleep = 'wake'
 
 def get_sleep_times(t, path):
     n = len(path)
@@ -257,6 +253,7 @@ if __name__ == '__main__':
         path = myhmm.decode(seg)
         model_cost = myhmm.forwardbackward(seg)
         model_cost /= len(seg)
+        print 'AVERAGE MODEL COST = %f' % model_cost
         path_cost = myhmm.evaluate_path_cost(seg, path, len(seg))
         limit = 3.0 * mean(path_cost)
         score = sum(path_cost > limit)
@@ -294,11 +291,9 @@ if __name__ == '__main__':
             grid('on')
             
             show()
-        
-
     
-        if outfile != None:
-            with open(outfile, 'wa') as csvfile:
+        else:
+            with open(outfile, 'a') as csvfile:
                 mywriter = csv.writer(csvfile, delimiter=',')
                 
                 for item in events:
