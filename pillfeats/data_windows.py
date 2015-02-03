@@ -3,7 +3,7 @@ from numpy import *
 import time
 
 
-def data_to_windows(data,  period_in_seconds, min_m_val = None):
+def data_to_windows(data,  period_in_seconds):
 
     t = array(data[0])    
     

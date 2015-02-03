@@ -64,9 +64,7 @@ class DataGetter(object):
         self.reinitialize()
         
         cur = self.conn.cursor()
-        
-        cur.execute("""SET TIME ZONE Zulu;""")
-        
+                
         query = """
         
         SELECT 
@@ -84,7 +82,7 @@ class DataGetter(object):
                 device_sensors_master.ts = tracker_motion_master.ts
                 
         WHERE
-            device_sensors_master.ts > \'%s\'::timestamp with time zone
+            device_sensors_master.ts > \'%s\'
         ORDER BY
             device_sensors_master.account_id,device_sensors_master.ts
             

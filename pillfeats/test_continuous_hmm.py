@@ -20,10 +20,9 @@ import data_windows
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 250
+k_min_count_pill_data = 50
 k_min_num_days_of_sense_data = 5
-k_min_date = '2015-01-28'
-k_min_m_val = 4.0
+k_min_date = '2015-01-15'
 
 k_default_energy = 50
 
@@ -123,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
     parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
+    parser.add_argument("--nosave", action='store_true', default=False)
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
@@ -154,7 +154,7 @@ if __name__ == '__main__':
         
     #light, then counts
     means = [[1.0, 6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0],
-             [0.1, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.1]]
+             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.01]]
     
     hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
     
@@ -206,15 +206,17 @@ if __name__ == '__main__':
         hmm.from_dict(json.load(f))
     
     
-    if args.train != None and args.train != False:
+    if args.train != None and args.train == True:
         print ('TRAINING')
         hmm.train(flat_seg, args.iter)
-        filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
-        print ('saving to %s' % filename)
-
-        f = open(filename, 'w')
-        json.dump(hmm.to_dict(), f)
-        f.close()
+        
+        if args.nosave == False:
+            filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
+            print ('saving to %s' % filename)
+    
+            f = open(filename, 'w')
+            json.dump(hmm.to_dict(), f)
+            f.close()
     
     print hmm.A
     print hmm.thetas
@@ -254,7 +256,7 @@ if __name__ == '__main__':
         
         sleep_time_strings = []
         for e in events:
-            print e
+            
             sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
                                          get_unix_time_as_string(e[1]), 
                                          get_unix_time_as_string(e[2]), 
