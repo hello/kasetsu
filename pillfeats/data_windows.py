@@ -1,16 +1,10 @@
 #!/usr/bin/python
 from numpy import *
 import time
-import datetime
 
-def get_as_unix_time(date_time):
-    return time.mktime(date_time.timetuple())
 
 def data_to_windows(data,  period_in_seconds, min_m_val = None):
-    #t = zeros((len(data[0]), )).astype(int)
-    # 
-    #for i in xrange(len(data[0])):
-    #    t[i] = get_as_unix_time(data[0][i])
+
     t = array(data[0])    
     
     light = array(data[1])

@@ -22,7 +22,7 @@ save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 250
 k_min_num_days_of_sense_data = 5
-k_min_date = '2015-01-01'
+k_min_date = '2015-01-28'
 k_min_m_val = 4.0
 
 k_default_energy = 50
@@ -38,7 +38,7 @@ wake_states = [0, 1, 2, 6, 7]
 sleep_states = [3, 4, 5]
 
 def get_unix_time_as_datetime(unix_time):
-    return datetime.datetime.fromtimestamp(unix_time)
+    return datetime.datetime.utcfromtimestamp(unix_time)
     
 def get_unix_time_as_string(unix_time): 
     return get_unix_time_as_datetime(unix_time).isoformat(' ')   
@@ -73,7 +73,9 @@ def get_sleep_times(t, path):
     n = len(path)
     
     line = []
+    indices = []
     events = []
+    events2 = []
     
     first = False
     
@@ -85,20 +87,29 @@ def get_sleep_times(t, path):
         
         if current in on_bed_states and prev in not_on_bed_states:
             line.append((tprev))
+            indices.append(prev)
+            indices.append(current)
+
             first = True
 
         if current in sleep_states and prev in wake_states and first:
             line.append((tprev))
+            indices.append(prev)
+            indices.append(current)
 
         if current in wake_states and prev in sleep_states and first:
             line.append((tprev))
+            indices.append(prev)
+            indices.append(current)
             
         if current in not_on_bed_states and prev in on_bed_states and first:
             line.append((tprev))
             events.append(copy.deepcopy(line))
+            events2.extend(copy.deepcopy(indices))
             line = []
+            indices = []
             
-    return events
+    return events, events2
 
 
         
@@ -231,29 +242,35 @@ if __name__ == '__main__':
         
         seg = array(seg)
         path = hmm.decode(seg)
+        model_cost = hmm.forwardbackward(seg)
+        path_cost = hmm.evaluate_path_cost(seg, path, len(seg))
+        limit = 3.0 * mean(path_cost)
+        score = sum(path_cost > limit)
         
-        events = get_sleep_times(t, path)   
-        
-        timezone_offset = -8 * 3600.0 
+        events, transition_indices = get_sleep_times(t, path)   
 
+        
+        print path_cost[transition_indices]
+        
         sleep_time_strings = []
         for e in events:
-            sleep_time_strings.append(  [get_unix_time_as_string(e[0] + timezone_offset), 
-                                         get_unix_time_as_string(e[1] + timezone_offset), 
-                                         get_unix_time_as_string(e[2] + timezone_offset), 
-                                         get_unix_time_as_string(e[3] + timezone_offset), 
+            print e
+            sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
+                                         get_unix_time_as_string(e[1]), 
+                                         get_unix_time_as_string(e[2]), 
+                                         get_unix_time_as_string(e[3]), 
                                          (e[2] - e[1]) / 3600.0] )
         
         good_times = []
         for s in sleep_time_strings:
-            if s[4] > 3.0:
+            if s[4] > 2.0:
                 good_times.append(s)
                 
         for s in good_times:
             print s
 
         if outfile == None:
-            t2 = [get_unix_time_as_datetime(tt + timezone_offset) for tt in t]
+            t2 = [get_unix_time_as_datetime(tt) for tt in t]
             figure(1)
             ax = subplot(2, 1, 1)
             plot(t2, l)
@@ -262,12 +279,14 @@ if __name__ == '__main__':
             plot(t2, log(energy + 1.0))
             legend(['log light', 'pill wake counts', 'log sound counts', 'log energy'])
             
-            title(key)
+            title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
             grid('on')
             
             subplot(2, 1, 2, sharex=ax)
             plot(t2, path, 'k.-')
+            #plot(t2, path_cost, 'ro')
             grid('on')
+            
             show()
         
       

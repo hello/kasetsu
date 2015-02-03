@@ -2,15 +2,15 @@
 
 import psycopg2
 import time
-import datetime
+import calendar
 import json
 
 k_pill_table = 'tracker_motion_master'
 k_sensor_table = 'device_sensors_master'
 
 def get_as_unix_time(date_time):
-    return time.mktime(date_time.timetuple())
-
+    return calendar.timegm(date_time.utctimetuple())
+    
 def get_common(a, b, keya, keyb):
     newdict = {}
     
@@ -41,6 +41,9 @@ class DataGetter(object):
         
         if not ready:
             self.conn = psycopg2.connect(dbname=self.dbname,user=self.user,host=self.host)
+            c = self.conn.cursor()
+            c.execute("""SET TIME ZONE Zulu;""")
+            c.close()
         
     def deinitialize(self):
         self.conn.close()
@@ -62,8 +65,10 @@ class DataGetter(object):
         
         cur = self.conn.cursor()
         
+        cur.execute("""SET TIME ZONE Zulu;""")
+        
         query = """
-         
+        
         SELECT 
             device_sensors_master.account_id,
             device_sensors_master.ts,
@@ -79,7 +84,7 @@ class DataGetter(object):
                 device_sensors_master.ts = tracker_motion_master.ts
                 
         WHERE
-            device_sensors_master.ts > \'%s\'
+            device_sensors_master.ts > \'%s\'::timestamp with time zone
         ORDER BY
             device_sensors_master.account_id,device_sensors_master.ts
             

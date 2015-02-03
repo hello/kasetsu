@@ -12,7 +12,7 @@ pill_url = 'https://dev-api.hello.is/v1/datascience/admin/pill/'
 label_url = 'https://dev-api.hello.is/v1/datascience/label/'
 auth = '10.d812154f46e641eeb70386155b977cb6'
 k_num_days = 15
-k_emails = ['benjo4@sayhello.com','delisa+dvt@sayhello.com']
+k_emails = ['jimmy5570@sayhello.com','benjo4@sayhello.com','delisa+dvt@sayhello.com']
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
