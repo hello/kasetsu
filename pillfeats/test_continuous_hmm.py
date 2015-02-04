@@ -22,7 +22,7 @@ save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 250
 k_min_num_days_of_sense_data = 5
-k_min_date = '2015-01-1'
+k_min_date = '2015-01-20'
 
 k_default_energy = 50
 
@@ -30,10 +30,11 @@ k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
+k_min_sleep_duration_hours = 1.5
 
-not_on_bed_states = [0, 7]
-on_bed_states = [1, 2, 3, 4, 5, 6]
-wake_states = [0, 1, 2, 6, 7]
+not_on_bed_states = [0, 8]
+on_bed_states = [1, 2, 3, 4, 5, 6, 7]
+wake_states = [0, 1, 2, 6, 7, 8]
 sleep_states = [3, 4, 5]
 
 def get_unix_time_as_datetime(unix_time):
@@ -135,25 +136,27 @@ if __name__ == '__main__':
     # 7 - woke up (light, no activity)
     
     A = array([
-    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.10],
-    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00],
-    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.80, 0.10, 0.05, 0.05, 0.00], 
-    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
-    [0.05, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05], 
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.10], 
-    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.75]
+    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.10],#off bed (dark)
+    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00],#reading (light)
+    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00],#reading (dark)
+    [0.00, 0.00, 0.00, 0.75, 0.10, 0.05, 0.05, 0.05, 0.00],#sleeping 
+    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00, 0.00],#disturbed sleep
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05],#sleep in the light
+    [0.05, 0.00, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05],#woke up (low activity, high magnitude)
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.05, 0.75, 0.10],#woke up (high activity, high magnitude)
+    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.75] #off bed (light)
 
     ])
              
              
-    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts
-    means = [[1.0, 6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0],
-             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.01]]
+    means = [[1.0,  6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0, 6.0 ],
+             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 1.0, 8.0, 0.01], 
+             [0.10,  6.0, 6.0, 4.0, 6.0, 4.0, 8.0, 8.0, 0.10 ]]
     
-    hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
+    hmm = PoissonHMM(9,3, A,pi0, means, verbose=True )
     
     
     data = pull_data()
@@ -180,6 +183,9 @@ if __name__ == '__main__':
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
         l = (log(l + 1.0)).astype(int)
+        energy[where(energy < 0)] = 0.0
+        energy = log(energy + 1.0).astype(int)
+        
         '''
         plot(t, c)
         plot(t, log(l + 10.0))
@@ -187,7 +193,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i]])
+            flat_seg.append([l[i], c[i], energy[i]])
 
         count += 1
         
@@ -231,6 +237,8 @@ if __name__ == '__main__':
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
         l = (log(l + 1.0)).astype(int)
+        energy[where(energy < 0)] = 0.0
+        energy = log(energy + 1.0).astype(int)
         '''
         plot(t, c)
         plot(t, log(l + 10.0))
@@ -239,7 +247,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i]])
+            seg.append([l[i], c[i], energy[i]])
         
         seg = array(seg)
         
@@ -261,13 +269,23 @@ if __name__ == '__main__':
         events, transition_indices = get_sleep_times(t, path)   
 
         sleep_time_strings = []
+        good_events = []
         for e in events:
             if len(e) >= 4:
-                sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
+                sleep_duration = (e[2] - e[1]) / 3600.0
+                
+                if sleep_duration > k_min_sleep_duration_hours:
+                
+                    sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
                                          get_unix_time_as_string(e[1]), 
                                          get_unix_time_as_string(e[2]), 
                                          get_unix_time_as_string(e[3]), 
-                                         (e[2] - e[1]) / 3600.0] )
+                                         sleep_duration] )
+                                         
+                    good_events.append(sleep_duration)
+                    
+        
+        events = good_events
         
         for s in sleep_time_strings:
             print s
@@ -279,7 +297,7 @@ if __name__ == '__main__':
             plot(t2, l)
             plot(t2, c)
             plot(t2, log2(sc + 1.0))
-            plot(t2, log(energy + 1.0))
+            plot(t2, energy)
             legend(['log light', 'pill wake counts', 'log sound counts', 'log energy'])
             
             title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
