@@ -282,7 +282,7 @@ if __name__ == '__main__':
                                          get_unix_time_as_string(e[3]), 
                                          sleep_duration] )
                                          
-                    good_events.append(sleep_duration)
+                    good_events.append(e)
                     
         
         events = good_events
