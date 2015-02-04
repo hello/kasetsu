@@ -105,8 +105,9 @@ class _BaseHMM(object):
             ptransition = self.A[istate, istate2]
             pobs = self.B_map[path[t]][t]
             
-            p[t] = p[t - 1] - numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
-            
+            #p[t] = p[t - 1] - numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
+            #p[t] = -numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
+            p[t] = -numpy.log(pobs + 1e-15)
         return p
 
     def _calcbeta(self,observations, c):
@@ -134,14 +135,20 @@ class _BaseHMM(object):
         
         return beta
     
-    def decode(self, observations, npadding=0, path_cost_allowance = k_cost_budget):
+    def decode(self, observations, npadding=0, path_cost_allowance = -1):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
         This method is usually used to predict the next state after training. 
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
-        return self._viterbi(observations, len(observations), npadding, path_cost_allowance)
+        
+        ret = self._viterbi(observations, len(observations), npadding, path_cost_allowance)
+        
+        if path_cost_allowance  == -1:
+            return ret.keys()[0]
+        else:
+            return ret
     
     #given original viterbi path, deviate from it
     #starting at tstart, and moving towards the max incming in state idxstart at that time
