@@ -9,7 +9,7 @@ import numpy
 import numpy.linalg
 import scipy.stats
 
-k_min_variance = 1e-4
+k_min_mean = 0.01
 
 class PoissonHMM(_BaseHMM):
     '''
@@ -116,6 +116,13 @@ class PoissonHMM(_BaseHMM):
             
                 newmeans[d][j] = numer/denom
         
+        
+        
+        for j in xrange(self.n):
+            for d in xrange(self.d):
+                if newmeans[d][j] < k_min_mean:
+                    newmeans[d][j] = k_min_mean
+                    
         print newmeans
         return newmeans
     
