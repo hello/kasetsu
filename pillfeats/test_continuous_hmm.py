@@ -31,11 +31,14 @@ k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
 k_min_sleep_duration_hours = 1.5
+light_sleep_limit = 6 #periods
 
-not_on_bed_states = [0, 8]
-on_bed_states = [1, 2, 3, 4, 5, 6, 7]
-wake_states = [0, 1, 2, 6, 7, 8]
+not_on_bed_states = [0, 7]
+on_bed_states = [1, 2, 3, 4, 5, 6]
+wake_states = [0, 1, 2, 6, 7]
 sleep_states = [3, 4, 5]
+
+forbidden_list = [1781, ]
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -64,50 +67,80 @@ def pull_data():
 
     return data
 
+mode_on_bed = 'a'
+mode_off_bed = 'b'
+mode_sleeping = 'c'
+mode_not_sleeping = 'd'
 
 def get_sleep_times(t, path):
-    n = len(path)
-    
-    line = []
-    indices = []
     events = []
-    events2 = []
+    light_sleep_state = 5
+    light_sleep_count = 0
     
-    first = False
+    sleep_times = [0, 0]
+    bed_times = [0, 0]
     
-    for i in xrange(1, n):
-        prev = path[i-1]
-        current = path[i]
-        tprev = t[i-1]
-        tcurrent = t[i]
+    bed_mode = mode_off_bed
+    sleep_mode = mode_not_sleeping
+    
+    for idx in xrange(len(path)):
+        state = path[idx]
         
-        if current in on_bed_states and prev in not_on_bed_states:
-            line.append((tprev))
-            indices.append(prev)
-            indices.append(current)
-
-            first = True
-
-        if current in sleep_states and prev in wake_states and first:
-            line.append((tprev))
-            indices.append(prev)
-            indices.append(current)
-
-        if current in wake_states and prev in sleep_states and first:
-            line.append((tprev))
-            indices.append(prev)
-            indices.append(current)
             
-        if current in not_on_bed_states and prev in on_bed_states and first:
-            line.append((tprev))
-            events.append(copy.deepcopy(line))
-            events2.extend(copy.deepcopy(indices))
-            line = []
-            indices = []
+        #track how long in the light sleep state
+        if state == light_sleep_state:
+            light_sleep_count += 1
             
-    return events, events2
+        if state in wake_states:
+            new_sleep_mode = mode_not_sleeping
+            
+        if state in sleep_states:
+            new_sleep_mode = mode_sleeping;
 
+            
+        #####################
+        #off bed? zero out light sleep counter
+        if state in not_on_bed_states:
+            light_sleep_count = 0
+            new_bed_mode = mode_off_bed
 
+        if state in on_bed_states:
+            new_bed_mode = mode_on_bed
+        
+        #################################
+        #too many light sleep modes? get up.
+        if light_sleep_count >= light_sleep_limit:
+            new_sleep_mode = mode_not_sleeping;   
+            
+        #did you just start sleeping?
+        if new_sleep_mode == mode_sleeping and sleep_mode == mode_not_sleeping:
+            sleep_times[0] = t[idx]
+            
+        #did you just stop sleeping?
+        if new_sleep_mode == mode_not_sleeping and sleep_mode == mode_sleeping:
+            sleep_times[1] = t[idx]
+            
+        #did you just get on the bed?
+        if new_bed_mode == mode_on_bed and bed_mode == mode_off_bed:
+            bed_times[0] = t[idx]
+            
+            
+        #did you just get off the bed?
+        if new_bed_mode == mode_off_bed and bed_mode == mode_on_bed:
+            bed_times[1] = t[idx]
+            
+            event = [bed_times[0] ,  sleep_times[0] ,  sleep_times[1] , bed_times[1]]
+
+            if bed_times[0] <= sleep_times[0] < sleep_times[1] <= bed_times[1]:
+                events.append(copy.deepcopy(event))
+            else:
+                print 'bad event!', event
+                
+        bed_mode = new_bed_mode
+        sleep_mode = new_sleep_mode
+            
+        
+    return events
         
 
 if __name__ == '__main__':
@@ -136,27 +169,25 @@ if __name__ == '__main__':
     # 7 - woke up (light, no activity)
     
     A = array([
-    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.10],#off bed (dark)
-    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00],#reading (light)
-    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00],#reading (dark)
-    [0.00, 0.00, 0.00, 0.75, 0.10, 0.05, 0.05, 0.05, 0.00],#sleeping 
-    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00, 0.00],#disturbed sleep
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05],#sleep in the light
-    [0.05, 0.00, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05],#woke up (low activity, high magnitude)
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.05, 0.75, 0.10],#woke up (high activity, high magnitude)
-    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.75] #off bed (light)
+    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.10],
+    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00],
+    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.80, 0.10, 0.05, 0.05, 0.00], 
+    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
+    [0.05, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05], 
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.10], 
+    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.75]
 
     ])
              
              
-    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts
-    means = [[1.0,  6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0, 6.0 ],
-             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 1.0, 8.0, 0.01], 
-             [0.10,  6.0, 6.0, 4.0, 6.0, 4.0, 8.0, 8.0, 0.10 ]]
+    means = [[1.0, 6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0],
+             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.01]]
     
-    hmm = PoissonHMM(9,3, A,pi0, means, verbose=True )
+    hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
     
     
     data = pull_data()
@@ -193,7 +224,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i], energy[i]])
+            flat_seg.append([l[i], c[i]])
 
         count += 1
         
@@ -247,7 +278,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i], energy[i]])
+            seg.append([l[i], c[i]])
         
         seg = array(seg)
         
@@ -260,13 +291,13 @@ if __name__ == '__main__':
         
         path = myhmm.decode(seg)
         model_cost = myhmm.forwardbackward(seg)
-        model_cost /= len(seg)
+        model_cost /= len(seg) / myhmm.d
         print 'AVERAGE MODEL COST = %f' % model_cost
         path_cost = myhmm.evaluate_path_cost(seg, path, len(seg))
         limit = 3.0 * mean(path_cost)
         score = sum(path_cost > limit)
         
-        events, transition_indices = get_sleep_times(t, path)   
+        events = get_sleep_times(t, path)   
 
         sleep_time_strings = []
         good_events = []
