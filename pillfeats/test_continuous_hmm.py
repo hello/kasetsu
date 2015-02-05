@@ -153,6 +153,7 @@ if __name__ == '__main__':
     parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
     parser.add_argument("--adapt", action='store_true', default=False)
     parser.add_argument('--train', action='store_true', default=False)
+    parser.add_argument('--saveadapt', action='store_true', default=False)
 
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
@@ -287,6 +288,14 @@ if __name__ == '__main__':
         if args.adapt:
             print ('ADAPTING for %s' % str(key))
             myhmm.train(seg, args.iter)
+            
+            if args.saveadapt:
+                filename = 'HMM' + str(key) + '.json'
+                print ('saving to %s' % filename)
+
+                f = open(filename, 'w')
+                json.dump(myhmm.to_dict(), f)
+                f.close()
             
         
         path = myhmm.decode(seg)
