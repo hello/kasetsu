@@ -38,7 +38,7 @@ on_bed_states = [1, 2, 3, 4, 5, 6]
 wake_states = [0, 1, 2, 6, 7]
 sleep_states = [3, 4, 5]
 
-forbidden_list = [1781, ]
+forbidden_keys = [1781]
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -151,9 +151,9 @@ if __name__ == '__main__':
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
     parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
-    parser.add_argument("--adapt", action='store_true', default=False)
-    parser.add_argument('--train', action='store_true', default=False)
-    parser.add_argument('--saveadapt', action='store_true', default=False)
+    parser.add_argument("--adapt", action='store_true', default=False, help='compute a model for each individual user ids')
+    parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
+    parser.add_argument('--saveadapt', action='store_true', default=False, help='save the adaptation for each user')
 
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
@@ -197,6 +197,9 @@ if __name__ == '__main__':
     flat_seg = []
     packaged_info = []
     count = 0
+    hmm_dict = {}
+    dict_filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
+
     
     if args.user != None:
         print args.user
@@ -212,6 +215,9 @@ if __name__ == '__main__':
     
     for key in data:
         
+        if key in forbidden_keys:
+            continue 
+            
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
         l = (log(l + 1.0)).astype(int)
@@ -238,19 +244,23 @@ if __name__ == '__main__':
     
     if args.model != None:
         f = open(args.model, 'r')
-        hmm.from_dict(json.load(f))
+        hmm_dict = json.load(f)
+        hmm.from_dict(hmm_dict['default'])
+
     
     
     if args.train == True:
         print ('TRAINING')
         hmm.train(flat_seg, args.iter)
         
-        filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
-        print ('saving to %s' % filename)
+        print ('saving to %s' % dict_filename)
 
-        f = open(filename, 'w')
-        json.dump(hmm.to_dict(), f)
+        hmm_dict['default'] = hmm.to_dict()
+
+        f = open(dict_filename, 'w')
+        json.dump(hmm_dict, f)
         f.close()
+        
     
     print hmm.A
     print hmm.thetas
@@ -265,6 +275,9 @@ if __name__ == '__main__':
         
     sleep_segments = []
     for key in keys:
+        
+        if key in forbidden_keys:
+            continue
         
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
         l[where(l < 0)] = 0.0
@@ -284,17 +297,21 @@ if __name__ == '__main__':
         seg = array(seg)
         
         myhmm = copy.deepcopy(hmm)
+        
+        if hmm_dict.has_key(key):
+            print 'USING CUSTOM MODEL for key=%s' % (str(key))
+            myhmm.from_dict(hmm_dict[key])
+        else:
+            print 'USING DEFAULT MODEL for key=%s' % (str(key))
 
         if args.adapt:
             print ('ADAPTING for %s' % str(key))
             myhmm.train(seg, args.iter)
             
             if args.saveadapt:
-                filename = 'HMM' + str(key) + '.json'
-                print ('saving to %s' % filename)
-
-                f = open(filename, 'w')
-                json.dump(myhmm.to_dict(), f)
+                hmm_dict[key] = myhmm.to_dict()
+                f = open(dict_filename, 'w')
+                json.dump(hmm_dict, f)
                 f.close()
             
         
