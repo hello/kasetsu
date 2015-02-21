@@ -28,8 +28,6 @@ class MyPca():
         #        E'*(X - xm)'*(X - xm)*E = lambda
         #  post-multiply by eigenvectors to get transformed
         #print ((P2 + 1e-6)*10).astype('int')
-        print v
-        print w
         transform = v[:, 0:ndimsout]
         
         self.covdiags_ = d
