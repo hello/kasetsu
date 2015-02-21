@@ -20,9 +20,9 @@ import data_windows
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 250
-k_min_num_days_of_sense_data = 5
-k_min_date = '2015-01-20'
+k_min_count_pill_data = 10s
+k_min_num_days_of_sense_data = 1
+k_min_date = '2015-02-15'
 
 k_default_energy = 50
 
@@ -57,7 +57,7 @@ def pull_data():
         data = json.load(f)
         f.close()
     else:
-        d = dbdata.DataGetter('benjo','benjo','localhost')
+        d = dbdata.DataGetter('benjo_sensors_1','benjo','localhost')
         print 'querying DB'
         data = d.get_all_minute_data(k_min_date,1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
         f = open(save_filename, 'w')

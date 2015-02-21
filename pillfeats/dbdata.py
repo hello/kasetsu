@@ -96,7 +96,9 @@ class DataGetter(object):
             LEFT OUTER JOIN tracker_motion_master ON 
                 device_sensors_master.account_id = tracker_motion_master.account_id
                 AND 
-                device_sensors_master.ts = tracker_motion_master.ts
+                   (device_sensors_master.ts, interval '30 second') 
+                  OVERLAPS 
+                    (tracker_motion_master.ts ,interval '30 second') 
                 
         WHERE
             device_sensors_master.ts > \'%s\'
@@ -105,7 +107,7 @@ class DataGetter(object):
             
         """ % (datestr)
         
-        #print query
+        print query
         
         cur.execute(query)
         records = cur.fetchall()
