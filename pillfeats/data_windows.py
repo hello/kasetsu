@@ -10,6 +10,7 @@ def data_to_windows(data,  period_in_seconds):
     light = array(data[1])
     sounds = array(data[2])
     m = array(data[3])
+    w = array(data[4])
     
     last_idx = t[0] / period_in_seconds;
     
@@ -18,11 +19,13 @@ def data_to_windows(data,  period_in_seconds):
     out_sounds = []
     out_light = []
     out_energy = []
+    out_waves = []
     count = 0
     pill_count = 0
     lv = 0
     scount = 0
     energy = 0
+    waves = 0;
     for i in xrange(len(data[0])):
         idx = int(t[i] / period_in_seconds)
         
@@ -32,6 +35,7 @@ def data_to_windows(data,  period_in_seconds):
                 energy = m[i]
 
         count += 1
+        waves += w[i]
         lv += light[i]
         scount += sounds[i]
         if idx == last_idx:
@@ -43,18 +47,19 @@ def data_to_windows(data,  period_in_seconds):
             out_counts.append(pill_count)
             out_sounds.append(scount)
             out_energy.append(energy)
-            
+            out_waves.append(waves)
             count = 0
             pill_count = 0
             lv = 0
             scount = 0
             energy = 0
+            waves = 0;
             
         last_idx = idx
 
         
     
-    return (array(out_times),array(out_light), array(out_counts), array(out_sounds), array(out_energy))
+    return (array(out_times),array(out_light), array(out_counts), array(out_sounds), array(out_energy), array(out_waves))
     
     
 def windows_to_segments(times,lights, counts, period_in_seconds, segment_spacing_in_seconds, min_segment_length_in_seconds, segment_padding_in_seconds):
