@@ -20,11 +20,9 @@ import data_windows
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 10s
+k_min_count_pill_data = 10
 k_min_num_days_of_sense_data = 1
 k_min_date = '2015-02-15'
-
-k_default_energy = 50
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -33,12 +31,15 @@ k_segment_padding_in_seconds = 180 * 60.0
 k_min_sleep_duration_hours = 1.5
 light_sleep_limit = 6 #periods
 
+k_raw_light_to_lux = 125.0 / (2 ** 16)
+k_lux_multipler = 4.0
+
 not_on_bed_states = [0, 7]
 on_bed_states = [1, 2, 3, 4, 5, 6]
 wake_states = [0, 1, 2, 6, 7]
 sleep_states = [3, 4, 5]
 
-forbidden_keys = [1781]
+forbidden_keys = []
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -171,10 +172,10 @@ if __name__ == '__main__':
     
     A = array([
     [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.10],
-    [0.00, 0.80, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00],
-    [0.00, 0.10, 0.80, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.50, 0.10, 0.40, 0.00, 0.00, 0.00, 0.00],
+    [0.00, 0.10, 0.50, 0.40, 0.00, 0.00, 0.00, 0.00], 
     [0.00, 0.00, 0.00, 0.80, 0.10, 0.05, 0.05, 0.00], 
-    [0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.40, 0.50, 0.05, 0.05, 0.00], 
     [0.05, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05], 
     [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.10], 
     [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.75]
@@ -184,9 +185,11 @@ if __name__ == '__main__':
              
     pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
-    #light, then counts
-    means = [[1.0, 6.0, 1.0, 1.0, 1.0, 6.0, 6.0, 6.0],
-             [0.01, 6.0, 6.0, 1.0, 4.0, 1.0, 8.0, 0.01]]
+    #light, then counts, then energy, then sound
+    means = [[0.1, 4.0, 0.1, 0.1, 0.1, 2.0, 2.0, 3.0],
+             [0.01, 8.0, 8.0, 3.0, 4.0, 1.0, 8.0, 0.01]]
+             #[0.01, 2.0, 2.0, 2.0, 3.0, 2.0, 3.0, 0.01], 
+             #[0.01, 4.0, 4.0, 2.0, 4.0, 3.0, 3.0, 0.01]]
     
     hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
     
@@ -219,10 +222,13 @@ if __name__ == '__main__':
             continue 
             
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        sc[where(sc < 0)] = 0.0
+        sc = log2(sc + 1.0).astype(int)
         l[where(l < 0)] = 0.0
-        l = (log(l + 1.0)).astype(int)
+        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)).astype(int)
         energy[where(energy < 0)] = 0.0
-        energy = log(energy + 1.0).astype(int)
+        energy = log2((energy + 500)/500).astype(int)
+
         
         '''
         plot(t, c)
@@ -231,7 +237,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i]])
+            flat_seg.append([l[i], c[i], energy[i], sc[i]])
 
         count += 1
         
@@ -280,10 +286,14 @@ if __name__ == '__main__':
             continue
         
         t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        sc[where(sc < 0)] = 0.0
+        sc = log2(sc + 1.0).astype(int)
+
         l[where(l < 0)] = 0.0
-        l = (log(l + 1.0)).astype(int)
+        l = (log2(l*k_raw_light_to_lux*k_lux_multipler + 1.0)).astype(int)
         energy[where(energy < 0)] = 0.0
-        energy = log(energy + 1.0).astype(int)
+        energy = log2((energy + 500)/500).astype(int)
+        
         '''
         plot(t, c)
         plot(t, log(l + 10.0))
@@ -292,7 +302,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i]])
+            seg.append([l[i], c[i], energy[i], sc[i]])
         
         seg = array(seg)
         
@@ -353,7 +363,7 @@ if __name__ == '__main__':
             ax = subplot(2, 1, 1)
             plot(t2, l)
             plot(t2, c)
-            plot(t2, log2(sc + 1.0))
+            plot(t2, sc)
             plot(t2, energy)
             legend(['log light', 'pill wake counts', 'log sound counts', 'log energy'])
             
