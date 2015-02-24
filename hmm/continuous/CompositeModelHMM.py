@@ -17,28 +17,29 @@ k_min_gaussian_variance = 0.01
 k_max_gaussian_variance = 100
 
 
-def model_factory(model_type, model_data, obsnum):
+def model_factory(model_type, model_data):
     
     if model_type == 'uniform':
         print 'creating uniform model'
-        return UniformModel(obsnum, model_data);
+        return UniformModel(model_data);
     elif model_type == 'poisson':
         print 'creating poisson model'
-        return PoissonModel(obsnum, model_data)
+        return PoissonModel(model_data)
     elif model_type == 'gaussian':
-        return OneDimensionalGaussianMixture(obsnum, model_data)
+        return OneDimensionalGaussianMixture(model_data)
     elif model_type == 'discrete_alphabet':
-        return DiscreteAlphabetModel(obsnum, model_data)
+        print 'creating discrete model'
+        return DiscreteAlphabetModel(model_data)
         
     return None
 
 class PoissonModel(object):
-    def __init__(self, obsnum, data):
-        self.obsnum = obsnum
-        self.dist = scipy.stats.poisson(data)
-        self.mean = data
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.mean = data['mean']
+        self.dist = scipy.stats.poisson(self.mean)
         
-
+                
     def eval(self, x):
         data = numpy.round(x[:, self.obsnum]).astype(int)
         the_eval = self.dist.pmf(data)
@@ -69,13 +70,13 @@ class PoissonModel(object):
 
         
     def to_dict(self):
-        return {'model_type' : 'poisson', 'model_data' : self.mean}
+        return {'model_type' : 'poisson', 'model_data' : self.mean,  'obs_num' : self.obsnum}
         
 
         
 class OneDimensionalGaussianMixture(object):
-    def __init__(self, obsnum, data):
-        self.obsnum = obsnum
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
         self.data = data
         
     def eval_gaussian(self, mean, variance, x):
@@ -157,13 +158,13 @@ class OneDimensionalGaussianMixture(object):
 
         
     def to_dict(self):
-        return {'model_type' : 'poisson', 'model_data' : self.mean}
+        return {'model_type' : 'poisson', 'model_data' : self.mean,  'obs_num' : self.obsnum}
         
         
 class UniformModel(object):
-    def __init__(self, obsnum, data):
-        self.obsnum = obsnum
-        self.mean = data
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.mean = data['mean']
         
     def eval(self, x):
         return self.mean
@@ -177,58 +178,14 @@ class UniformModel(object):
         return "uni {:<10.2f}".format(self.mean)
 
     def to_dict(self):
-        return {'model_type' : 'uniform', 'model_data' : self.mean}
-       
-class CompositeModel(object):
-    def __init__(self):
-        self.models = []
-        
-    def add_model(self, model_type, model_data, obsnum):
-        model = model_factory(model_type, model_data, obsnum)
-        
-        if model is not None:
-            self.models.append(model)
-            
-    def add_model_from_dict(self, model_dict, obsnum):
-        model_type = model_dict['model_type']
-        model_data = model_dict['model_data']
-            
-        self.add_model(model_type, model_data, obsnum)
-        
-        
-            
-    def eval(self, x):
-        liks = numpy.ones((x.shape[0],))
-        
-        for model in self.models:
-            liks2 = model.eval(x)
-            liks = liks * liks2
-        
-        return liks
-        
-    def reestimate(self, x, gammaForThisState):
-        for i in range(len(self.models)):
-            self.models[i].reestimate(x, gammaForThisState)
-            
-    def to_dict(self):
-        my_dicts = []
-        for model in self.models:
-            my_dicts.append(model.to_dict())
-            
-        return my_dicts
-        
-    def get_status(self):
-        status_line  = []
-        for model in self.models:
-            status_line.append(model.get_status())
-            
-        return ",".join(status_line)
+        return {'model_type' : 'uniform', 'model_data' : self.mean,  'obs_num' : self.obsnum}
+      
     
 class DiscreteAlphabetModel(object):
-    def __init__(self, obsnum, data):
-        self.obsnum = obsnum
-        self.data = data
-        
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.data = data['alphabet_probs']
+                
     def eval(self, x):
         xvec = x[:, self.obsnum]
         
@@ -263,8 +220,54 @@ class DiscreteAlphabetModel(object):
         return ",".join([("%.2f" % f) for f in self.data])
 
     def to_dict(self):
-        return {'model_type' : 'discrete_alphabet', 'model_data' : self.data}
+        return {'model_type' : 'discrete_alphabet', 'model_data' : self.data,  'obs_num' : self.obsnum}
         
+        
+class CompositeModel(object):
+    def __init__(self):
+        self.models = []
+        
+    def add_model(self, model_type, model_data):
+        model = model_factory(model_type, model_data)
+        
+        if model is not None:
+            self.models.append(model)
+            
+    def add_model_from_dict(self, model_dict):
+        model_type = model_dict['model_type']
+        model_data = model_dict['model_data']
+            
+        self.add_model(model_type, model_data)
+        
+        
+            
+    def eval(self, x):
+        liks = numpy.ones((x.shape[0],))
+        
+        for model in self.models:
+            liks2 = model.eval(x)
+            liks = liks * liks2
+        
+        return liks
+        
+    def reestimate(self, x, gammaForThisState):
+        for i in range(len(self.models)):
+            self.models[i].reestimate(x, gammaForThisState)
+            
+    def to_dict(self):
+        my_dicts = []
+        for model in self.models:
+            my_dicts.append(model.to_dict())
+            
+        return my_dicts
+        
+    def get_status(self):
+        status_line  = []
+        for model in self.models:
+            status_line.append(model.get_status())
+            
+        return ",".join(status_line)
+
 class CompositeModelHMM(_BaseHMM):
 
     def __init__(self,model_list = [], A=None,pi=None,precision=numpy.double,verbose=False):
@@ -298,7 +301,7 @@ class CompositeModelHMM(_BaseHMM):
                 models_for_this_state = model_list[i]
                 print models_for_this_state
                 for j in xrange(len(models_for_this_state)):
-                    self.models[i].add_model_from_dict(models_for_this_state[j], j)
+                    self.models[i].add_model_from_dict(models_for_this_state[j])
     
     def _mapB(self,observations):
         self.B_map = numpy.zeros( (self.n,observations.shape[0]), dtype=self.precision)

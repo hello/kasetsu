@@ -144,14 +144,14 @@ def get_sleep_times(t, path):
     return events
         
 
-def make_poisson(mean):
-    return {'model_type' : 'poisson' ,  'model_data' : mean}
+def make_poisson(mean, obsnum):
+    return {'model_type' : 'poisson' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
     
-def make_uniform(mean):
-    return {'model_type' : 'uniform' ,  'model_data' : mean}
+def make_uniform(mean, obsnum):
+    return {'model_type' : 'uniform' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
     
-def make_discrete(dist):
-    return {'model_type' : 'discrete_alphabet' ,  'model_data' : dist}
+def make_discrete(dist, obsnum):
+    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dist}}
 
 if __name__ == '__main__':
     
@@ -211,16 +211,16 @@ if __name__ == '__main__':
     med_waves = [0.5, 0.5]
     high_waves = [0.1, 0.9]
     
-    #                 light,         counts,           waves,              sound,                energy
-    model0 = [make_poisson(low_light), make_poisson(no_motion), make_discrete(low_waves)]
-    model1 = [make_poisson(high_light), make_poisson(no_motion), make_discrete(low_waves)] 
-    model2 = [make_poisson(high_light), make_poisson(high_motion), make_discrete(low_waves) ]
-    model3 = [make_poisson(low_light), make_poisson(high_motion), make_discrete(low_waves)]
-    model4 = [make_poisson(low_light), make_poisson(low_motion), make_discrete(no_waves)]
-    model5 = [make_poisson(low_light), make_poisson(high_motion), make_discrete(no_waves)]
-    model6 = [make_poisson(med_light), make_poisson(low_motion), make_discrete(no_waves)]
-    model7 = [make_poisson(med_light), make_poisson(med_motion), make_discrete(high_waves)]
-    model8 = [make_poisson(high_light), make_poisson(high_motion), make_discrete(low_waves)]
+    #                 light,                        counts,                     waves,                       sound,                energy
+    model0 = [make_poisson(low_light, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2)]
+    model1 = [make_poisson(high_light, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2)] 
+    model2 = [make_poisson(high_light, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2) ]
+    model3 = [make_poisson(low_light, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
+    model4 = [make_poisson(low_light, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
+    model5 = [make_poisson(low_light, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
+    model6 = [make_poisson(med_light, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
+    model7 = [make_poisson(med_light, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
+    model8 = [make_poisson(high_light, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
 
 
     models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
