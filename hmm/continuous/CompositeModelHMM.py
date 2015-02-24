@@ -8,8 +8,13 @@ from hmm._BaseHMM import _BaseHMM
 import numpy
 import numpy.linalg
 import scipy.stats
+import copy
+import numpy.random
+
 
 k_min_poisson_mean = 0.01
+k_min_gaussian_variance = 0.01
+k_max_gaussian_variance = 100
 
 
 def model_factory(model_type, model_data, obsnum):
@@ -20,6 +25,10 @@ def model_factory(model_type, model_data, obsnum):
     elif model_type == 'poisson':
         print 'creating poisson model'
         return PoissonModel(obsnum, model_data)
+    elif model_type == 'gaussian':
+        return OneDimensionalGaussianMixture(obsnum, model_data)
+    elif model_type == 'discrete_alphabet':
+        return DiscreteAlphabetModel(obsnum, model_data)
         
     return None
 
@@ -36,10 +45,7 @@ class PoissonModel(object):
         return the_eval
         
     def reestimate(self, x, gammaForThisState):
-        '''
-        Helper method that performs the Baum-Welch 'M' step
-        for the mixture parameters - 'w', 'means', 'covars'.
-        '''       
+        
         newmean = 0.0
         
         numer = 0.0
@@ -60,6 +66,94 @@ class PoissonModel(object):
         
     def get_status(self):
         return "psn {:<10.2f}".format(self.mean)
+
+        
+    def to_dict(self):
+        return {'model_type' : 'poisson', 'model_data' : self.mean}
+        
+
+        
+class OneDimensionalGaussianMixture(object):
+    def __init__(self, obsnum, data):
+        self.obsnum = obsnum
+        self.data = data
+        
+    def eval_gaussian(self, mean, variance, x):
+        dx = x - mean
+        y = numpy.exp( -(dx*dx) / (2*variance))
+        y[numpy.where(y <= 1e-5)] = 1e-5
+        y /= numpy.sqrt(2*3.14159*variance)
+        return y
+
+    def eval(self, x):
+        weights = self.data['weights']
+        means = self.data['means']
+        variances = self.data['variances']
+        
+        n = len(weights)
+        
+        measvec = x[:, self.obsnum]
+        
+        evals = numpy.ones(measvec.shape)
+        for i in xrange(n):
+            y = weights[i] * self.eval_gaussian(means[i], variances[i], measvec)
+            evals *= y
+        
+        return evals
+        
+    def reestimate(self, x, gammaForThisState):
+        '''
+        Helper method that performs the Baum-Welch 'M' step
+        for the mixture parameters - 'w', 'means', 'covars'.
+        '''       
+        
+        weights = self.data['weights']
+        means = self.data['means']
+        variances = self.data['variances']
+        
+        n = len(weights)
+        
+        newweights = copy.deepcopy(weights)
+        newmeans = copy.deepcopy(means)
+        newvariances = copy.deepcopy(variances)
+        
+        measvec = x[:, self.obsnum]
+        m = measvec.shape[0]
+        
+        total_denom = sum(gammaForThisState)
+            
+        
+        for i in xrange(n):
+            
+            mydenomsum = 0.0
+            mycovsum   = 0.0
+            mymeansum  = 0.0
+            
+            for t in xrange(m):
+                mymeansum += gammaForThisState[t] * measvec[t]
+                dx = measvec[t] - means[i]
+                mycovsum += gammaForThisState[t] * dx*dx
+                mydenomsum += gammaForThisState[t]
+                
+                
+            newweights[i] = mydenomsum / total_denom
+            newvariances[i] = mycovsum / mydenomsum
+            newmeans[i] = mymeansum / mydenomsum
+
+            if newvariances[i] < k_min_gaussian_variance:
+                newvariances[i] = k_min_gaussian_variance
+                
+            if newvariances[i] > k_max_gaussian_variance:
+                newvariances[i] = k_max_gaussian_variance
+
+            
+        
+        self.means = newmeans
+        self.weights = newweights
+        self.variances = newvariances
+        
+    def get_status(self):
+        return "m=%.2f,s=%.2f,w=%f" % (self.means[0], numpy.sqrt(self.variances[0]), self.weights[0])
 
         
     def to_dict(self):
@@ -130,7 +224,47 @@ class CompositeModel(object):
             
         return ",".join(status_line)
     
+class DiscreteAlphabetModel(object):
+    def __init__(self, obsnum, data):
+        self.obsnum = obsnum
+        self.data = data
+        
+    def eval(self, x):
+        xvec = x[:, self.obsnum]
+        
+        ret = numpy.zeros(xvec.shape)
+        xvec = xvec.tolist()
+        
+        for i in xrange(len(xvec)):
+            ret[i] = self.data[xvec[i]]
+        
+        return ret
+        
+    
+    def reestimate(self, x, gammaForThisState):
+        num_obs = x.shape[0]
+        m = len(self.data)
+        xvec = x[:, self.obsnum].tolist()
+        
+        denom = numpy.sum(gammaForThisState)
+        Bnew = copy.deepcopy(self.data)
+        for k in xrange(m):
+            numer = 0.0
+            
+            for t in xrange(num_obs):
+                if xvec[t] == k:
+                    numer += gammaForThisState[t]
+                
+            Bnew[k] = numer/denom    
+         
+        self.data = Bnew
+       
+    def get_status(self):
+        return ",".join([("%.2f" % f) for f in self.data])
 
+    def to_dict(self):
+        return {'model_type' : 'discrete_alphabet', 'model_data' : self.data}
+        
 class CompositeModelHMM(_BaseHMM):
 
     def __init__(self,model_list = [], A=None,pi=None,precision=numpy.double,verbose=False):
@@ -235,9 +369,9 @@ def test():
     
     a.train(obs, 20)
     
-    for model in a.models:
-        for m2 in model.models:
-            print m2.mean
+    print a.means
+    print a.variances
+    print a.weights
             
     print a.A
     
@@ -261,8 +395,76 @@ def test():
 
   
     
+def test_gaussian():
+    numpy.set_printoptions(precision=3, suppress=True, threshold=numpy.nan)
+    print 'testing composite model'
+    A = numpy.array([[0.9, 0.1], 
+                     [0.1, 0.9]])
+                
+                
+    pi = [0.95, 0.05]
+    
+    model1 = [{'model_type' : 'gaussian' ,  'model_data' : {'means' : [2.0], 'variances' : [1.0],  'weights' : [1.0] }}]
+    model2 = [{'model_type' : 'gaussian' ,  'model_data' : {'means' : [8.0], 'variances' : [4.0],  'weights' : [1.0] }}]
+
+    models = [model1, model2]
     
     
+    a = CompositeModelHMM(models, A, pi)
+    obs = numpy.concatenate( (0.5*numpy.random.randn(200, 1), 0.2*numpy.random.randn(200, 1) + 10), axis=0)
+        
+    a.train(obs, 10)
+
+    print a.A
     
-if __name__ == '__main__':
-    test()
+def gen_model(p, n):
+    p2 = numpy.cumsum(numpy.array(p))
+    
+    ret = []
+    for i in xrange(n):
+        peval = numpy.random.rand()
+        for j in xrange(len(p2)):
+            if peval > p2[j]:
+                break;
+                
+        ret.append(j)
+            
+    return ret
+    
+def test_discrete():
+    A = numpy.array([[0.9, 0.1], 
+                     [0.1, 0.9]])
+                     
+    model1 = [{'model_type' : 'discrete_alphabet' ,  'model_data' : [0.8, 0.2]}]
+    model2 = [{'model_type' : 'discrete_alphabet' ,  'model_data' : [0.2, 0.8]}]
+
+    p1 = [0.1, 0.9]
+    p2 = [0.5, 0.5]
+    
+    v = []
+    for i in xrange(20):
+        v1 = gen_model(p1, 25)
+        v2 = gen_model(p2, 25)
+        v.extend(v1)
+        v.extend(v2)
+        
+   
+    v = numpy.array(v).reshape(len(v), 1)
+ 
+    models = [model1, model2]
+    
+    pi = [0.95, 0.05]
+
+    a = CompositeModelHMM(models, A, pi)
+    
+    a.train(v, 20)
+    
+    print a.A
+    
+
+    
+    
+
+    
+    
+

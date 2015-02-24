@@ -34,10 +34,11 @@ light_sleep_limit = 6 #periods
 k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_lux_multipler = 4.0
 
-not_on_bed_states = [0, 8]
-on_bed_states = [1, 2, 3, 4, 5, 6]
-wake_states = [0, 1, 2, 6, 7]
-sleep_states = [3, 4, 5]
+not_on_bed_states = [0, 1]
+on_bed_states = [2, 3, 4, 5, 6, 7, 8]
+wake_states = [0, 1, 2, 3, 7, 8]
+sleep_states = [4, 5, 6]
+light_sleep_state = 6
 
 forbidden_keys = [1057]
 
@@ -75,7 +76,6 @@ mode_not_sleeping = 'd'
 
 def get_sleep_times(t, path):
     events = []
-    light_sleep_state = 5
     light_sleep_count = 0
     
     sleep_times = [0, 0]
@@ -149,6 +149,9 @@ def make_poisson(mean):
     
 def make_uniform(mean):
     return {'model_type' : 'uniform' ,  'model_data' : mean}
+    
+def make_discrete(dist):
+    return {'model_type' : 'discrete_alphabet' ,  'model_data' : dist}
 
 if __name__ == '__main__':
     
@@ -167,43 +170,57 @@ if __name__ == '__main__':
     
     
     #states
-    # 0 - off bed (dark, no activity)
-    # 1 - reading on bed (light, high activity)
-    # 2 - watching movie on bed (dark, high activity)
-    # 3 - sleep (dark, low activity)
-    # 4 - tossing / turning (dark, high activity)
-    # 5 - waking up (light, low activity)
-    # 6 - lazy sunday (light, high activity) 
-    # 7 - woke up (light, no activity)
+    # 0 - off bed #1 (very low activity,low light)
+    # 1 - off bed #2 (very low activity,high light)
+    # 2 - reading on bed (high activity, high light)
+    # 3 - ipad on bed    (high activity, low light)
+    # 4 - sleep (low activity, low light)
+    # 5 - disturbed sleep (high activity, low light)
+    # 6 - late sleep (med light, low activity)
+    # 7 - waking up with alarm (med light, med activity, high wave)
+    # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.10],
-    [0.00, 0.50, 0.10, 0.40, 0.00, 0.00, 0.00, 0.00, 0.00],
-    [0.00, 0.10, 0.50, 0.40, 0.00, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05, 0.05, 0.00], 
-    [0.00, 0.00, 0.00, 0.35, 0.50, 0.05, 0.05, 0.05, 0.00], 
-    [0.05, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05], 
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.10], 
-    [0.20, 0.00, 0.00, 0.00, 0.00, 0.00, 0.20, 0.40, 0.20], #no self term here
-    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.75]
-
+    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
+    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00, 0.60, 0.25, 0.05, 0.05, 0.05], 
+    [0.00, 0.00, 0.00, 0.00, 0.40, 0.50, 0.00, 0.00, 0.00], 
+    [0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10, 0.10], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
     ])
              
              
     pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts, then waves, then sound, then energy
-            
-    #light, then counts, then waves, then sound, then energy
-    model0 = [make_poisson(0.1), make_poisson(0.5), make_uniform(1.0)]
-    model1 = [make_poisson(4.0), make_poisson(8.0), make_poisson(0.1)]
-    model2 = [make_poisson(0.1), make_poisson(8.0), make_poisson(0.1)]
-    model3 = [make_poisson(0.1), make_poisson(2.0), make_poisson(0.1)]
-    model4 = [make_poisson(0.1), make_poisson(5.0), make_poisson(0.1)]
-    model5 = [make_poisson(2.0), make_poisson(2.0), make_poisson(0.1)]
-    model6 = [make_poisson(2.0), make_poisson(8.0), make_poisson(2.0)]
-    model7 = [make_poisson(1.0), make_poisson(4.0), make_poisson(2.0)]
-    model8 = [make_poisson(3.0), make_poisson(0.5), make_uniform(1.0)]
+       
+    low_light = 0.5
+    med_light = 3.0
+    high_light = 6.0
+    
+    no_motion = 0.05
+    low_motion = 3.0
+    med_motion = 4.0
+    high_motion = 8.0
+    
+    no_waves = [0.999, 0.001]
+    low_waves = [0.9, 0.1]
+    med_waves = [0.5, 0.5]
+    high_waves = [0.1, 0.9]
+    
+    #                 light,         counts,           waves,              sound,                energy
+    model0 = [make_poisson(low_light), make_poisson(no_motion), make_discrete(low_waves)]
+    model1 = [make_poisson(high_light), make_poisson(no_motion), make_discrete(low_waves)] 
+    model2 = [make_poisson(high_light), make_poisson(high_motion), make_discrete(low_waves) ]
+    model3 = [make_poisson(low_light), make_poisson(high_motion), make_discrete(low_waves)]
+    model4 = [make_poisson(low_light), make_poisson(low_motion), make_discrete(no_waves)]
+    model5 = [make_poisson(low_light), make_poisson(high_motion), make_discrete(no_waves)]
+    model6 = [make_poisson(med_light), make_poisson(low_motion), make_discrete(no_waves)]
+    model7 = [make_poisson(med_light), make_poisson(med_motion), make_discrete(high_waves)]
+    model8 = [make_poisson(high_light), make_poisson(high_motion), make_discrete(low_waves)]
 
 
     models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
