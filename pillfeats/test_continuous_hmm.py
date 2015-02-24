@@ -9,7 +9,7 @@ from numpy import *
 from pylab import *
 import sklearn.mixture
 import sys
-from hmm.continuous.PoissonHMM import PoissonHMM
+from hmm.continuous.CompositeModelHMM import CompositeModelHMM
 from time import strftime
 import datetime
 import csv
@@ -20,8 +20,8 @@ import data_windows
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 10
-k_min_num_days_of_sense_data = 1
+k_min_count_pill_data = 40
+k_min_num_days_of_sense_data = 2.5
 k_min_date = '2015-02-15'
 
 k_period_in_seconds = 15 * 60.0
@@ -34,12 +34,12 @@ light_sleep_limit = 6 #periods
 k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_lux_multipler = 4.0
 
-not_on_bed_states = [0, 7]
+not_on_bed_states = [0, 8]
 on_bed_states = [1, 2, 3, 4, 5, 6]
 wake_states = [0, 1, 2, 6, 7]
 sleep_states = [3, 4, 5]
 
-forbidden_keys = []
+forbidden_keys = [1057]
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -144,6 +144,12 @@ def get_sleep_times(t, path):
     return events
         
 
+def make_poisson(mean):
+    return {'model_type' : 'poisson' ,  'model_data' : mean}
+    
+def make_uniform(mean):
+    return {'model_type' : 'uniform' ,  'model_data' : mean}
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
@@ -171,28 +177,38 @@ if __name__ == '__main__':
     # 7 - woke up (light, no activity)
     
     A = array([
-    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.10],
-    [0.00, 0.50, 0.10, 0.40, 0.00, 0.00, 0.00, 0.00],
-    [0.00, 0.10, 0.50, 0.40, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.80, 0.10, 0.05, 0.05, 0.00], 
-    [0.00, 0.00, 0.00, 0.40, 0.50, 0.05, 0.05, 0.00], 
-    [0.05, 0.00, 0.00, 0.00, 0.00, 0.85, 0.05, 0.05], 
-    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.10], 
-    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.75]
+    [0.75, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.10],
+    [0.00, 0.50, 0.10, 0.40, 0.00, 0.00, 0.00, 0.00, 0.00],
+    [0.00, 0.10, 0.50, 0.40, 0.00, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05, 0.05, 0.00], 
+    [0.00, 0.00, 0.00, 0.35, 0.50, 0.05, 0.05, 0.05, 0.00], 
+    [0.05, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.05, 0.05], 
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.05, 0.10], 
+    [0.20, 0.00, 0.00, 0.00, 0.00, 0.00, 0.20, 0.40, 0.20], #no self term here
+    [0.10, 0.05, 0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.75]
 
     ])
              
              
-    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
-    #light, then counts, then energy, then sound
-    means = [[0.1, 4.0, 0.1, 0.1, 0.1, 2.0, 2.0, 3.0],
-             [0.01, 8.0, 8.0, 3.0, 4.0, 1.0, 8.0, 0.01]]
-             #[0.01, 2.0, 2.0, 2.0, 3.0, 2.0, 3.0, 0.01], 
-             #[0.01, 4.0, 4.0, 2.0, 4.0, 3.0, 3.0, 0.01]]
-    
-    hmm = PoissonHMM(8,2, A,pi0, means, verbose=True )
-    
+    #light, then counts, then waves, then sound, then energy
+            
+    #light, then counts, then waves, then sound, then energy
+    model0 = [make_poisson(0.1), make_poisson(0.5), make_uniform(1.0)]
+    model1 = [make_poisson(4.0), make_poisson(8.0), make_poisson(0.1)]
+    model2 = [make_poisson(0.1), make_poisson(8.0), make_poisson(0.1)]
+    model3 = [make_poisson(0.1), make_poisson(2.0), make_poisson(0.1)]
+    model4 = [make_poisson(0.1), make_poisson(5.0), make_poisson(0.1)]
+    model5 = [make_poisson(2.0), make_poisson(2.0), make_poisson(0.1)]
+    model6 = [make_poisson(2.0), make_poisson(8.0), make_poisson(2.0)]
+    model7 = [make_poisson(1.0), make_poisson(4.0), make_poisson(2.0)]
+    model8 = [make_poisson(3.0), make_poisson(0.5), make_uniform(1.0)]
+
+
+    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
+
+    hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
     data = pull_data()
    
@@ -221,8 +237,9 @@ if __name__ == '__main__':
         if key in forbidden_keys:
             continue 
             
-        t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy, waves = data_windows.data_to_windows(data[key], k_period_in_seconds)
         sc[where(sc < 0)] = 0.0
+        waves[where(waves > 0)] = 1.0;
         sc = log2(sc + 1.0).astype(int)
         l[where(l < 0)] = 0.0
         l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)).astype(int)
@@ -237,7 +254,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i], energy[i], sc[i]])
+            flat_seg.append([l[i], c[i], waves[i],  sc[i], energy[i]])
 
         count += 1
         
@@ -269,8 +286,7 @@ if __name__ == '__main__':
         
     
     print hmm.A
-    print hmm.thetas
-    
+    print hmm.get_status()
   
     
     outfile = args.file
@@ -285,8 +301,10 @@ if __name__ == '__main__':
         if key in forbidden_keys:
             continue
         
-        t, l, c, sc, energy = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy, waves = data_windows.data_to_windows(data[key], k_period_in_seconds)
         sc[where(sc < 0)] = 0.0
+        waves[where(waves > 0)] = 1.0;
+
         sc = log2(sc + 1.0).astype(int)
 
         l[where(l < 0)] = 0.0
@@ -302,7 +320,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i], energy[i], sc[i]])
+            seg.append([l[i], c[i],waves[i], sc[i], energy[i]])
         
         seg = array(seg)
         
@@ -326,12 +344,12 @@ if __name__ == '__main__':
             
         
         path = myhmm.decode(seg)
-        model_cost = myhmm.forwardbackward(seg)
-        model_cost /= len(seg) / myhmm.d
-        print 'AVERAGE MODEL COST = %f' % model_cost
-        path_cost = myhmm.evaluate_path_cost(seg, path, len(seg))
-        limit = 3.0 * mean(path_cost)
-        score = sum(path_cost > limit)
+        #model_cost = myhmm.forwardbackward(seg)
+        #model_cost /= len(seg) / myhmm.d
+        #print 'AVERAGE MODEL COST = %f' % model_cost
+        #path_cost = myhmm.evaluate_path_cost(seg, path, len(seg))
+        #limit = 3.0 * mean(path_cost)
+        #score = sum(path_cost > limit)
         
         events = get_sleep_times(t, path)   
 
@@ -365,9 +383,11 @@ if __name__ == '__main__':
             plot(t2, c)
             plot(t2, sc)
             plot(t2, energy)
-            legend(['log light', 'pill wake counts', 'log sound counts', 'log energy'])
+            plot(t2, waves)
+            legend(['log light', 'pill wake counts', 'log sound counts', 'log energy', 'wavecount'])
             
-            title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
+            #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
+            title("userid=%s" % (str(key)))
             grid('on')
             
             subplot(2, 1, 2, sharex=ax)

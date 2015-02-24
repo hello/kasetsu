@@ -57,6 +57,9 @@ class PoissonModel(object):
                 
         self.mean = newmeans
         self.dist = scipy.stats.poisson(self.mean)
+        
+    def get_status(self):
+        return "psn {:<10.2f}".format(self.mean)
 
         
     def to_dict(self):
@@ -75,6 +78,10 @@ class UniformModel(object):
     def reestimate(self, x, gammaForThisState):
        foo =3 # do nothing!
        
+       
+    def get_status(self):
+        return "uni {:<10.2f}".format(self.mean)
+
     def to_dict(self):
         return {'model_type' : 'uniform', 'model_data' : self.mean}
        
@@ -115,6 +122,13 @@ class CompositeModel(object):
             my_dicts.append(model.to_dict())
             
         return my_dicts
+        
+    def get_status(self):
+        status_line  = []
+        for model in self.models:
+            status_line.append(model.get_status())
+            
+        return ",".join(status_line)
     
 
 class CompositeModelHMM(_BaseHMM):
@@ -159,6 +173,9 @@ class CompositeModelHMM(_BaseHMM):
         
        
                 
+    def get_status(self):
+        for i in xrange(len(self.models)):
+            print "model %d: %s" % (i, self.models[i].get_status())
             
     def _reestimate(self,stats,observations):
         #get A and pi
@@ -168,6 +185,8 @@ class CompositeModelHMM(_BaseHMM):
         for i in xrange(len(self.models)):
             self.models[i].reestimate(observations, gamma[:, i])
     
+        self.get_status()
+
         
         return new_model
     
@@ -197,7 +216,6 @@ class CompositeModelHMM(_BaseHMM):
 
 def test():
     numpy.set_printoptions(precision=3, suppress=True, threshold=numpy.nan)
-    #n=None,model_list = [], A=None,pi=None,thetas=None, precision
     print 'testing composite model'
     A = numpy.array([[0.9, 0.1], 
                      [0.1, 0.9]])

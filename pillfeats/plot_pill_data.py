@@ -4,9 +4,11 @@ import sys
 import numpy as np
 from pylab import *
 from copy import *
-uri = 'https://dev-api.hello.is/v1/datascience/pill/'
+#uri = 'https://dev-api.hello.is/v1/datascience/pill/'
+uri = 'http://localhost:9999/v1/datascience/pill/'
 target_date_string = sys.argv[1]
-auth = '1.54320790d7444b648cb56a832df41777'
+auth='6.a2432d1a17024ec5afb8daad4c5b44dd'
+#auth = '1.54320790d7444b648cb56a832df41777'
 #auth = '1.631598871dbd4e4d8651d36392c1173f'
 #auth = '1.968b8e23615447f9aef774553825a83f'
 headers = {'Authorization' : 'Bearer %s' % auth}

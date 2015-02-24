@@ -134,7 +134,7 @@ def get_pair_data(pairs, datestr):
     legend(pairs)
     
     subplot(2, 1, 2, sharex=ax)
-    plot(abstime, diffsig, '.-')
+    plot(abstime, diffsig / (abs(powersig) + 0.1), '.-')
     grid('on')
     ylabel('decision signal')
     show()
