@@ -1,8 +1,4 @@
 #!/usr/bin/python
-import pillcsv
-import sensecsv
-import surveycsv
-import all_data
 import os.path
 import json
 from numpy import *
@@ -61,6 +57,11 @@ def to_proto(composite_hmm, timestring):
     
     for entry in amat:
         sleep_hmm.state_transition_matrix.append(entry)
+        
+    pimat = array(composite_hmm.pi).flatten().tolist()
+    
+    for entry in pimat:
+        sleep_hmm.initial_state_probabilities.append(entry)
     
     for i in xrange(Nstates):
         
@@ -71,13 +72,13 @@ def to_proto(composite_hmm, timestring):
         d = model.to_dict()
                 
         m_light = sleep_hmm_pb2.PoissonModel()
-        m_light.mean = d[0]['model_data']
+        m_light.mean = d[0]['model_data']['mean']
         
         m_motion_count = sleep_hmm_pb2.PoissonModel()
-        m_motion_count.mean = d[1]['model_data']
+        m_motion_count.mean = d[1]['model_data']['mean']
 
         m_wave = sleep_hmm_pb2.DiscreteAlphabetModel()
-        vec = d[2]['model_data']
+        vec = d[2]['model_data']['alphabet_probs']
         for v in vec:
             m_wave.probabilities.append(v)
 

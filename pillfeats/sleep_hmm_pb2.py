@@ -14,7 +14,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='sleep_hmm.proto',
   package='',
-  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"v\n\nStateModel\x12\x1c\n\x05light\x18\x01 \x01(\x0b\x32\r.PoissonModel\x12#\n\x0cmotion_count\x18\x02 \x01(\x0b\x32\r.PoissonModel\x12%\n\x05waves\x18\x03 \x01(\x0b\x32\x16.DiscreteAlphabetModel\"\xcd\x01\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12(\n\x14sleep_mode_of_states\x18\x04 \x03(\x0e\x32\n.SleepMode\x12$\n\x12\x62\x65\x64_mode_of_states\x18\x05 \x03(\x0e\x32\x08.BedMode\x12\x12\n\nnum_states\x18\x06 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x07 \x03(\x01*1\n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x0f\n\x0bLIGHT_SLEEP\x10\x01\x12\x08\n\x04WAKE\x10\x02*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01\x42/\n\x1d\x63om.hello.suripu.api.sleephmmB\x0eSleepHmmProtos')
+  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"v\n\nStateModel\x12\x1c\n\x05light\x18\x01 \x01(\x0b\x32\r.PoissonModel\x12#\n\x0cmotion_count\x18\x02 \x01(\x0b\x32\r.PoissonModel\x12%\n\x05waves\x18\x03 \x01(\x0b\x32\x16.DiscreteAlphabetModel\"\xf2\x01\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12(\n\x14sleep_mode_of_states\x18\x04 \x03(\x0e\x32\n.SleepMode\x12$\n\x12\x62\x65\x64_mode_of_states\x18\x05 \x03(\x0e\x32\x08.BedMode\x12\x12\n\nnum_states\x18\x06 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x07 \x03(\x01\x12#\n\x1binitial_state_probabilities\x18\x08 \x03(\x01*1\n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x0f\n\x0bLIGHT_SLEEP\x10\x01\x12\x08\n\x04WAKE\x10\x02*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01\x42\x32\n com.hello.suripu.api.datascienceB\x0eSleepHmmProtos')
 
 _SLEEPMODE = _descriptor.EnumDescriptor(
   name='SleepMode',
@@ -37,8 +37,8 @@ _SLEEPMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=425,
-  serialized_end=474,
+  serialized_start=462,
+  serialized_end=511,
 )
 
 SleepMode = enum_type_wrapper.EnumTypeWrapper(_SLEEPMODE)
@@ -59,8 +59,8 @@ _BEDMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=476,
-  serialized_end=510,
+  serialized_start=513,
+  serialized_end=547,
 )
 
 BedMode = enum_type_wrapper.EnumTypeWrapper(_BEDMODE)
@@ -226,6 +226,13 @@ _SLEEPHMM = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='initial_state_probabilities', full_name='SleepHmm.initial_state_probabilities', index=7,
+      number=8, type=1, cpp_type=5, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -236,7 +243,7 @@ _SLEEPHMM = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=218,
-  serialized_end=423,
+  serialized_end=460,
 )
 
 _STATEMODEL.fields_by_name['light'].message_type = _POISSONMODEL
@@ -276,5 +283,5 @@ class SleepHmm(_message.Message):
 
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n\035com.hello.suripu.api.sleephmmB\016SleepHmmProtos')
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n com.hello.suripu.api.datascienceB\016SleepHmmProtos')
 # @@protoc_insertion_point(module_scope)

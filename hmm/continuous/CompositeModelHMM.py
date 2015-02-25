@@ -70,7 +70,7 @@ class PoissonModel(object):
 
         
     def to_dict(self):
-        return {'model_type' : 'poisson', 'model_data' : self.mean,  'obs_num' : self.obsnum}
+        return {'model_type' : 'poisson', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum} }
         
 
         
@@ -158,7 +158,7 @@ class OneDimensionalGaussianMixture(object):
 
         
     def to_dict(self):
-        return {'model_type' : 'poisson', 'model_data' : self.mean,  'obs_num' : self.obsnum}
+        return {'model_type' : 'gaussian_mixture', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum}}
         
         
 class UniformModel(object):
@@ -220,7 +220,7 @@ class DiscreteAlphabetModel(object):
         return ",".join([("%.2f" % f) for f in self.data])
 
     def to_dict(self):
-        return {'model_type' : 'discrete_alphabet', 'model_data' : self.data,  'obs_num' : self.obsnum}
+        return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum} }
         
         
 class CompositeModel(object):
