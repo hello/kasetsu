@@ -348,9 +348,8 @@ class CompositeModelHMM(_BaseHMM):
         self.pi = numpy.array(mydict['pi'])
         self.n = self.A.shape[0]
         self._initModels(mydict['models'])
-
-    
-
+        
+        
 def test():
     numpy.set_printoptions(precision=3, suppress=True, threshold=numpy.nan)
     print 'testing composite model'

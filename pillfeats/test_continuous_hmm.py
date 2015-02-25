@@ -15,8 +15,13 @@ import datetime
 import csv
 import argparse
 import copy
-
 import data_windows
+import sleep_hmm_pb2
+
+   
+
+    
+
 
 save_filename = 'savedata3.json'
 
@@ -41,6 +46,64 @@ sleep_states = [4, 5, 6]
 light_sleep_state = 6
 
 forbidden_keys = [1057]
+
+
+def to_proto(composite_hmm, timestring):
+    print timestring
+    filename = timestring + '.proto'
+    
+    sleep_hmm = sleep_hmm_pb2.SleepHmm()
+    
+    Nstates = len(composite_hmm.models)
+    
+    sleep_hmm.num_states = Nstates
+    amat = array(composite_hmm.A).flatten().tolist()
+    
+    for entry in amat:
+        sleep_hmm.state_transition_matrix.append(entry)
+    
+    for i in xrange(Nstates):
+        
+        m_state = sleep_hmm.states.add()
+
+        
+        model =  composite_hmm.models[i]
+        d = model.to_dict()
+                
+        m_light = sleep_hmm_pb2.PoissonModel()
+        m_light.mean = d[0]['model_data']
+        
+        m_motion_count = sleep_hmm_pb2.PoissonModel()
+        m_motion_count.mean = d[1]['model_data']
+
+        m_wave = sleep_hmm_pb2.DiscreteAlphabetModel()
+        vec = d[2]['model_data']
+        for v in vec:
+            m_wave.probabilities.append(v)
+
+        m_state.light.MergeFrom(m_light)
+        m_state.motion_count.MergeFrom(m_motion_count)
+        m_state.waves.MergeFrom(m_wave)
+        
+        
+        if i in sleep_states:
+            sleep_hmm.sleep_mode_of_states.append(sleep_hmm_pb2.SLEEP)
+        else:
+            sleep_hmm.sleep_mode_of_states.append(sleep_hmm_pb2.WAKE)
+
+        if i in on_bed_states:
+            sleep_hmm.bed_mode_of_states.append(sleep_hmm_pb2.ON_BED)
+        else:
+            sleep_hmm.bed_mode_of_states.append(sleep_hmm_pb2.OFF_BED)
+            
+    
+    f = open(filename, 'wb')
+    f.write(sleep_hmm.SerializeToString())
+    f.close()
+
+        
+    
+    
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -234,7 +297,9 @@ if __name__ == '__main__':
     packaged_info = []
     count = 0
     hmm_dict = {}
-    dict_filename = strftime("HMM_%Y-%m-%d_%H:%M:%S.json")
+    timestring = strftime("HMM_%Y-%m-%d_%H:%M:%S")
+    
+    dict_filename = timestring + '.json'
 
     
     if args.user != None:
@@ -297,6 +362,8 @@ if __name__ == '__main__':
 
         hmm_dict['default'] = hmm.to_dict()
 
+
+        to_proto(hmm, timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
