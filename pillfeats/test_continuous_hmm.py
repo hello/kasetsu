@@ -40,6 +40,8 @@ on_bed_states = [2, 3, 4, 5, 6, 7, 8]
 wake_states = [0, 1, 2, 3, 7, 8]
 sleep_states = [4, 5, 6]
 light_sleep_state = 6
+regular_sleep_state = 4
+disturbed_sleep_state = 5
 
 forbidden_keys = [1057]
 
@@ -88,15 +90,24 @@ def to_proto(composite_hmm, timestring):
         
         
         if i in sleep_states:
-            sleep_hmm.sleep_mode_of_states.append(sleep_hmm_pb2.SLEEP)
+            m_state.sleep_mode = sleep_hmm_pb2.SLEEP
         else:
-            sleep_hmm.sleep_mode_of_states.append(sleep_hmm_pb2.WAKE)
+            m_state.sleep_mode = sleep_hmm_pb2.WAKE
 
         if i in on_bed_states:
-            sleep_hmm.bed_mode_of_states.append(sleep_hmm_pb2.ON_BED)
+            m_state.bed_mode = sleep_hmm_pb2.ON_BED
         else:
-            sleep_hmm.bed_mode_of_states.append(sleep_hmm_pb2.OFF_BED)
+            m_state.bed_mode = sleep_hmm_pb2.OFF_BED
             
+        if i == light_sleep_state:
+            m_state.sleep_depth = sleep_hmm_pb2.LIGHT
+        elif i == regular_sleep_state:
+            m_state.sleep_depth = sleep_hmm_pb2.REGULAR
+        elif i == disturbed_sleep_state:
+            m_state.sleep_depth = sleep_hmm_pb2.DISTURBED
+        else:
+            m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
+
     
     f = open(filename, 'wb')
     f.write(sleep_hmm.SerializeToString())
