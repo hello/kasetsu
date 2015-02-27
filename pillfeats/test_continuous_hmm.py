@@ -46,11 +46,13 @@ disturbed_sleep_state = 5
 forbidden_keys = [1057]
 
 
-def to_proto(composite_hmm, timestring):
+def to_proto(composite_hmm, user, timestring):
     print timestring
     filename = timestring + '.proto'
     
     sleep_hmm = sleep_hmm_pb2.SleepHmm()
+    sleep_hmm.source = timestring
+    sleep_hmm.user_id = user
     
     Nstates = len(composite_hmm.models)
     
@@ -375,7 +377,7 @@ if __name__ == '__main__':
         hmm_dict['default'] = hmm.to_dict()
 
 
-        to_proto(hmm, timestring)
+        to_proto(hmm,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
