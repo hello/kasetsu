@@ -16,17 +16,26 @@ k_min_poisson_mean = 0.01
 k_min_gaussian_variance = 0.01
 k_max_gaussian_variance = 100
 
+k_min_gamma_mean = 0.01
+k_min_gamma_variance = 0.01
+
 
 def model_factory(model_type, model_data):
     
     if model_type == 'uniform':
         print 'creating uniform model'
-        return UniformModel(model_data);
+        return UniformModel(model_data)
+        
     elif model_type == 'poisson':
         print 'creating poisson model'
         return PoissonModel(model_data)
-    elif model_type == 'gaussian':
+        
+    elif model_type == 'gaussian_mixture':
         return OneDimensionalGaussianMixture(model_data)
+        
+    elif model_type == 'gamma':
+        return GammaDistribution(model_data)
+        
     elif model_type == 'discrete_alphabet':
         print 'creating discrete model'
         return DiscreteAlphabetModel(model_data)
@@ -38,8 +47,7 @@ class PoissonModel(object):
         self.obsnum = data['obs_num']
         self.mean = data['mean']
         self.dist = scipy.stats.poisson(self.mean)
-        
-                
+    
     def eval(self, x):
         data = numpy.round(x[:, self.obsnum]).astype(int)
         the_eval = self.dist.pmf(data)
@@ -73,7 +81,76 @@ class PoissonModel(object):
         return {'model_type' : 'poisson', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum} }
         
 
+class GammaDistribution(object):
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.mean  = data['mean']
+        self.stddev = data['stddev']
+        self.dist = self.get_dist()
         
+        
+    def get_dist(self):
+        variance = self.stddev*self.stddev
+        theta = variance / self.mean
+        k = self.mean / theta
+        print k, theta
+        return scipy.stats.gamma(k, scale=theta)
+        
+    def get_params(self):
+        theta = self.dist.var() / self.dist.mean()
+        k = self.dist.mean() / theta
+        return (k, theta)
+        
+    def eval(self, x):
+        data = numpy.round(x[:, self.obsnum])
+        
+        the_eval = self.dist.pdf(data)
+
+        #print data[30:40]
+        #print the_eval[30:40]
+        #print self.dist
+        #print self.get_params()
+        return the_eval
+        
+        
+    def reestimate(self, x, gammaForThisState):
+        
+        oldmean = self.mean
+        
+        newmean = 0.0
+        
+        numer_mean = 0.0
+        numer_variance = 0.0
+        denom = 0.0
+        for t in xrange(x.shape[0]):
+            myobs = x[t][self.obsnum]
+            dx = myobs - oldmean
+
+            numer_mean += gammaForThisState[t]*myobs
+            numer_variance += gammaForThisState[t]*dx*dx
+            denom += (gammaForThisState[t])
+    
+        newmean = numer_mean/denom
+        newvariance = numer_variance / denom
+    
+        if newmean < k_min_gamma_mean:
+            newmean = k_min_gamma_mean
+            
+        if newvariance < k_min_gamma_variance:
+            newvariance = k_min_gamma_variance
+            
+        self.mean = newmean 
+        self.stddev = numpy.sqrt(newvariance)
+        
+        
+    def to_dict(self):
+        return {'model_type' : 'gamma', 'model_data' : {'mean' : self.mean, 'stddev' : self.stddev,   'obs_num' : self.obsnum} }
+
+
+    def get_status(self):
+        return "m=%.2f,s=%.2f" % (self.mean, self.stddev)
+
+
 class OneDimensionalGaussianMixture(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
@@ -187,11 +264,10 @@ class DiscreteAlphabetModel(object):
         self.data = data['alphabet_probs']
                 
     def eval(self, x):
-        xvec = x[:, self.obsnum]
+        xvec = x[:, self.obsnum].astype(int)
         
         ret = numpy.zeros(xvec.shape)
         xvec = xvec.tolist()
-        
         for i in xrange(len(xvec)):
             ret[i] = self.data[xvec[i]]
         

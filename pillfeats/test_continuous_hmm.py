@@ -227,8 +227,11 @@ def make_poisson(mean, obsnum):
 def make_uniform(mean, obsnum):
     return {'model_type' : 'uniform' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
     
-def make_discrete(dist, obsnum):
-    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dist}}
+def make_discrete(dists, obsnum):
+    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists}}
+    
+def make_gamma(mean, stddev, obsnum):   
+    return {'model_type' : 'gamma' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean,  'stddev' : stddev}}
 
 if __name__ == '__main__':
     
@@ -274,11 +277,12 @@ if __name__ == '__main__':
         
     #light, then counts, then waves, then sound, then energy
        
-    low_light = 0.5
+    low_light = 1.0
     med_light = 3.0
     high_light = 6.0
+    init_light_stddev = 1.0
     
-    no_motion = 0.05
+    no_motion = 0.5
     low_motion = 3.0
     med_motion = 4.0
     high_motion = 8.0
@@ -289,15 +293,15 @@ if __name__ == '__main__':
     high_waves = [0.1, 0.9]
     
     #                 light,                        counts,                     waves,                       sound,                energy
-    model0 = [make_poisson(low_light, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2)]
-    model1 = [make_poisson(high_light, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2)] 
-    model2 = [make_poisson(high_light, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2) ]
-    model3 = [make_poisson(low_light, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
-    model4 = [make_poisson(low_light, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
-    model5 = [make_poisson(low_light, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
-    model6 = [make_poisson(med_light, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
-    model7 = [make_poisson(med_light, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
-    model8 = [make_poisson(high_light, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2)] 
+    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2) ]
+    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
+    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
+    model6 = [make_gamma(med_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
+    model7 = [make_gamma(med_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
+    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
 
 
     models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
@@ -333,12 +337,14 @@ if __name__ == '__main__':
         if key in forbidden_keys:
             continue 
             
-        t, l, c, sc, energy, waves = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        soundmags = soundmags/10.0 / 1024.0 - 4.0
+        soundmags[where(soundmags < 0.0)] = 0.0;
         sc[where(sc < 0)] = 0.0
         waves[where(waves > 0)] = 1.0;
         sc = log2(sc + 1.0).astype(int)
         l[where(l < 0)] = 0.0
-        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)).astype(int)
+        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
         energy = log2((energy + 500)/500).astype(int)
 
@@ -399,14 +405,17 @@ if __name__ == '__main__':
         if key in forbidden_keys:
             continue
         
-        t, l, c, sc, energy, waves = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        soundmags = soundmags/10.0 / 1024.0 - 4.0
+        soundmags[where(soundmags < 0.0)] = 0.0;
+        
         sc[where(sc < 0)] = 0.0
         waves[where(waves > 0)] = 1.0;
 
         sc = log2(sc + 1.0).astype(int)
 
         l[where(l < 0)] = 0.0
-        l = (log2(l*k_raw_light_to_lux*k_lux_multipler + 1.0)).astype(int)
+        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
         energy = log2((energy + 500)/500).astype(int)
         
@@ -482,6 +491,7 @@ if __name__ == '__main__':
             plot(t2, sc)
             plot(t2, energy)
             plot(t2, waves)
+            plot(t2, soundmags )
             legend(['log light', 'pill wake counts', 'log sound counts', 'log energy', 'wavecount'])
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
