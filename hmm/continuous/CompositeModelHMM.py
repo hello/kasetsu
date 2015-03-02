@@ -93,7 +93,7 @@ class GammaDistribution(object):
         variance = self.stddev*self.stddev
         theta = variance / self.mean
         k = self.mean / theta
-        print k, theta
+        #print k, theta
         return scipy.stats.gamma(k, scale=theta)
         
     def get_params(self):
@@ -102,8 +102,8 @@ class GammaDistribution(object):
         return (k, theta)
         
     def eval(self, x):
-        data = numpy.round(x[:, self.obsnum])
-        
+        data = x[:, self.obsnum]
+                
         the_eval = self.dist.pdf(data)
 
         #print data[30:40]
