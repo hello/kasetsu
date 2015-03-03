@@ -37,8 +37,8 @@ k_lux_multipler = 4.0
 
 not_on_bed_states = [0, 1]
 on_bed_states = [2, 3, 4, 5, 6, 7, 8]
-wake_states = [0, 1, 2, 3, 7, 8]
-sleep_states = [4, 5, 6]
+wake_states = [0, 1, 2, 3, 6, 7, 8]
+sleep_states = [4, 5]
 light_sleep_state = 6
 regular_sleep_state = 4
 disturbed_sleep_state = 5
@@ -256,24 +256,22 @@ if __name__ == '__main__':
     # 3 - ipad on bed    (high activity, low light)
     # 4 - sleep (low activity, low light)
     # 5 - disturbed sleep (high activity, low light)
-    # 6 - late sleep (med light, low activity)
     # 7 - waking up with alarm (med light, med activity, high wave)
     # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
-    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.00, 0.60, 0.25, 0.05, 0.05, 0.05], 
-    [0.00, 0.00, 0.00, 0.00, 0.40, 0.50, 0.00, 0.00, 0.00], 
-    [0.05, 0.05, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
+    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.05, 0.60, 0.15, 0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
     ])
              
              
-    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts, then waves, then sound, then energy
        
@@ -299,12 +297,11 @@ if __name__ == '__main__':
     model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
     model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
     model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
-    model6 = [make_gamma(med_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
-    model7 = [make_gamma(med_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
-    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
+    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
+    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_waves, 2)]
 
 
-    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
+    models = [model0, model1, model2, model3, model4, model5, model6, model7]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -341,6 +338,9 @@ if __name__ == '__main__':
         soundmags = soundmags/10.0 / 1024.0 - 4.0
         soundmags[where(soundmags < 0.0)] = 0.0;
         sc[where(sc < 0)] = 0.0
+        
+        waves[where(energy > 15000)] += 1
+        
         waves[where(waves > 0)] = 1.0;
         sc = log2(sc + 1.0).astype(int)
         l[where(l < 0)] = 0.0
@@ -410,6 +410,9 @@ if __name__ == '__main__':
         soundmags[where(soundmags < 0.0)] = 0.0;
         
         sc[where(sc < 0)] = 0.0
+        
+        waves[where(energy > 15000)] += 1
+
         waves[where(waves > 0)] = 1.0;
 
         sc = log2(sc + 1.0).astype(int)
