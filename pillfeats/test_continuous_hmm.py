@@ -335,10 +335,11 @@ if __name__ == '__main__':
             continue 
             
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        soundmags = soundmags/10.0 / 1024.0 - 4.0
-        soundmags[where(soundmags < 0.0)] = 0.0;
+        soundmags /= 1024.0
+        
         sc[where(sc < 0)] = 0.0
         
+        waves[where(soundmags > 60)] += 1
         waves[where(energy > 15000)] += 1
         
         waves[where(waves > 0)] = 1.0;
@@ -406,11 +407,10 @@ if __name__ == '__main__':
             continue
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        soundmags = soundmags/10.0 / 1024.0 - 4.0
-        soundmags[where(soundmags < 0.0)] = 0.0;
-        
+        soundmags /= 1024.0
         sc[where(sc < 0)] = 0.0
         
+        waves[where(soundmags > 60)] += 1
         waves[where(energy > 15000)] += 1
 
         waves[where(waves > 0)] = 1.0;
@@ -422,11 +422,6 @@ if __name__ == '__main__':
         energy[where(energy < 0)] = 0.0
         energy = log2((energy + 500)/500).astype(int)
         
-        '''
-        plot(t, c)
-        plot(t, log(l + 10.0))
-        show()
-        '''
         
         seg = []
         for i in xrange(len(t)):
@@ -494,7 +489,7 @@ if __name__ == '__main__':
             plot(t2, sc)
             plot(t2, energy)
             plot(t2, waves)
-            plot(t2, soundmags )
+            plot(t2, soundmags/10.0 )
             legend(['log light', 'pill wake counts', 'log sound counts', 'log energy', 'wavecount'])
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))

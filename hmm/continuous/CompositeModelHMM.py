@@ -74,7 +74,7 @@ class PoissonModel(object):
         self.dist = scipy.stats.poisson(self.mean)
         
     def get_status(self):
-        return "psn {:<10.2f}".format(self.mean)
+        return "psn %.2f" % (self.mean)
 
         
     def to_dict(self):
