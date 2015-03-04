@@ -14,7 +14,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='sleep_hmm.proto',
   package='',
-  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"\xd4\x01\n\nStateModel\x12\x1c\n\x05light\x18\x01 \x01(\x0b\x32\r.PoissonModel\x12#\n\x0cmotion_count\x18\x02 \x01(\x0b\x32\r.PoissonModel\x12%\n\x05waves\x18\x03 \x01(\x0b\x32\x16.DiscreteAlphabetModel\x12\x1e\n\nsleep_mode\x18\x04 \x01(\x0e\x32\n.SleepMode\x12\x1a\n\x08\x62\x65\x64_mode\x18\x05 \x01(\x0e\x32\x08.BedMode\x12 \n\x0bsleep_depth\x18\x06 \x01(\x0e\x32\x0b.SleepDepth\"\xa2\x01\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12\x12\n\nnum_states\x18\x04 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x05 \x03(\x01\x12#\n\x1binitial_state_probabilities\x18\x06 \x03(\x01* \n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x08\n\x04WAKE\x10\x01*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01*G\n\nSleepDepth\x12\x12\n\x0eNOT_APPLICABLE\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0b\n\x07REGULAR\x10\x02\x12\r\n\tDISTURBED\x10\x03\x42\x32\n com.hello.suripu.api.datascienceB\x0eSleepHmmProtos')
+  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"*\n\nGammaModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\x12\x0e\n\x06stddev\x18\x02 \x02(\x01\"\xd9\x01\n\nStateModel\x12\x1e\n\nsleep_mode\x18\x04 \x01(\x0e\x32\n.SleepMode\x12\x1a\n\x08\x62\x65\x64_mode\x18\x05 \x01(\x0e\x32\x08.BedMode\x12 \n\x0bsleep_depth\x18\x06 \x01(\x0e\x32\x0b.SleepDepth\x12\x1a\n\x05light\x18\x0b \x01(\x0b\x32\x0b.GammaModel\x12#\n\x0cmotion_count\x18\x0c \x01(\x0b\x32\r.PoissonModel\x12,\n\x0c\x64isturbances\x18\r \x01(\x0b\x32\x16.DiscreteAlphabetModel\"\xa2\x01\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12\x12\n\nnum_states\x18\x04 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x05 \x03(\x01\x12#\n\x1binitial_state_probabilities\x18\x06 \x03(\x01* \n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x08\n\x04WAKE\x10\x01*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01*G\n\nSleepDepth\x12\x12\n\x0eNOT_APPLICABLE\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0b\n\x07REGULAR\x10\x02\x12\r\n\tDISTURBED\x10\x03\x42\x32\n com.hello.suripu.api.datascienceB\x0eSleepHmmProtos')
 
 _SLEEPMODE = _descriptor.EnumDescriptor(
   name='SleepMode',
@@ -33,8 +33,8 @@ _SLEEPMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=477,
-  serialized_end=509,
+  serialized_start=526,
+  serialized_end=558,
 )
 
 SleepMode = enum_type_wrapper.EnumTypeWrapper(_SLEEPMODE)
@@ -55,8 +55,8 @@ _BEDMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=511,
-  serialized_end=545,
+  serialized_start=560,
+  serialized_end=594,
 )
 
 BedMode = enum_type_wrapper.EnumTypeWrapper(_BEDMODE)
@@ -85,8 +85,8 @@ _SLEEPDEPTH = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=547,
-  serialized_end=618,
+  serialized_start=596,
+  serialized_end=667,
 )
 
 SleepDepth = enum_type_wrapper.EnumTypeWrapper(_SLEEPDEPTH)
@@ -157,51 +157,23 @@ _DISCRETEALPHABETMODEL = _descriptor.Descriptor(
 )
 
 
-_STATEMODEL = _descriptor.Descriptor(
-  name='StateModel',
-  full_name='StateModel',
+_GAMMAMODEL = _descriptor.Descriptor(
+  name='GammaModel',
+  full_name='GammaModel',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='light', full_name='StateModel.light', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='motion_count', full_name='StateModel.motion_count', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='waves', full_name='StateModel.waves', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='sleep_mode', full_name='StateModel.sleep_mode', index=3,
-      number=4, type=14, cpp_type=8, label=1,
+      name='mean', full_name='GammaModel.mean', index=0,
+      number=1, type=1, cpp_type=5, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='bed_mode', full_name='StateModel.bed_mode', index=4,
-      number=5, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='sleep_depth', full_name='StateModel.sleep_depth', index=5,
-      number=6, type=14, cpp_type=8, label=1,
+      name='stddev', full_name='GammaModel.stddev', index=1,
+      number=2, type=1, cpp_type=5, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -215,8 +187,71 @@ _STATEMODEL = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=98,
-  serialized_end=310,
+  serialized_start=97,
+  serialized_end=139,
+)
+
+
+_STATEMODEL = _descriptor.Descriptor(
+  name='StateModel',
+  full_name='StateModel',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='sleep_mode', full_name='StateModel.sleep_mode', index=0,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='bed_mode', full_name='StateModel.bed_mode', index=1,
+      number=5, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sleep_depth', full_name='StateModel.sleep_depth', index=2,
+      number=6, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='light', full_name='StateModel.light', index=3,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='motion_count', full_name='StateModel.motion_count', index=4,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='disturbances', full_name='StateModel.disturbances', index=5,
+      number=13, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=142,
+  serialized_end=359,
 )
 
 
@@ -278,19 +313,20 @@ _SLEEPHMM = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=313,
-  serialized_end=475,
+  serialized_start=362,
+  serialized_end=524,
 )
 
-_STATEMODEL.fields_by_name['light'].message_type = _POISSONMODEL
-_STATEMODEL.fields_by_name['motion_count'].message_type = _POISSONMODEL
-_STATEMODEL.fields_by_name['waves'].message_type = _DISCRETEALPHABETMODEL
 _STATEMODEL.fields_by_name['sleep_mode'].enum_type = _SLEEPMODE
 _STATEMODEL.fields_by_name['bed_mode'].enum_type = _BEDMODE
 _STATEMODEL.fields_by_name['sleep_depth'].enum_type = _SLEEPDEPTH
+_STATEMODEL.fields_by_name['light'].message_type = _GAMMAMODEL
+_STATEMODEL.fields_by_name['motion_count'].message_type = _POISSONMODEL
+_STATEMODEL.fields_by_name['disturbances'].message_type = _DISCRETEALPHABETMODEL
 _SLEEPHMM.fields_by_name['states'].message_type = _STATEMODEL
 DESCRIPTOR.message_types_by_name['PoissonModel'] = _POISSONMODEL
 DESCRIPTOR.message_types_by_name['DiscreteAlphabetModel'] = _DISCRETEALPHABETMODEL
+DESCRIPTOR.message_types_by_name['GammaModel'] = _GAMMAMODEL
 DESCRIPTOR.message_types_by_name['StateModel'] = _STATEMODEL
 DESCRIPTOR.message_types_by_name['SleepHmm'] = _SLEEPHMM
 
@@ -305,6 +341,12 @@ class DiscreteAlphabetModel(_message.Message):
   DESCRIPTOR = _DISCRETEALPHABETMODEL
 
   # @@protoc_insertion_point(class_scope:DiscreteAlphabetModel)
+
+class GammaModel(_message.Message):
+  __metaclass__ = _reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _GAMMAMODEL
+
+  # @@protoc_insertion_point(class_scope:GammaModel)
 
 class StateModel(_message.Message):
   __metaclass__ = _reflection.GeneratedProtocolMessageType

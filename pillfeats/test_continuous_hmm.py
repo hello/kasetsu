@@ -39,7 +39,8 @@ not_on_bed_states = [0, 1]
 on_bed_states = [2, 3, 4, 5, 6, 7, 8]
 wake_states = [0, 1, 2, 3, 6, 7, 8]
 sleep_states = [4, 5]
-light_sleep_state = 6
+
+light_sleep_state = 9999
 regular_sleep_state = 4
 disturbed_sleep_state = 5
 
@@ -75,20 +76,21 @@ def to_proto(composite_hmm, user, timestring):
         model =  composite_hmm.models[i]
         d = model.to_dict()
                 
-        m_light = sleep_hmm_pb2.PoissonModel()
+        m_light = sleep_hmm_pb2.GammaModel()
         m_light.mean = d[0]['model_data']['mean']
+        m_light.stddev = d[0]['model_data']['stddev']
         
         m_motion_count = sleep_hmm_pb2.PoissonModel()
         m_motion_count.mean = d[1]['model_data']['mean']
 
-        m_wave = sleep_hmm_pb2.DiscreteAlphabetModel()
+        m_disturbances = sleep_hmm_pb2.DiscreteAlphabetModel()
         vec = d[2]['model_data']['alphabet_probs']
         for v in vec:
-            m_wave.probabilities.append(v)
+            m_disturbances.probabilities.append(v)
 
         m_state.light.MergeFrom(m_light)
         m_state.motion_count.MergeFrom(m_motion_count)
-        m_state.waves.MergeFrom(m_wave)
+        m_state.disturbances.MergeFrom(m_disturbances)
         
         
         if i in sleep_states:
