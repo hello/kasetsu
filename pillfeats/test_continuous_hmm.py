@@ -13,17 +13,21 @@ import argparse
 import copy
 import data_windows
 import sleep_hmm_pb2
-
-   
+import serverdata
+import os.path
 
     
-
+k_user_list = [1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039, 
+       1045, 1043, 1060, 1012, 1057, 1061, 1071, 1056, 1053, 1067, 1044, 
+       1049, 1073, 1007, 1047, 1072, 1021, 1066, 1059, 1001, 1003, 1051, 
+       1062, 1006, 1013, 1034, 1025, 1052, 1041]
 
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 40
 k_min_num_days_of_sense_data = 2.5
 k_min_date = '2015-02-15'
+k_num_days_of_data = 5
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -32,7 +36,8 @@ k_segment_padding_in_seconds = 180 * 60.0
 k_min_sleep_duration_hours = 1.5
 light_sleep_limit = 6 #periods
 
-k_raw_light_to_lux = 125.0 / (2 ** 16)
+#k_raw_light_to_lux = 125.0 / (2 ** 16)
+k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
 
 not_on_bed_states = [0, 1]
@@ -127,20 +132,21 @@ def get_unix_time_as_datetime(unix_time):
 def get_unix_time_as_string(unix_time): 
     return get_unix_time_as_datetime(unix_time).isoformat(' ')   
 
-def pull_data():
-    import dbdata
-    import os.path
- 
-    
+def pull_data():    
     if os.path.isfile(save_filename): 
         print 'loading from %s' % save_filename
         f = open(save_filename, 'r')
         data = json.load(f)
         f.close()
     else:
-        d = dbdata.DataGetter('benjo_sensors_1','benjo','localhost')
         print 'querying DB'
-        data = d.get_all_minute_data(k_min_date,1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
+
+        #d = dbdata.DataGetter('benjo_sensors_1','benjo','localhost')
+        #data = d.get_all_minute_data(k_min_date,1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
+
+        d = serverdata.ServerDataGetter(k_user_list)
+        data = d.get_all_minute_data(k_min_date, k_num_days_of_data, 1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
+        
         f = open(save_filename, 'w')
         json.dump(data, f)
         f.close()
@@ -337,11 +343,11 @@ if __name__ == '__main__':
             continue 
             
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        soundmags /= 1024.0
+
         
         sc[where(sc < 0)] = 0.0
         
-        waves[where(soundmags > 60)] += 1
+        waves[where(soundmags > 55)] += 1
         waves[where(energy > 15000)] += 1
         
         waves[where(waves > 0)] = 1.0;
@@ -409,10 +415,10 @@ if __name__ == '__main__':
             continue
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        soundmags /= 1024.0
+        print soundmags
         sc[where(sc < 0)] = 0.0
         
-        waves[where(soundmags > 60)] += 1
+        waves[where(soundmags > 55)] += 1
         waves[where(energy > 15000)] += 1
 
         waves[where(waves > 0)] = 1.0;
