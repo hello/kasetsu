@@ -415,7 +415,6 @@ if __name__ == '__main__':
             continue
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        print soundmags
         sc[where(sc < 0)] = 0.0
         
         waves[where(soundmags > 55)] += 1
