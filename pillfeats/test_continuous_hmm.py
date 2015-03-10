@@ -17,7 +17,7 @@ import serverdata
 import os.path
 
     
-k_user_list = [1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039, 
+k_user_list = [1, 1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039, 
        1045, 1043, 1060, 1012, 1057, 1061, 1071, 1056, 1053, 1067, 1044, 
        1049, 1073, 1007, 1047, 1072, 1021, 1066, 1059, 1001, 1003, 1051, 
        1062, 1006, 1013, 1034, 1025, 1052, 1041]
@@ -26,8 +26,8 @@ save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 40
 k_min_num_days_of_sense_data = 2.5
-k_min_date = '2015-02-15'
-k_num_days_of_data = 5
+k_min_date = '2015-02-22'
+k_num_days_of_data = 10
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -228,6 +228,37 @@ def get_sleep_times(t, path):
         
     return events
         
+def fill_connections(A, ind1, ind2):
+    for i in ind1:
+        for j in ind2:
+            A[j, i] += 1
+            A[i, j] += 1
+            A[i, i] += 1
+            A[j, j] += 1
+            
+def create_state_transition_matrix(indices):
+    idx = [0]
+    idx.extend(cumsum(indices).tolist())
+    
+    indices_list = []
+    for i in xrange(len(idx)-1):
+        indices = range(idx[i], idx[i+1])
+        indices_list.append(indices)
+        
+    A = zeros((idx[-1], idx[-1]))
+    for i in xrange(len(indices_list)):
+        #self
+        fill_connections(A, indices_list[i], indices_list[i])
+        
+        #nearby
+        if i > 0:
+            fill_connections(A, indices_list[i-1], indices_list[i])
+
+    for irow in xrange(A.shape[0]):
+        A[irow, :] = A[irow, :] / sum(A[irow, :])
+        
+    print A
+    return A
 
 def make_poisson(mean, obsnum):
     return {'model_type' : 'poisson' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
@@ -254,39 +285,17 @@ if __name__ == '__main__':
     parser.add_argument('--saveadapt', action='store_true', default=False, help='save the adaptation for each user')
 
     args = parser.parse_args()
-    set_printoptions(precision=3, suppress=True, threshold=np.nan)
+    set_printoptions(precision=3, suppress=True, threshold=np.nan, linewidth=200)
     
     
-    #states
-    # 0 - off bed #1 (very low activity,low light)
-    # 1 - off bed #2 (very low activity,high light)
-    # 2 - reading on bed (high activity, high light)
-    # 3 - ipad on bed    (high activity, low light)
-    # 4 - sleep (low activity, low light)
-    # 5 - disturbed sleep (high activity, low light)
-    # 7 - waking up with alarm (med light, med activity, high wave)
-    # 8 - woken up (med light, high activity) 
-    
-    A = array([
-    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.05, 0.60, 0.15, 0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
-    ])
-             
-             
-    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
-        
+ 
+            
     #light, then counts, then waves, then sound, then energy
        
-    low_light = 1.0
+    low_light = 1.5
     med_light = 3.0
     high_light = 6.0
-    init_light_stddev = 1.0
+    init_light_stddev = 1.5
     
     no_motion = 0.5
     low_motion = 3.0
@@ -298,18 +307,56 @@ if __name__ == '__main__':
     med_waves = [0.5, 0.5]
     high_waves = [0.1, 0.9]
     
+    low_sound = 4.0
+    high_sound = 6.0
+    sound_stddev = 2.0
+    
+    low_energy = 4000
+    high_energy = 15000
+    low_energy_stddev = 3000
+    high_energy_stddev = 6000
+    
+    indices = []
+    
     #                 light,                        counts,                     waves,                       sound,                energy
-    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2)]
-    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2)] 
-    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2) ]
-    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
-    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
-    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
-    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
-    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_waves, 2)]
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)] 
+    
+    not_on_bed_models = [model0, model1]
+    indices.append(len(not_on_bed_models))
 
+    #any combination of energy, motion, and light that is not both low motion and low energy
+    model2 = [make_gamma(low_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4) ]
+    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4)]
+    model5 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4) ]
+    model6 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model7 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4)]
 
-    models = [model0, model1, model2, model3, model4, model5, model6, model7]
+   
+    on_bed_models = [model2, model3, model4, model5, model6, model7]
+    indices.append(len(on_bed_models))
+
+    #low energy, low motion, in both low and high light, and low and high sound
+    model8 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model9 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model10 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+
+    sleep_models = [model8, model9, model10]
+    indices.append(len(sleep_models))
+
+ 
+   
+ 
+ 
+    models = []
+    models.extend(not_on_bed_models)
+    models.extend(on_bed_models)
+    models.extend(sleep_models)
+    print (len(models))
+    
+    A = create_state_transition_matrix(indices) 
+    pi0 = ones((len(models))) / len(models)
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
