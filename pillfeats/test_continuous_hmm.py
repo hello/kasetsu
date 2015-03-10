@@ -24,10 +24,10 @@ k_user_list = [1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039,
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 40
-k_min_num_days_of_sense_data = 2.5
-k_min_date = '2015-02-15'
-k_num_days_of_data = 5
+k_min_count_pill_data = 80
+k_min_num_days_of_sense_data = 5
+k_min_date = '2015-02-27'
+k_num_days_of_data = 7
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -39,6 +39,7 @@ light_sleep_limit = 6 #periods
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
+k_sound_disturbance_threshold = 60.0
 
 not_on_bed_states = [0, 1]
 on_bed_states = [2, 3, 4, 5, 6, 7, 8]
@@ -248,7 +249,7 @@ if __name__ == '__main__':
     parser.add_argument("-f",  "--file", help="output file of predicted sleep / wake times")
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
-    parser.add_argument("--iter", type=int, help="number of training iterations", default=8)
+    parser.add_argument("--iter", type=int, help="number of training iterations", default=4)
     parser.add_argument("--adapt", action='store_true', default=False, help='compute a model for each individual user ids')
     parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
     parser.add_argument('--saveadapt', action='store_true', default=False, help='save the adaptation for each user')
@@ -268,18 +269,19 @@ if __name__ == '__main__':
     # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.05, 0.60, 0.15, 0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00, 0.50, 0.50, 0.00, 0.00], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
+    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
+    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.05, 0.50, 0.15, 0.10, 0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00, 0.50, 0.40, 0.10, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.25, 0.25], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
     ])
              
              
-    pi0 = array([0.65, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts, then waves, then sound, then energy
        
@@ -305,11 +307,13 @@ if __name__ == '__main__':
     model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
     model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
     model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
-    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
-    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_waves, 2)]
+    model6 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2)]
+
+    model7 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
+    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_waves, 2)]
 
 
-    models = [model0, model1, model2, model3, model4, model5, model6, model7]
+    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -347,7 +351,7 @@ if __name__ == '__main__':
         
         sc[where(sc < 0)] = 0.0
         
-        waves[where(soundmags > 55)] += 1
+        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
         waves[where(energy > 15000)] += 1
         
         waves[where(waves > 0)] = 1.0;
@@ -355,7 +359,7 @@ if __name__ == '__main__':
         l[where(l < 0)] = 0.0
         l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
-        energy = log2((energy + 500)/500).astype(int)
+        energy /= 2000
 
         
         '''
@@ -417,7 +421,7 @@ if __name__ == '__main__':
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
         sc[where(sc < 0)] = 0.0
         
-        waves[where(soundmags > 55)] += 1
+        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
         waves[where(energy > 15000)] += 1
 
         waves[where(waves > 0)] = 1.0;
@@ -427,7 +431,7 @@ if __name__ == '__main__':
         l[where(l < 0)] = 0.0
         l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
-        energy = log2((energy + 500)/500).astype(int)
+        energy /= 2000
         
         
         seg = []
@@ -497,7 +501,7 @@ if __name__ == '__main__':
             plot(t2, energy)
             plot(t2, waves)
             plot(t2, soundmags/10.0 )
-            legend(['log light', 'pill wake counts', 'log sound counts', 'log energy', 'wavecount'])
+            legend(['log light', 'pill wake counts', 'log sound counts', 'energy', 'wavecount', 'sound magnitude'])
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
             title("userid=%s" % (str(key)))

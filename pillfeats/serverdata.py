@@ -4,11 +4,11 @@ import requests
 import datetime
 import calendar
 
-#k_url = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/datascience/device_sensors_motion/'
-k_url = 'http://localhost:9997/v1/datascience/device_sensors_motion/'
+k_url = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/datascience/device_sensors_motion/'
+#k_url = 'http://localhost:9997/v1/datascience/device_sensors_motion/'
 
-#k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
-k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
+k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
+#k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
 k_headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 
 
