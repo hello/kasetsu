@@ -25,31 +25,29 @@ k_user_list = [1, 1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039,
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 40
-k_min_num_days_of_sense_data = 2.5
+k_min_num_days_of_sense_data = 0
 k_min_date = '2015-02-22'
-k_num_days_of_data = 10
+k_num_days_of_data = 1
 
 k_period_in_seconds = 15 * 60.0
-k_segment_spacing_in_seconds = 120 * 60.0
-k_min_segment_length_in_seconds = 240*60.0
-k_segment_padding_in_seconds = 180 * 60.0
 k_min_sleep_duration_hours = 1.5
 light_sleep_limit = 6 #periods
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
+k_sound_noise_floor = 40.0
 
 not_on_bed_states = [0, 1]
 on_bed_states = [2, 3, 4, 5, 6, 7, 8]
-wake_states = [0, 1, 2, 3, 6, 7, 8]
-sleep_states = [4, 5]
+wake_states = [0, 1, 2, 3, 7, 8, 9]
+sleep_states = [4, 5, 6]
 
 light_sleep_state = 9999
 regular_sleep_state = 4
 disturbed_sleep_state = 5
 
-forbidden_keys = [1057]
+forbidden_keys = []
 
 
 def to_proto(composite_hmm, user, timestring):
@@ -231,10 +229,8 @@ def get_sleep_times(t, path):
 def fill_connections(A, ind1, ind2):
     for i in ind1:
         for j in ind2:
-            A[j, i] += 1
             A[i, j] += 1
             A[i, i] += 1
-            A[j, j] += 1
             
 def create_state_transition_matrix(indices):
     idx = [0]
@@ -250,9 +246,13 @@ def create_state_transition_matrix(indices):
         #self
         fill_connections(A, indices_list[i], indices_list[i])
         
-        #nearby
-        if i > 0:
+        #the next
+        if i == 0:
+            fill_connections(A, indices_list[-1], indices_list[0])
+        else:
             fill_connections(A, indices_list[i-1], indices_list[i])
+
+
 
     for irow in xrange(A.shape[0]):
         A[irow, :] = A[irow, :] / sum(A[irow, :])
@@ -297,65 +297,69 @@ if __name__ == '__main__':
     high_light = 6.0
     init_light_stddev = 1.5
     
-    no_motion = 0.5
+    no_motion = 0.05
     low_motion = 3.0
     med_motion = 4.0
     high_motion = 8.0
     
-    no_waves = [0.999, 0.001]
-    low_waves = [0.9, 0.1]
-    med_waves = [0.5, 0.5]
-    high_waves = [0.1, 0.9]
+    no_waves = 0.1#[0.999, 0.001]
+    low_waves = 0.5 #[0.9, 0.1]
+    med_waves = 1.0 #[0.5, 0.5]
+    high_waves = 2.0 #[0.1, 0.9]
     
     low_sound = 4.0
     high_sound = 6.0
     sound_stddev = 2.0
     
-    low_energy = 4000
-    high_energy = 15000
-    low_energy_stddev = 3000
-    high_energy_stddev = 6000
+    low_energy = 4
+    high_energy = 15
+    low_energy_stddev = 3
+    high_energy_stddev = 6
     
     indices = []
     
-    #                 light,                        counts,                     waves,                       sound,                energy
-    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
-    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)] 
+    #                 light,                        counts,                     waves,             disturbances,                energy
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_poisson(low_waves, 2)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_poisson(low_waves, 2)]
     
     not_on_bed_models = [model0, model1]
     indices.append(len(not_on_bed_models))
 
     #any combination of energy, motion, and light that is not both low motion and low energy
-    model2 = [make_gamma(low_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4) ]
-    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
-    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4)]
-    model5 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4) ]
-    model6 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
-    model7 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(med_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(high_energy, high_energy_stddev, 4)]
+    model2 = [make_gamma(low_light,init_light_stddev, 0),   make_poisson(high_motion, 1), make_poisson(med_waves, 2)]
+    model3 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_poisson(med_waves, 2)]
 
    
-    on_bed_models = [model2, model3, model4, model5, model6, model7]
-    indices.append(len(on_bed_models))
+    pre_sleep = [model2, model3]
+    indices.append(len(pre_sleep))
 
     #low energy, low motion, in both low and high light, and low and high sound
-    model8 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
-    model9 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2), make_gamma(high_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
-    model10 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2), make_gamma(low_sound, sound_stddev, 3), make_gamma(low_energy, low_energy_stddev, 4)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_poisson(no_waves, 2)]
+    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_poisson(no_waves, 2)]
+    model6 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_poisson(no_waves, 2)]
 
-    sleep_models = [model8, model9, model10]
+    sleep_models = [model4, model5, model6]
     indices.append(len(sleep_models))
 
- 
+    model7 = [make_gamma(low_light,init_light_stddev, 0),   make_poisson(high_motion, 1), make_poisson(med_waves, 2)]
+    model8 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_poisson(med_waves, 2)]
+
+    post_sleep = [model7, model8]
+    indices.append(len(sleep_models))
+
    
  
  
     models = []
     models.extend(not_on_bed_models)
-    models.extend(on_bed_models)
+    models.extend(pre_sleep)
     models.extend(sleep_models)
+    models.extend(post_sleep)
+    
     print (len(models))
     
     A = create_state_transition_matrix(indices) 
+
     pi0 = ones((len(models))) / len(models)
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
@@ -393,16 +397,15 @@ if __name__ == '__main__':
 
         
         sc[where(sc < 0)] = 0.0
-        
+        soundmags[where(soundmags < k_sound_noise_floor)] = k_sound_noise_floor
         waves[where(soundmags > 55)] += 1
         waves[where(energy > 15000)] += 1
         
-        waves[where(waves > 0)] = 1.0;
-        sc = log2(sc + 1.0).astype(int)
+        #waves[where(waves > 0)] = 1.0;
         l[where(l < 0)] = 0.0
         l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
-        energy = log2((energy + 500)/500).astype(int)
+        energy /= 1000
 
         
         '''
@@ -412,7 +415,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i], waves[i],  sc[i], energy[i]])
+            flat_seg.append([l[i], c[i], waves[i],  soundmags[i], energy[i]])
 
         count += 1
         
@@ -439,7 +442,7 @@ if __name__ == '__main__':
         hmm_dict['default'] = hmm.to_dict()
 
 
-        to_proto(hmm,'-1', timestring)
+        #to_proto(hmm,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
@@ -467,14 +470,17 @@ if __name__ == '__main__':
         waves[where(soundmags > 55)] += 1
         waves[where(energy > 15000)] += 1
 
-        waves[where(waves > 0)] = 1.0;
+        #waves[where(waves > 0)] = 1.0;
+
+        soundmags[where(soundmags < k_sound_noise_floor)] = k_sound_noise_floor
 
         sc = log2(sc + 1.0).astype(int)
 
         l[where(l < 0)] = 0.0
         l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
         energy[where(energy < 0)] = 0.0
-        energy = log2((energy + 500)/500).astype(int)
+        energy /= 1000
+        #energy = log2((energy + 500)/500).astype(int)
         
         
         seg = []
