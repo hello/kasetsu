@@ -18,7 +18,9 @@ k_max_gaussian_variance = 100
 
 k_min_gamma_mean = 0.01
 k_min_gamma_variance = 0.01
+k_min_val_for_gamma = 0.1
 
+k_min_loglik = -10.0
 
 def model_factory(model_type, model_data):
     
@@ -103,7 +105,8 @@ class GammaDistribution(object):
         
     def eval(self, x):
         data = x[:, self.obsnum]
-                
+               
+        data[numpy.where(data < k_min_val_for_gamma)] = k_min_val_for_gamma
         the_eval = self.dist.pdf(data)
 
         #print data[30:40]
@@ -318,13 +321,15 @@ class CompositeModel(object):
         
             
     def eval(self, x):
-        liks = numpy.ones((x.shape[0],))
+        liks = numpy.zeros((x.shape[0],))
         
         for model in self.models:
-            liks2 = model.eval(x)
-            liks = liks * liks2
+            liks2 = numpy.log(model.eval(x))
+            liks = liks + liks2
         
-        return liks
+        liks -= numpy.amax(liks)
+        liks[numpy.where(liks < k_min_loglik)] = k_min_loglik
+        return numpy.exp(liks)
         
     def reestimate(self, x, gammaForThisState):
         for i in range(len(self.models)):
