@@ -17,17 +17,14 @@ import serverdata
 import os.path
 
     
-k_user_list = [1070, 1063, 1042, 1005, 1002, 1038, 1050, 1040, 1039, 
-       1045, 1043, 1060, 1012, 1057, 1061, 1071, 1056, 1053, 1067, 1044, 
-       1049, 1073, 1007, 1047, 1072, 1021, 1066, 1059, 1001, 1003, 1051, 
-       1062, 1006, 1013, 1034, 1025, 1052, 1041]
+k_user_list = [1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
 
 save_filename = 'savedata3.json'
 
-k_min_count_pill_data = 80
-k_min_num_days_of_sense_data = 5
-k_min_date = '2015-02-27'
-k_num_days_of_data = 7
+k_min_count_pill_data = 0
+k_min_num_days_of_sense_data = 0
+k_min_date = '2015-02-22'
+k_num_days_of_data = 14
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -50,7 +47,7 @@ light_sleep_state = 9999
 regular_sleep_state = 4
 disturbed_sleep_state = 5
 
-forbidden_keys = [1057]
+forbidden_keys = []
 
 
 def to_proto(composite_hmm, user, timestring):
@@ -269,15 +266,14 @@ if __name__ == '__main__':
     # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
-    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.05, 0.50, 0.15, 0.10, 0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00, 0.50, 0.40, 0.10, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.25, 0.25], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
+    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
+    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.05, 0.50, 0.10, 0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.25, 0.25], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
+    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
     ])
              
              
@@ -295,25 +291,29 @@ if __name__ == '__main__':
     med_motion = 4.0
     high_motion = 8.0
     
-    no_waves = [0.999, 0.001]
-    low_waves = [0.9, 0.1]
-    med_waves = [0.5, 0.5]
-    high_waves = [0.1, 0.9]
+
+    low_energy = 2.0
+    low_energy_stddev = 1.0
+    high_energy = 6.0
+    high_energy_stddev = 3.0
     
-    #                 light,                        counts,                     waves,                       sound,                energy
-    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_waves, 2)]
-    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_waves, 2)] 
-    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(low_waves, 2) ]
-    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(low_waves, 2)]
-    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(no_waves, 2)]
-    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(no_waves, 2)]
-    model6 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(no_waves, 2)]
+    low_sound = 5.0
+    low_sound_stddev = 4.0
+    high_sound = 15.0
+    high_sound_stddev = 10
+    
+    #                 light,                        counts,                              energy                                       audio
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)] 
+    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
+    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
+    model5 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
+    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
+    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
 
-    model7 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_waves, 2)]
-    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_waves, 2)]
 
-
-    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
+    models = [model0, model1, model2, model3, model4, model5, model6, model7]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -351,9 +351,11 @@ if __name__ == '__main__':
         
         sc[where(sc < 0)] = 0.0
         
-        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
-        waves[where(energy > 15000)] += 1
-        
+        #waves[where(soundmags > k_sound_disturbance_threshold)] += 1
+        #waves[where(energy > 15000)] += 1
+        soundmags -= 40.0
+        soundmags[where(soundmags < 0)] = 0;
+
         waves[where(waves > 0)] = 1.0;
         sc = log2(sc + 1.0).astype(int)
         l[where(l < 0)] = 0.0
@@ -369,7 +371,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i], waves[i],  sc[i], energy[i]])
+            flat_seg.append([l[i], c[i],energy[i], soundmags[i]])
 
         count += 1
         
@@ -396,7 +398,7 @@ if __name__ == '__main__':
         hmm_dict['default'] = hmm.to_dict()
 
 
-        to_proto(hmm,'-1', timestring)
+        #to_proto(hmm,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
@@ -420,10 +422,11 @@ if __name__ == '__main__':
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
         sc[where(sc < 0)] = 0.0
-        
-        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
-        waves[where(energy > 15000)] += 1
+        soundmags -= 40.0
+        soundmags[where(soundmags < 0)] = 0;
 
+        #waves[where(soundmags > k_sound_disturbance_threshold)] += 1
+        #waves[where(energy > 15000)] += 1
         waves[where(waves > 0)] = 1.0;
 
         sc = log2(sc + 1.0).astype(int)
@@ -436,7 +439,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i],waves[i], sc[i], energy[i]])
+            seg.append([l[i], c[i],energy[i], soundmags[i]])
         
         seg = array(seg)
         
