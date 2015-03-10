@@ -20,7 +20,7 @@ k_min_gamma_mean = 0.01
 k_min_gamma_variance = 0.01
 k_min_val_for_gamma = 0.1
 
-k_min_loglik = -10.0
+k_min_loglik = -30.0
 
 def model_factory(model_type, model_data):
     
@@ -318,18 +318,14 @@ class CompositeModel(object):
             
         self.add_model(model_type, model_data)
         
-        
-            
     def eval(self, x):
-        liks = numpy.zeros((x.shape[0],))
+        logliks = numpy.zeros((x.shape[0],))
         
         for model in self.models:
-            liks2 = numpy.log(model.eval(x))
-            liks = liks + liks2
+            logliks2 = numpy.log(model.eval(x))
+            logliks += logliks2 
         
-        liks -= numpy.amax(liks)
-        liks[numpy.where(liks < k_min_loglik)] = k_min_loglik
-        return numpy.exp(liks)
+        return logliks
         
     def reestimate(self, x, gammaForThisState):
         for i in range(len(self.models)):
@@ -386,10 +382,17 @@ class CompositeModelHMM(_BaseHMM):
     
     def _mapB(self,observations):
         self.B_map = numpy.zeros( (self.n,observations.shape[0]), dtype=self.precision)
+        
         for i in xrange(self.n):
             self.B_map[i, :] = self.models[i].eval(observations)
         
-       
+        themax = numpy.amax(self.B_map.flatten())
+        #print ('the maximum is %f') % (themax)
+
+        self.B_map -= themax
+        self.B_map[numpy.where(self.B_map < k_min_loglik)] = k_min_loglik
+        self.B_map = numpy.exp(self.B_map)
+
                 
     def get_status(self):
         for i in xrange(len(self.models)):
