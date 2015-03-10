@@ -29,7 +29,6 @@ def model_factory(model_type, model_data):
         return UniformModel(model_data)
         
     elif model_type == 'poisson':
-        print 'creating poisson model'
         return PoissonModel(model_data)
         
     elif model_type == 'gaussian_mixture':
@@ -39,8 +38,9 @@ def model_factory(model_type, model_data):
         return GammaDistribution(model_data)
         
     elif model_type == 'discrete_alphabet':
-        print 'creating discrete model'
         return DiscreteAlphabetModel(model_data)
+    else:
+        print 'ERROR: %s unrecognized model!!!!' % model_type
         
     return None
 
@@ -76,7 +76,7 @@ class PoissonModel(object):
         self.dist = scipy.stats.poisson(self.mean)
         
     def get_status(self):
-        return "psn %.2f" % (self.mean)
+        return "psn:%.2f" % (self.mean)
 
         
     def to_dict(self):
@@ -347,7 +347,7 @@ class CompositeModel(object):
         for model in self.models:
             status_line.append(model.get_status())
             
-        return ",".join(status_line)
+        return ",  ".join(status_line)
 
 class CompositeModelHMM(_BaseHMM):
 
@@ -380,7 +380,7 @@ class CompositeModelHMM(_BaseHMM):
         
             for i in xrange(self.n):
                 models_for_this_state = model_list[i]
-                print models_for_this_state
+                #print models_for_this_state
                 for j in xrange(len(models_for_this_state)):
                     self.models[i].add_model_from_dict(models_for_this_state[j])
     
