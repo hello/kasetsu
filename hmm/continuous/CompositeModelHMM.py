@@ -296,7 +296,7 @@ class DiscreteAlphabetModel(object):
         self.data = Bnew
        
     def get_status(self):
-        return ",".join([("%.2f" % f) for f in self.data])
+        return "alph:" + ",".join([("%.2f" % f) for f in self.data])
 
     def to_dict(self):
         return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum} }
