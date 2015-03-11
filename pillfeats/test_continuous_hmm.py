@@ -302,15 +302,19 @@ if __name__ == '__main__':
     high_sound = 15.0
     high_sound_stddev = 10
     
+    low_wave = [0.9, 0.1]
+    high_wave = [0.1, 0.9]
+    
+    
     #                 light,                        counts,                              energy                                       audio
-    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
-    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)] 
-    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
-    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
-    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
-    model5 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_gamma(low_energy,  low_energy_stddev,  2),  make_gamma(low_sound,  low_sound_stddev,  3)]
-    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
-    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_gamma(high_energy, high_energy_stddev, 2),  make_gamma(high_sound,  high_sound_stddev,  3)]
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)] 
+    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
+    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
+    model5 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
+    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
+    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
 
 
     models = [model0, model1, model2, model3, model4, model5, model6, model7]
@@ -371,7 +375,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i],energy[i], soundmags[i]])
+            flat_seg.append([l[i], c[i],waves[i], energy[i], soundmags[i]])
 
         count += 1
         
@@ -439,7 +443,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i],energy[i], soundmags[i]])
+            seg.append([l[i], c[i],waves[i], energy[i], soundmags[i]])
         
         seg = array(seg)
         
