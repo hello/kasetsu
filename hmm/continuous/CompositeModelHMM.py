@@ -20,7 +20,7 @@ k_min_gamma_mean = 0.01
 k_min_gamma_variance = 0.01
 k_min_val_for_gamma = 0.1
 
-k_min_loglik = -30.0
+k_min_loglik = -15.0
 
 def model_factory(model_type, model_data):
     
