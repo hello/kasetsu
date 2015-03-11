@@ -151,7 +151,7 @@ class GammaDistribution(object):
 
 
     def get_status(self):
-        return "m=%.2f,s=%.2f" % (self.mean, self.stddev)
+        return "gam:%.2f,%.2f" % (self.mean, self.stddev)
 
 
 class OneDimensionalGaussianMixture(object):
