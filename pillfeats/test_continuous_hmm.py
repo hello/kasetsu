@@ -40,8 +40,8 @@ k_sound_disturbance_threshold = 60.0
 
 not_on_bed_states = [0, 1]
 on_bed_states = [2, 3, 4, 5, 6, 7, 8]
-wake_states = [0, 1, 2, 3, 6, 7, 8]
-sleep_states = [4, 5]
+wake_states = [0, 1, 2, 3, 7, 8]
+sleep_states = [4, 5, 6]
 
 light_sleep_state = 9999
 regular_sleep_state = 4
@@ -266,22 +266,23 @@ if __name__ == '__main__':
     # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.70, 0.10,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.70,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.70, 0.15,   0.05, 0.05, 0.05,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.15, 0.70,   0.05, 0.05, 0.05,   0.00, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.00, 0.05,   0.70, 0.10,   0.15, 0.00, 0.00,   0.00, 0.00], 
-    [0.00, 0.00,   0.10, 0.70,   0.20, 0.00, 0.00,   0.00, 0.00], 
+    [0.00, 0.05,   0.60, 0.10, 0.10,   0.10, 0.05, 0.00,   0.00, 0.00], 
+    [0.00, 0.05,   0.10, 0.60, 0.10,   0.10, 0.05, 0.00,   0.00, 0.00], 
+    [0.00, 0.00,   0.10, 0.10, 0.60,   0.15, 0.05, 0.00,   0.00, 0.00], 
     
-    [0.00, 0.00,   0.00, 0.05,   0.50, 0.10, 0.05,   0.10, 0.10], 
-    [0.00, 0.00,   0.00, 0.00,   0.50, 0.50, 0.00,   0.00, 0.00], 
-    [0.00, 0.00,   0.00, 0.00,   0.00, 0.00, 0.50,   0.25, 0.25], 
+    [0.00, 0.00,   0.00, 0.00, 0.05,   0.50, 0.10, 0.05,   0.10, 0.10], 
+    [0.00, 0.00,   0.00, 0.00, 0.00,   0.50, 0.50, 0.00,   0.00, 0.00], 
+    [0.00, 0.00,   0.00, 0.00, 0.00,   0.10, 0.10, 0.50,   0.15, 0.15], 
     
-    [0.10, 0.10,   0.00, 0.00,   0.00, 0.00, 0.00,   0.70, 0.10], 
-    [0.10, 0.10,   0.00, 0.00,   0.00, 0.00, 0.00,   0.10, 0.70]
+    [0.10, 0.10,   0.00, 0.00, 0.00,   0.10, 0.10, 0.00,   0.50, 0.10], 
+    [0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00, 0.00,   0.10, 0.70]
     ])
              
              
-    pi0 = array([0.60, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+    pi0 = array([0.55, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
         
     #light, then counts, then waves, then sound, then energy
        
@@ -310,22 +311,26 @@ if __name__ == '__main__':
     high_wave = [0.1, 0.9]
     
     low_sc = 0.5
-    high_sc = 4.0
+    low_sc_stddev = 0.4
+    high_sc = 10.0
+    high_sc_stddev = 8.0
     
     
-    #                 light,                        counts,                              energy                                       audio
-    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_poisson(low_sc, 5)]
-    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_poisson(low_sc, 5)] 
-    model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_poisson(high_sc, 5)]
-    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_poisson(high_sc, 5)]
-    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_poisson(low_sc, 5)]
-    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(low_wave, 2), make_gamma(high_energy,  high_energy_stddev,  3),make_gamma(low_sound,  low_sound_stddev,  4),   make_poisson(low_sc, 5)]
-    model6 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(low_motion, 1), make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),    make_gamma(low_sound,  low_sound_stddev,  4),   make_poisson(low_sc, 5)]
-    model7 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3), make_gamma(high_sound,  high_sound_stddev,  4), make_poisson(high_sc, 5)]
-    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_poisson(high_sc, 5)]
+    
+    #                 light,                                      counts,                      waves                         energy                                       audio magnitude                                 audio counts
+    model0 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_gamma(low_sc,low_sc_stddev,  5)]
+    model1 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(no_motion, 1),   make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_gamma(low_sc,low_sc_stddev,  5)] 
+    model2a = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_gamma(high_sc,high_sc_stddev,  5)]
+    model2b = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(low_energy, low_energy_stddev, 3),  make_gamma(low_sound,  low_sound_stddev,  4), make_gamma(high_sc,high_sc_stddev,  5)]
+    model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_gamma(high_sc,high_sc_stddev,  5)]
+    model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),   make_gamma(low_sound,  low_sound_stddev,  4),   make_gamma(low_sc,low_sc_stddev,  5)]
+    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(low_wave, 2), make_gamma(high_energy,  high_energy_stddev,  3),make_gamma(low_sound,  low_sound_stddev,  4),   make_gamma(low_sc,low_sc_stddev,  5)]
+    model6 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(low_motion, 1), make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),    make_gamma(low_sound,  low_sound_stddev,  4),   make_gamma(low_sc,low_sc_stddev,  5)]
+    model7 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3), make_gamma(high_sound,  high_sound_stddev,  4), make_gamma(high_sc,high_sc_stddev,  5)]
+    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4), make_gamma(high_sc,high_sc_stddev,  5)]
 
 
-    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
+    models = [model0, model1, model2a, model2b,  model3, model4, model5, model6, model7, model8]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -362,9 +367,9 @@ if __name__ == '__main__':
 
         
         sc[where(sc < 0)] = 0.0
-        sc[where(sc > 10)] = 10
-
-        sc = sc.astype(int)
+        sc = log(sc + 1.0) / log(2)
+        #sc[where(sc > 10)] = 10
+        #sc = sc.astype(int)
 
         #waves[where(soundmags > k_sound_disturbance_threshold)] += 1
         #waves[where(energy > 15000)] += 1
@@ -436,9 +441,11 @@ if __name__ == '__main__':
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
         sc[where(sc < 0)] = 0.0
-        sc[where(sc > 10)] = 10
+        sc = log(sc + 1.0) / log(2)
 
-        sc = sc.astype(int)
+        #sc[where(sc > 10)] = 10
+        #sc = sc.astype(int)
+        
         soundmags -= 40.0
         soundmags[where(soundmags < 0)] = 0;
 
