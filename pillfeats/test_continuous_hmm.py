@@ -266,14 +266,18 @@ if __name__ == '__main__':
     # 8 - woken up (med light, high activity) 
     
     A = array([
-    [0.70, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.10, 0.70, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00], 
-    [0.00, 0.05, 0.70, 0.10, 0.15, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.10, 0.70, 0.20, 0.00, 0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.05, 0.50, 0.10, 0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.25, 0.25], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.70, 0.10], 
-    [0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70]
+    [0.70, 0.10,   0.10, 0.10,   0.00,0.00,  0.00,   0.00, 0.00], 
+    [0.10, 0.70,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    
+    [0.00, 0.05,   0.70, 0.10,   0.15, 0.00, 0.00,   0.00, 0.00], 
+    [0.00, 0.00,   0.10, 0.70,   0.20, 0.00, 0.00,   0.00, 0.00], 
+    
+    [0.00, 0.00,   0.00, 0.00,   0.60, 0.10, 0.10,   0.10, 0.10], 
+    [0.00, 0.00,   0.00, 0.00,   0.50, 0.50, 0.00,   0.00, 0.00], 
+    [0.00, 0.00,   0.00, 0.00,   0.00, 0.00, 0.50,   0.25, 0.25], 
+    
+    [0.10, 0.10,   0.00, 0.00,   0.00, 0.00, 0.00,   0.70, 0.10], 
+    [0.10, 0.10,   0.00, 0.00,   0.00, 0.00, 0.00,   0.10, 0.70]
     ])
              
              
@@ -312,12 +316,13 @@ if __name__ == '__main__':
     model2 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
     model3 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
     model4 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(low_motion, 1),  make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
-    model5 = [make_gamma(high_light,init_light_stddev, 0),  make_poisson(low_motion, 1), make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
-    model6 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(med_motion, 1),  make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
-    model7 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
+    model5 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(low_wave, 2), make_gamma(high_energy,  high_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
+    model6 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(low_motion, 1), make_discrete(low_wave, 2), make_gamma(low_energy,  low_energy_stddev,  3),  make_gamma(low_sound,  low_sound_stddev,  4)]
+    model7 = [make_gamma(low_light,init_light_stddev, 0),  make_poisson(high_motion, 1),  make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
+    model8 = [make_gamma(high_light,init_light_stddev, 0), make_poisson(high_motion, 1), make_discrete(high_wave, 2), make_gamma(high_energy, high_energy_stddev, 3),  make_gamma(high_sound,  high_sound_stddev,  4)]
 
 
-    models = [model0, model1, model2, model3, model4, model5, model6, model7]
+    models = [model0, model1, model2, model3, model4, model5, model6, model7, model8]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
