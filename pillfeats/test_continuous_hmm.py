@@ -39,14 +39,12 @@ k_lux_multipler = 4.0
 k_sound_disturbance_threshold = 55.0
 k_energy_disturbance_threshold = 15000
 
-not_on_bed_states = [0, 1]
-on_bed_states = [2, 3, 4, 5, 6, 7, 8]
-wake_states = [0, 1, 2, 3, 7, 8]
-sleep_states = [4, 5, 6]
+on_bed_states = [4, 5, 6, 7, 8, 9, 10]
+sleep_states = [6, 7, 8, 9]
 
-light_sleep_state = 9999
-regular_sleep_state = 4
-disturbed_sleep_state = 5
+light_sleep_state = [6]
+regular_sleep_state = [7, 9]
+disturbed_sleep_state = [8]
 
 forbidden_keys = []
 
@@ -91,10 +89,15 @@ def to_proto(composite_hmm, user, timestring):
         vec = d[2]['model_data']['alphabet_probs']
         for v in vec:
             m_disturbances.probabilities.append(v)
+            
+        m_soundcounts = sleep_hmm_pb2.GammaModel()
+        m_soundcounts.mean = d[3]['model_data']['mean']
+        m_soundcounts.stddev = d[3]['model_data']['stddev']
 
         m_state.light.MergeFrom(m_light)
         m_state.motion_count.MergeFrom(m_motion_count)
         m_state.disturbances.MergeFrom(m_disturbances)
+        m_state.log_sound_count.MergeFrom(m_soundcounts)
         
         
         if i in sleep_states:
@@ -107,11 +110,11 @@ def to_proto(composite_hmm, user, timestring):
         else:
             m_state.bed_mode = sleep_hmm_pb2.OFF_BED
             
-        if i == light_sleep_state:
+        if i in light_sleep_state:
             m_state.sleep_depth = sleep_hmm_pb2.LIGHT
-        elif i == regular_sleep_state:
+        elif i in regular_sleep_state:
             m_state.sleep_depth = sleep_hmm_pb2.REGULAR
-        elif i == disturbed_sleep_state:
+        elif i in disturbed_sleep_state:
             m_state.sleep_depth = sleep_hmm_pb2.DISTURBED
         else:
             m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
@@ -176,7 +179,7 @@ def get_sleep_times(t, path):
         if state == light_sleep_state:
             light_sleep_count += 1
             
-        if state in wake_states:
+        if state not in sleep_states:
             new_sleep_mode = mode_not_sleeping
             
         if state in sleep_states:
@@ -185,7 +188,7 @@ def get_sleep_times(t, path):
             
         #####################
         #off bed? zero out light sleep counter
-        if state in not_on_bed_states:
+        if state not in on_bed_states:
             light_sleep_count = 0
             new_bed_mode = mode_off_bed
 
@@ -288,20 +291,21 @@ if __name__ == '__main__':
     
     A = array([
     
-    [0.65, 0.10, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.65, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.65, 0.10, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.65, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00,   0.00, 0.00], 
-    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.10, 0.65,    0.10, 0.05, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.60, 0.10, 0.05,   0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.50, 0.50, 0.00,   0.00, 0.00], 
-    [0.10, 0.00, 0.10, 0.00,   0.05,  0.00,   0.00, 0.00, 0.65,   0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.55, 0.05, 0.10, 0.05,   0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.50, 0.00, 0.00,   0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.00, 0.50, 0.00,   0.00, 0.00], 
+    [0.10, 0.00, 0.10, 0.00,   0.05,  0.00,   0.00, 0.00, 0.00, 0.65,   0.10, 0.10], 
     
-    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00,   0.60, 0.10], 
-    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.05, 0.00,   0.10, 0.55]
+    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00, 0.00,   0.60, 0.10], 
+    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.05, 0.00,   0.10, 0.55]
     ])
              
              
@@ -319,15 +323,16 @@ if __name__ == '__main__':
     model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
 
     model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
-    model7 =[make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
-    model8 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
+    model7 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
+    model8 =[make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
+    model9 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
     
-    model9 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
-    model10 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model10 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model11 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
 
     
     
-    models = [model0, model1, model2, model3, model4,model5, model6, model7, model8, model9, model10]
+    models = [model0, model1, model2, model3, model4,model5, model6, model7, model8, model9, model10, model11]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -414,7 +419,7 @@ if __name__ == '__main__':
         hmm_dict['default'] = hmm.to_dict()
 
 
-        #to_proto(hmm,'-1', timestring)
+        to_proto(hmm,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
