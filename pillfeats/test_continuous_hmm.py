@@ -38,6 +38,7 @@ k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
 k_sound_disturbance_threshold = 55.0
 k_energy_disturbance_threshold = 15000
+k_loglight_change_threshold = 2.0
 
 on_bed_states = [4, 5, 6, 7, 8, 9, 10]
 sleep_states = [6, 7, 8, 9]
