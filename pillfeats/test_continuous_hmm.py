@@ -17,7 +17,7 @@ import serverdata
 import os.path
 
     
-k_user_list = [1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
+k_user_list = [1085, 1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
 
 save_filename = 'savedata3.json'
 
@@ -41,10 +41,10 @@ k_energy_disturbance_threshold = 15000
 k_loglight_change_threshold = 2.0
 
 on_bed_states = [4, 5, 6, 7, 8, 9, 10]
-sleep_states = [6, 7, 8, 9]
+sleep_states = [6, 7, 8]
 
 light_sleep_state = [6]
-regular_sleep_state = [7, 9]
+regular_sleep_state = [7]
 disturbed_sleep_state = [8]
 
 forbidden_keys = []
@@ -292,21 +292,20 @@ if __name__ == '__main__':
     
     A = array([
     
-    [0.65, 0.10, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.65, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.65, 0.10, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.65, 0.10, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
+    [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00, 0.00,   0.00, 0.00], 
-    [0.05, 0.05, 0.05, 0.05,   0.10, 0.65,    0.10, 0.05, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.55, 0.05, 0.10, 0.05,   0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.50, 0.00, 0.00,   0.00, 0.00], 
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.00, 0.50, 0.00,   0.00, 0.00], 
-    [0.10, 0.00, 0.10, 0.00,   0.05,  0.00,   0.00, 0.00, 0.00, 0.65,   0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.55, 0.10, 0.05,   0.10, 0.10], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.50, 0.00,   0.00, 0.00], 
+    [0.10, 0.00, 0.10, 0.00,   0.05,  0.00,   0.00, 0.00, 0.65,   0.10, 0.10], 
     
-    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00, 0.00,   0.60, 0.10], 
-    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.05, 0.00,   0.10, 0.55]
+    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00,   0.60, 0.10], 
+    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.05, 0.00,   0.10, 0.55]
     ])
              
              
@@ -320,20 +319,19 @@ if __name__ == '__main__':
     model2 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
     model3 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
     
-    model4 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model4 = [make_gamma(med_light,ligh_stddev, 0),        make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
     model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
 
     model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
-    model7 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
-    model8 =[make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
-    model9 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
+    model7 =[make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
+    model8 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
     
-    model10 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
-    model11 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model9 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model10 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
 
     
     
-    models = [model0, model1, model2, model3, model4,model5, model6, model7, model8, model9, model10, model11]
+    models = [model0, model1, model2, model3, model4,model5, model6, model7, model8, model9, model10]
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
