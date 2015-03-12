@@ -44,6 +44,7 @@ def model_factory(model_type, model_data):
         
     return None
 
+
 class PoissonModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
@@ -265,7 +266,11 @@ class DiscreteAlphabetModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
         self.data = data['alphabet_probs']
-                
+        if data.has_key('allow_reestimation'):
+            self.allow_reestimation = data['allow_reestimation']
+        else:
+            self.allow_reestimation = True
+        
     def eval(self, x):
         xvec = x[:, self.obsnum].astype(int)
         
@@ -278,6 +283,10 @@ class DiscreteAlphabetModel(object):
         
     
     def reestimate(self, x, gammaForThisState):
+        
+        if not self.allow_reestimation:
+            return
+        
         num_obs = x.shape[0]
         m = len(self.data)
         xvec = x[:, self.obsnum].tolist()
@@ -299,7 +308,7 @@ class DiscreteAlphabetModel(object):
         return "alph:" + ",".join([("%.2f" % f) for f in self.data])
 
     def to_dict(self):
-        return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum} }
+        return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum, 'allow_reestimation' : self.allow_reestimation} }
         
         
 class CompositeModel(object):

@@ -12,6 +12,8 @@ def data_to_windows(data,  period_in_seconds):
     soundmag = array(data[3])
     m = array(data[4])
     w = array(data[5])
+    offset = array(data[6])
+    t += offset
     
     last_idx = t[0] / period_in_seconds;
     
@@ -46,9 +48,8 @@ def data_to_windows(data,  period_in_seconds):
         waves += w[i]
         lv += light[i]
         scount += sounds[i]
-        if idx == last_idx:
-            foo = 3
-        else:
+        
+        if idx != last_idx:
             foo = 4
             out_times.append(t[i])
             out_light.append(lv / count)

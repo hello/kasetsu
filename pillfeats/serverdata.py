@@ -70,7 +70,7 @@ class ServerDataGetter(object):
             key = record['account_id']
             
             if not datadict.has_key(key):
-                datadict[key] = [[], [], [], [], [], []]
+                datadict[key] = [[], [], [], [], [], [], []]
                 
             datadict[key][0].append(record['ts']/1000)
             datadict[key][1].append(record['light'])
@@ -78,6 +78,7 @@ class ServerDataGetter(object):
             datadict[key][3].append(record['sound_peak_disturbances'])
             datadict[key][4].append(record['svm_no_gravity'])
             datadict[key][5].append(record['wave_count'])
+            datadict[key][6].append(record['offset_millis']/1000)
             
         badkeys = []
         for key in datadict:

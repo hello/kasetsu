@@ -37,7 +37,7 @@ light_sleep_limit = 6 #periods
 k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
 k_sound_disturbance_threshold = 55.0
-k_energy_disturbance_threshold = 15000
+k_energy_disturbance_threshold = 10000
 k_loglight_change_threshold = 2.0
 
 on_bed_states = [4, 5, 6, 7, 8, 9, 10]
@@ -239,7 +239,11 @@ def make_uniform(mean, obsnum):
     return {'model_type' : 'uniform' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
     
 def make_discrete(dists, obsnum):
-    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists}}
+    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists, 'allow_reestimation' : True}}
+    
+def make_penalty(dists, obsnum):
+    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists, 'allow_reestimation' : False}}
+    
     
 def make_gamma(mean, stddev, obsnum):   
     return {'model_type' : 'gamma' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean,  'stddev' : stddev}}
@@ -264,7 +268,7 @@ if __name__ == '__main__':
     med_light = 3.0
     high_light = 6.0
     low_light_stddev = 1.0
-    ligh_stddev = 2.5
+    high_light_stddev = 2.5
     
     no_motion = 0.01
     low_motion = 3.0
@@ -279,6 +283,9 @@ if __name__ == '__main__':
     sc_high = 2.0
     sc_low_stddev = 0.5
     sc_high_stddev = 1.0
+    
+    no_penalty = [1., 1.]
+    yes_penalty = [1., 1e-6]
     
     #states
     # 0 - off bed #1 (very low activity,low light)
@@ -314,20 +321,20 @@ if __name__ == '__main__':
     #light, then counts, then waves, then sound, then energy
        
 
-    model0 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
-    model1 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
-    model2 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
-    model3 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
+    model0 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model1 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model2 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
+    model3 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(no_motion, 1),     make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
     
-    model4 = [make_gamma(med_light,ligh_stddev, 0),        make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
-    model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model4 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
 
-    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
-    model7 =[make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3)]
-    model8 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3)]
+    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
+    model7 =[make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model8 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(yes_penalty, 4)]
     
-    model9 = [make_gamma(high_light,ligh_stddev, 0),       make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
-    model10 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3)]
+    model9 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model10 = [make_gamma(low_light,low_light_stddev, 0),  make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
 
     
     
@@ -366,7 +373,9 @@ if __name__ == '__main__':
             
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
 
-        
+        tod = (t % 86400) / 3600.0
+        non_natural_light = logical_or( (tod > 18), (tod < 4)).astype(int)
+
         sc[where(sc < 0)] = 0.0
         sc = log(sc + 1.0) / log(2)
         #sc[where(sc > 10)] = 10
@@ -391,7 +400,7 @@ if __name__ == '__main__':
         '''
         
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i],waves[i], sc[i],energy[i],   soundmags[i]])
+            flat_seg.append([l[i], c[i],waves[i], sc[i],non_natural_light[i] ])
 
         count += 1
         
@@ -441,6 +450,10 @@ if __name__ == '__main__':
             continue
         
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
+        
+        tod = (t % 86400) / 3600.0
+        non_natural_light = logical_or( (tod > 18), (tod < 4)).astype(int)
+
         sc[where(sc < 0)] = 0.0
         sc = log(sc + 1.0) / log(2)
 
@@ -462,7 +475,7 @@ if __name__ == '__main__':
         
         seg = []
         for i in xrange(len(t)):
-            seg.append([l[i], c[i],waves[i], sc[i],energy[i],   soundmags[i]])
+            seg.append([l[i], c[i],waves[i], sc[i],non_natural_light[i]])
         
         seg = array(seg)
         
@@ -527,6 +540,7 @@ if __name__ == '__main__':
             plot(t2, energy)
             plot(t2, waves)
             plot(t2, soundmags/10.0 )
+            plot(t2, non_natural_light, '--')
             legend(['log light', 'pill wake counts', 'log sound counts', 'energy', 'wavecount', 'sound magnitude'])
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
