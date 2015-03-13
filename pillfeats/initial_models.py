@@ -37,8 +37,8 @@ def get_apnea_model():
     high_light_stddev = 2.5
     
     no_motion = 0.01
-    low_motion = 4.0
-    med_motion = 6.0
+    low_motion = 3.0
+    med_motion = 5.0
     high_motion = 8.0
     
 
@@ -47,10 +47,10 @@ def get_apnea_model():
    
     sc_low = 1.0
     sc_high = 2.0
-    sc_sleep = 4.0
+    sc_snore = 4.0
     sc_low_stddev = 0.5
     sc_high_stddev = 1.0
-    sc_sleep_stddev = 1.0
+    sc_snore_stddev = 1.0
     
     no_penalty = [1., 1.]
     yes_penalty = [1., 1e-6]
@@ -64,15 +64,15 @@ def get_apnea_model():
     [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
     [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00,   0.00, 0.00], 
-    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.10, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.10, 0.00,   0.00, 0.00], 
     
     [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.55, 0.10, 0.05,   0.10, 0.10], 
-    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.50, 0.00,   0.00, 0.00], 
+    [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.10, 0.55, 0.05,   0.10, 0.10], 
     [0.10, 0.00, 0.10, 0.00,   0.05,  0.00,   0.00, 0.00, 0.65,   0.10, 0.10], 
     
     [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00,   0.60, 0.10], 
-    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.05, 0.00,   0.10, 0.55]
+    [0.10, 0.10, 0.10, 0.10,   0.00, 0.00,    0.00, 0.00, 0.00,   0.10, 0.55]
     ])
              
              
@@ -89,9 +89,9 @@ def get_apnea_model():
     model4 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
     model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
 
-    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_sleep, sc_sleep_stddev, 3),   make_penalty(no_penalty, 4)]
-    model7 = [make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_sleep, sc_sleep_stddev, 3), make_penalty(no_penalty, 4)]
-    model8 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_sleep, sc_sleep_stddev, 3),   make_penalty(yes_penalty, 4)]
+    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
+    model7 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(med_motion, 1),    make_discrete(high_wave, 2),   make_gamma(sc_snore, sc_snore_stddev, 3), make_penalty(no_penalty, 4)]
+    model8 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(low_motion, 1),    make_discrete(low_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(yes_penalty, 4)]
     
     model9 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
     model10 = [make_gamma(low_light,low_light_stddev, 0),  make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
