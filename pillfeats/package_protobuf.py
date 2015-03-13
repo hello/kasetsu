@@ -6,7 +6,7 @@ import base64
 import sys
 import json
 from time import strftime
-
+import numpy
 
 from hmm.continuous.CompositeModelHMM import CompositeModelHMM
 
@@ -39,12 +39,12 @@ def to_proto(composite_hmm,aux_params, input_filename):
     Nstates = len(composite_hmm.models)
     
     sleep_hmm.num_states = Nstates
-    amat = array(composite_hmm.A).flatten().tolist()
+    amat = numpy.array(composite_hmm.A).flatten().tolist()
     
     for entry in amat:
         sleep_hmm.state_transition_matrix.append(entry)
         
-    pimat = array(composite_hmm.pi).flatten().tolist()
+    pimat = numpy.array(composite_hmm.pi).flatten().tolist()
     
     for entry in pimat:
         sleep_hmm.initial_state_probabilities.append(entry)
@@ -108,11 +108,7 @@ def to_proto(composite_hmm,aux_params, input_filename):
         
     
     return sleep_hmm
-    #f = open(filename, 'wb')
-    #f.write(sleep_hmm.SerializeToString())
-    #f.close()
-    #
-
+    
         
     
 if __name__ == '__main__':
@@ -134,10 +130,15 @@ if __name__ == '__main__':
         f = open(model_filename, 'r')
         model_data = json.load(f)
         f.close()
-        hmm = CompositeModelHMM()
-        hmm.from_dict(model_data)
+        
+        default_model_data = model_data['default']
 
-        hmm_model_protobuf = to_proto(hmm,model_data['params'], model_filename)
+        
+        hmm = CompositeModelHMM()
+        hmm.from_dict(default_model_data)
+
+
+        hmm_model_protobuf = to_proto(hmm,default_model_data['params'], model_filename)
         all_models.models.extend([hmm_model_protobuf])
     
     serialized_model_string = base64.b64encode(all_models.SerializeToString())

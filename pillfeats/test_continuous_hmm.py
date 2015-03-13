@@ -168,7 +168,6 @@ if __name__ == '__main__':
     else:
         hmm, params = initial_models.get_default_model()
 
-
     
     params['natural_light_filter_start_hour'] = k_natural_light_filter_start_time
     params['natural_light_filter_stop_hour'] = k_natural_light_filter_stop_time
@@ -199,7 +198,7 @@ if __name__ == '__main__':
             data = {args.user : data[args.user]}
     
     keys = data.keys()
-    params['users'] = ','.join([("%d" % id) for id in keys])
+    params['users'] = ','.join([("%s" % str(id)) for id in keys])
 
     print keys
 
@@ -257,6 +256,9 @@ if __name__ == '__main__':
         hmm_dict = json.load(f)
         hmm.from_dict(hmm_dict['default'])
         params = hmm_dict['default']['params']
+    else:
+        print 'using init model %s' % args.initmodel 
+
     
     #if we are training, then go do it
     if args.train == True:
