@@ -31,7 +31,9 @@ k_segment_spacing_in_seconds = 120 * 60.0
 k_min_segment_length_in_seconds = 240*60.0
 k_segment_padding_in_seconds = 180 * 60.0
 k_min_sleep_duration_hours = 1.5
-light_sleep_limit = 6 #periods
+
+k_natural_light_filter_start_time = 16 #hour in 24 hours
+k_natural_light_filter_stop_time = 4 #hour in 24 hours
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
@@ -164,7 +166,6 @@ mode_not_sleeping = 'd'
 
 def get_sleep_times(t, path):
     events = []
-    light_sleep_count = 0
     
     sleep_times = [0, 0]
     bed_times = [0, 0]
@@ -177,9 +178,6 @@ def get_sleep_times(t, path):
         
             
         #track how long in the light sleep state
-        if state == light_sleep_state:
-            light_sleep_count += 1
-            
         if state not in sleep_states:
             new_sleep_mode = mode_not_sleeping
             
@@ -190,17 +188,12 @@ def get_sleep_times(t, path):
         #####################
         #off bed? zero out light sleep counter
         if state not in on_bed_states:
-            light_sleep_count = 0
             new_bed_mode = mode_off_bed
 
         if state in on_bed_states:
             new_bed_mode = mode_on_bed
         
-        #################################
-        #too many light sleep modes? get up.
-        if light_sleep_count >= light_sleep_limit:
-            new_sleep_mode = mode_not_sleeping;   
-            
+        #################################            
         #did you just start sleeping?
         if new_sleep_mode == mode_sleeping and sleep_mode == mode_not_sleeping:
             sleep_times[0] = t[idx]
@@ -374,7 +367,7 @@ if __name__ == '__main__':
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
 
         tod = (t % 86400) / 3600.0
-        non_natural_light = logical_or( (tod > 18), (tod < 4)).astype(int)
+        non_natural_light = logical_or( (tod > k_natural_light_filter_start_time), (tod < k_natural_light_filter_stop_time)).astype(int)
 
         sc[where(sc < 0)] = 0.0
         sc = log(sc + 1.0) / log(2)
@@ -452,7 +445,7 @@ if __name__ == '__main__':
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
         
         tod = (t % 86400) / 3600.0
-        non_natural_light = logical_or( (tod > 18), (tod < 4)).astype(int)
+        non_natural_light = logical_or( (tod > k_natural_light_filter_start_time), (tod < k_natural_light_filter_stop_time)).astype(int)
 
         sc[where(sc < 0)] = 0.0
         sc = log(sc + 1.0) / log(2)
