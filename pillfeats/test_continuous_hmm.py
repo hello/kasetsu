@@ -386,6 +386,10 @@ if __name__ == '__main__':
             
         
         path = myhmm.decode(seg)
+        bic = myhmm.get_bic(seg, path, params['num_model_params'])
+        aic = myhmm.get_aic(seg, path, params['num_model_params'])
+
+        print "BIC is %f, AIC is %f" % (bic, aic)
         #model_cost = myhmm.forwardbackward(seg)
         #model_cost /= len(seg) / myhmm.d
         #print 'AVERAGE MODEL COST = %f' % model_cost
@@ -430,7 +434,7 @@ if __name__ == '__main__':
             legend(sensor_data_names)
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
-            title("userid=%s" % (str(key)))
+            title("userid=%s,bic=%f,aic=%f" % (str(key), bic, aic))
             grid('on')
             
             subplot(2, 1, 2, sharex=ax)

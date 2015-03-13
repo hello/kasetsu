@@ -20,10 +20,11 @@ def make_penalty(dists, obsnum):
 def make_gamma(mean, stddev, obsnum):   
     return {'model_type' : 'gamma' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean,  'stddev' : stddev}}
 
-def get_model_interpretation_params(on_bed_states, sleep_states):
+def get_model_interpretation_params(on_bed_states, sleep_states, num_model_params):
     params = {
     'on_bed_states' : on_bed_states,  
     'sleep_states' : sleep_states, 
+    'num_model_params' : num_model_params
     }
     
     return params
@@ -106,7 +107,10 @@ def get_apnea_model():
     regular_sleep_state = [7]
     disturbed_sleep_state = [8]
     
-    params = get_model_interpretation_params(on_bed_states, sleep_states)
+    #2 for light, 1 for motion, 2 for wave, 2 for sound count, zero for the penalty (we don't estimate anything here)
+    num_model_params = len(models) * 7
+    
+    params = get_model_interpretation_params(on_bed_states, sleep_states, num_model_params)
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
@@ -188,7 +192,10 @@ def get_default_model():
     regular_sleep_state = [7]
     disturbed_sleep_state = [8]
 
-    params = get_model_interpretation_params(on_bed_states, sleep_states)
+    #2 for light, 1 for motion, 2 for wave, 2 for sound count, zero for the penalty (we don't estimate anything here)
+    num_model_params = len(models) * 7
+    
+    params = get_model_interpretation_params(on_bed_states, sleep_states, num_model_params)
 
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     

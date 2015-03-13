@@ -93,11 +93,39 @@ class _BaseHMM(object):
                 
         return (alpha, c)
 
+    #bayesian information criteria
+    def get_bic(self, observations, path, num_model_params):
+        numobs = len(path)
+        pathcosts = self.evaluate_path_cost(observations, path, numobs)
+        
+        pathcost = numpy.sum(pathcosts)
+        
+        num_params_from_transition = numpy.sum((self.A.flatten() > 0).astype(int))
+
+        num_params_estimated = num_model_params + num_params_from_transition
+        
+        bic = 2*pathcost + num_params_estimated * numpy.log(numobs)
+        
+        return bic
+        
+    def get_aic(self, observations, path, num_model_params):
+        numobs = len(path)
+        pathcosts = self.evaluate_path_cost(observations, path, numobs)
+        
+        pathcost = numpy.sum(pathcosts)
+        
+        num_params_from_transition = numpy.sum((self.A.flatten() > 0).astype(int))
+        num_params_estimated = num_model_params + num_params_from_transition
+
+        aic = 2*pathcost + 2 * num_params_estimated
+        
+        return aic
+
     def evaluate_path_cost(self, observations, path, numobs):
         self._mapB(observations)
         p = numpy.zeros((numobs, ))
         
-        p[0] = -numpy.log(self.B_map[path[0]][0] + 1e-15) - numpy.log(self.pi[0] + 1e-15)
+        p[0] = -numpy.log(self.B_map[path[0]][0] + 1e-15)
         
         for t in xrange(1, numobs):
             istate = path[t-1]
@@ -106,8 +134,8 @@ class _BaseHMM(object):
             pobs = self.B_map[path[t]][t]
             
             #p[t] = p[t - 1] - numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
-            #p[t] = -numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
-            p[t] = -numpy.log(pobs + 1e-15)
+            p[t] = -numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
+            #p[t] = -numpy.log(pobs + 1e-15)
         return p
 
     def _calcbeta(self,observations, c):
