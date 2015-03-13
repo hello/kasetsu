@@ -17,7 +17,7 @@ import os.path
 import initial_models
 
     
-k_user_list = [1085, 1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
+k_user_list = [1038,1085, 1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
 
 save_filename = 'savedata3.json'
 
@@ -34,28 +34,25 @@ k_min_sleep_duration_hours = 1.5
 
 k_natural_light_filter_start_time = 16 #hour in 24 hours
 k_natural_light_filter_stop_time = 4 #hour in 24 hours
+k_sound_disturbance_threshold = 60.0
+k_energy_disturbance_threshold = 12000
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
-k_sound_disturbance_threshold = 55.0
-k_energy_disturbance_threshold = 10000
-k_loglight_change_threshold = 2.0
 
-on_bed_states = [4, 5, 6, 7, 8, 9, 10]
-sleep_states = [6, 7, 8]
 
-light_sleep_state = [6]
-regular_sleep_state = [7]
-disturbed_sleep_state = [8]
 
 forbidden_keys = []
 
 
-def to_proto(composite_hmm, user, timestring):
+def to_proto(composite_hmm,aux_params,  user, timestring):
     print timestring
     filename = timestring + '.proto'
     
+    on_bed_states = aux_params['on_bed_states']   
+    sleep_states = aux_params['sleep_states']  
+  
     sleep_hmm = sleep_hmm_pb2.SleepHmm()
     sleep_hmm.source = timestring
     sleep_hmm.user_id = user
@@ -77,7 +74,6 @@ def to_proto(composite_hmm, user, timestring):
         
         m_state = sleep_hmm.states.add()
 
-        
         model =  composite_hmm.models[i]
         d = model.to_dict()
                 
@@ -112,7 +108,8 @@ def to_proto(composite_hmm, user, timestring):
             m_state.bed_mode = sleep_hmm_pb2.ON_BED
         else:
             m_state.bed_mode = sleep_hmm_pb2.OFF_BED
-            
+           
+        '''
         if i in light_sleep_state:
             m_state.sleep_depth = sleep_hmm_pb2.LIGHT
         elif i in regular_sleep_state:
@@ -121,6 +118,9 @@ def to_proto(composite_hmm, user, timestring):
             m_state.sleep_depth = sleep_hmm_pb2.DISTURBED
         else:
             m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
+        '''
+        m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
+
 
     
     f = open(filename, 'wb')
@@ -164,8 +164,11 @@ mode_off_bed = 'b'
 mode_sleeping = 'c'
 mode_not_sleeping = 'd'
 
-def get_sleep_times(t, path):
+def get_sleep_times(t, path, params):
     events = []
+    
+    on_bed_states = params['on_bed_states']   
+    sleep_states = params['sleep_states']  
     
     sleep_times = [0, 0]
     bed_times = [0, 0]
@@ -225,21 +228,7 @@ def get_sleep_times(t, path):
     return events
         
 
-def make_poisson(mean, obsnum):
-    return {'model_type' : 'poisson' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
-    
-def make_uniform(mean, obsnum):
-    return {'model_type' : 'uniform' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}
-    
-def make_discrete(dists, obsnum):
-    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists, 'allow_reestimation' : True}}
-    
-def make_penalty(dists, obsnum):
-    return {'model_type' : 'discrete_alphabet' ,  'model_data' : {'obs_num' : obsnum,  'alphabet_probs' : dists, 'allow_reestimation' : False}}
-    
-    
-def make_gamma(mean, stddev, obsnum):   
-    return {'model_type' : 'gamma' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean,  'stddev' : stddev}}
+
 
 if __name__ == '__main__':
     
@@ -252,13 +241,17 @@ if __name__ == '__main__':
     parser.add_argument("--adapt", action='store_true', default=False, help='compute a model for each individual user ids')
     parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
     parser.add_argument('--saveadapt', action='store_true', default=False, help='save the adaptation for each user')
-
+    parser.add_argument('--initmodel', default='default', help='which initial model to choose')
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
-    hmm = initial_models.get_default_model()
+    #get initial model
+    if args.initmodel == 'apnea':
+        hmm, params = initial_models.get_apnea_model()
+    else:
+        hmm, params = initial_models.get_default_model()
 
-    
+    #get the data
     data = pull_data()
    
     all_times = []
@@ -270,7 +263,7 @@ if __name__ == '__main__':
     
     dict_filename = timestring + '.json'
 
-    
+    #if user is specified, deal with that
     if args.user != None:
         print args.user
         if not data.has_key(args.user):
@@ -282,7 +275,10 @@ if __name__ == '__main__':
     keys = data.keys()
     print keys
 
-    
+    indiv_user_sensor_data = {}
+    sensor_data_names = ['log light', 'counts', 'disturbances', 'log soundcounts', 'art. light', 'snd mag', 'energy']
+    #go through each user (the key == user number) and get their sensor data
+    #append into one big sequence
     for key in data:
         
         if key in forbidden_keys:
@@ -295,13 +291,12 @@ if __name__ == '__main__':
 
         sc[where(sc < 0)] = 0.0
         sc = log(sc + 1.0) / log(2)
-        #sc[where(sc > 10)] = 10
-        #sc = sc.astype(int)
-
+      
         waves[where(soundmags > k_sound_disturbance_threshold)] += 1
         waves[where(energy > k_energy_disturbance_threshold)] += 1
         soundmags -= 40.0
         soundmags[where(soundmags < 0)] = 0;
+        soundmags /= 10.0
 
         waves[where(waves > 0)] = 1.0;
         l[where(l < 0)] = 0.0
@@ -310,14 +305,14 @@ if __name__ == '__main__':
         energy /= 2000
 
         
-        '''
-        plot(t, c)
-        plot(t, log(l + 10.0))
-        show()
-        '''
         
+        myseg = []
         for i in xrange(len(t)):
-            flat_seg.append([l[i], c[i],waves[i], sc[i],non_natural_light[i] ])
+            vec = [l[i], c[i],waves[i], sc[i],non_natural_light[i], soundmags[i], energy[i]]
+            flat_seg.append(vec)
+            myseg.append(vec)
+
+        indiv_user_sensor_data[key] = t, array(myseg)
 
         count += 1
         
@@ -328,13 +323,14 @@ if __name__ == '__main__':
     flat_seg = array(flat_seg)
     print flat_seg.shape
     
+    #if a model was specified, load it
     if args.model != None:
         f = open(args.model, 'r')
         hmm_dict = json.load(f)
         hmm.from_dict(hmm_dict['default'])
-
+        params = hmm_dict['default']['params']
     
-    
+    #if we are training, then go do it
     if args.train == True:
         print ('TRAINING')
         hmm.train(flat_seg, args.iter)
@@ -342,9 +338,10 @@ if __name__ == '__main__':
         print ('saving to %s' % dict_filename)
 
         hmm_dict['default'] = hmm.to_dict()
+        hmm_dict['default']['params'] = params
 
-
-        to_proto(hmm,'-1', timestring)
+        #save to outputs
+        to_proto(hmm,params,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
@@ -359,42 +356,15 @@ if __name__ == '__main__':
     if outfile != None and os.path.isfile(outfile):
         os.remove(outfile)
 
-        
+    #path decode / plotting
     sleep_segments = []
     for key in keys:
         
         if key in forbidden_keys:
             continue
         
-        t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-        
-        tod = (t % 86400) / 3600.0
-        non_natural_light = logical_or( (tod > k_natural_light_filter_start_time), (tod < k_natural_light_filter_stop_time)).astype(int)
-
-        sc[where(sc < 0)] = 0.0
-        sc = log(sc + 1.0) / log(2)
-
-        #sc[where(sc > 10)] = 10
-        #sc = sc.astype(int)
-        
-        soundmags -= 40.0
-        soundmags[where(soundmags < 0)] = 0;
-
-        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
-        waves[where(energy > k_energy_disturbance_threshold)] += 1
-        waves[where(waves > 0)] = 1.0;
-
-        l[where(l < 0)] = 0.0
-        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
-        energy[where(energy < 0)] = 0.0
-        energy /= 2000
-        
-        
-        seg = []
-        for i in xrange(len(t)):
-            seg.append([l[i], c[i],waves[i], sc[i],non_natural_light[i]])
-        
-        seg = array(seg)
+        #get sensor data for user
+        t, seg = indiv_user_sensor_data[key]
         
         myhmm = copy.deepcopy(hmm)
         
@@ -423,7 +393,7 @@ if __name__ == '__main__':
         #limit = 3.0 * mean(path_cost)
         #score = sum(path_cost > limit)
         
-        events = get_sleep_times(t, path)   
+        events = get_sleep_times(t, path, params)   
 
         sleep_time_strings = []
         good_events = []
@@ -451,14 +421,13 @@ if __name__ == '__main__':
             t2 = [get_unix_time_as_datetime(tt) for tt in t]
             figure(1)
             ax = subplot(2, 1, 1)
-            plot(t2, l)
-            plot(t2, c)
-            plot(t2, sc)
-            plot(t2, energy)
-            plot(t2, waves)
-            plot(t2, soundmags/10.0 )
-            plot(t2, non_natural_light, '--')
-            legend(['log light', 'pill wake counts', 'log sound counts', 'energy', 'wavecount', 'sound magnitude'])
+            
+            N = seg.shape[1]
+            for i in xrange(N):
+                plot(t2, seg[:, i])
+            
+            
+            legend(sensor_data_names)
             
             #title("userid=%s, %d periods > %f, model cost=%f" % (str(key), score, limit, model_cost))
             title("userid=%s" % (str(key)))
