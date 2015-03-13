@@ -11,7 +11,6 @@ import csv
 import argparse
 import copy
 import data_windows
-import sleep_hmm_pb2
 import serverdata
 import os.path
 import initial_models
@@ -46,89 +45,7 @@ k_lux_multipler = 4.0
 forbidden_keys = []
 
 
-def to_proto(composite_hmm,aux_params,  user, timestring):
-    print timestring
-    filename = timestring + '.proto'
-    
-    on_bed_states = aux_params['on_bed_states']   
-    sleep_states = aux_params['sleep_states']  
-  
-    sleep_hmm = sleep_hmm_pb2.SleepHmm()
-    sleep_hmm.source = timestring
-    sleep_hmm.user_id = user
-    
-    Nstates = len(composite_hmm.models)
-    
-    sleep_hmm.num_states = Nstates
-    amat = array(composite_hmm.A).flatten().tolist()
-    
-    for entry in amat:
-        sleep_hmm.state_transition_matrix.append(entry)
-        
-    pimat = array(composite_hmm.pi).flatten().tolist()
-    
-    for entry in pimat:
-        sleep_hmm.initial_state_probabilities.append(entry)
-    
-    for i in xrange(Nstates):
-        
-        m_state = sleep_hmm.states.add()
 
-        model =  composite_hmm.models[i]
-        d = model.to_dict()
-                
-        m_light = sleep_hmm_pb2.GammaModel()
-        m_light.mean = d[0]['model_data']['mean']
-        m_light.stddev = d[0]['model_data']['stddev']
-        
-        m_motion_count = sleep_hmm_pb2.PoissonModel()
-        m_motion_count.mean = d[1]['model_data']['mean']
-
-        m_disturbances = sleep_hmm_pb2.DiscreteAlphabetModel()
-        vec = d[2]['model_data']['alphabet_probs']
-        for v in vec:
-            m_disturbances.probabilities.append(v)
-            
-        m_soundcounts = sleep_hmm_pb2.GammaModel()
-        m_soundcounts.mean = d[3]['model_data']['mean']
-        m_soundcounts.stddev = d[3]['model_data']['stddev']
-
-        m_state.light.MergeFrom(m_light)
-        m_state.motion_count.MergeFrom(m_motion_count)
-        m_state.disturbances.MergeFrom(m_disturbances)
-        m_state.log_sound_count.MergeFrom(m_soundcounts)
-        
-        
-        if i in sleep_states:
-            m_state.sleep_mode = sleep_hmm_pb2.SLEEP
-        else:
-            m_state.sleep_mode = sleep_hmm_pb2.WAKE
-
-        if i in on_bed_states:
-            m_state.bed_mode = sleep_hmm_pb2.ON_BED
-        else:
-            m_state.bed_mode = sleep_hmm_pb2.OFF_BED
-           
-        '''
-        if i in light_sleep_state:
-            m_state.sleep_depth = sleep_hmm_pb2.LIGHT
-        elif i in regular_sleep_state:
-            m_state.sleep_depth = sleep_hmm_pb2.REGULAR
-        elif i in disturbed_sleep_state:
-            m_state.sleep_depth = sleep_hmm_pb2.DISTURBED
-        else:
-            m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
-        '''
-        m_state.sleep_depth = sleep_hmm_pb2.NOT_APPLICABLE
-
-
-    
-    f = open(filename, 'wb')
-    f.write(sleep_hmm.SerializeToString())
-    f.close()
-
-        
-    
     
 
 def get_unix_time_as_datetime(unix_time):
@@ -251,6 +168,15 @@ if __name__ == '__main__':
     else:
         hmm, params = initial_models.get_default_model()
 
+
+    
+    params['natural_light_filter_start_hour'] = k_natural_light_filter_start_time
+    params['natural_light_filter_stop_hour'] = k_natural_light_filter_stop_time
+    params['model_name'] = args.initmodel
+    params['audio_disturbance_threshold_db'] = k_sound_disturbance_threshold
+    params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
+    params['users'] = '-1'
+
     #get the data
     data = pull_data()
    
@@ -273,6 +199,8 @@ if __name__ == '__main__':
             data = {args.user : data[args.user]}
     
     keys = data.keys()
+    params['users'] = ','.join([("%d" % id) for id in keys])
+
     print keys
 
     indiv_user_sensor_data = {}
@@ -341,7 +269,6 @@ if __name__ == '__main__':
         hmm_dict['default']['params'] = params
 
         #save to outputs
-        to_proto(hmm,params,'-1', timestring)
         f = open(dict_filename, 'w')
         json.dump(hmm_dict, f)
         f.close()
