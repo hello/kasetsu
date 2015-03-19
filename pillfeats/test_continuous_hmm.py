@@ -14,15 +14,15 @@ import data_windows
 import serverdata
 import os.path
 import initial_models
-
+import matplotlib.dates as mdates
     
-k_user_list = [1038,1085, 1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
+k_user_list = [1310,1038, 1050, 1052, 1053, 1070, 1071, 1012, 1013, 1043, 1025, 1061, 1060, 1049, 1062, 1067, 1005, 1063, 1001, 1]
 
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-02-22'
+k_min_date = '2015-03-01'
 k_num_days_of_data = 14
 
 k_period_in_seconds = 15 * 60.0
@@ -354,7 +354,7 @@ if __name__ == '__main__':
             t2 = [get_unix_time_as_datetime(tt) for tt in t]
             figure(1)
             ax = subplot(2, 1, 1)
-            
+
             N = seg.shape[1]
             for i in xrange(N):
                 plot(t2, seg[:, i])
@@ -366,7 +366,9 @@ if __name__ == '__main__':
             title("userid=%s,bic=%f,aic=%f" % (str(key), bic, aic))
             grid('on')
             
-            subplot(2, 1, 2, sharex=ax)
+            ax2 = subplot(2, 1, 2, sharex=ax)
+            ax2.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
+            ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M:')
             plot(t2, path, 'k.-')
             #plot(t2, path_cost, 'ro')
             grid('on')

@@ -145,3 +145,4 @@ if __name__ == '__main__':
     f = open(outfilename, 'w')
     f.write(serialized_model_string)
     f.close()
+    print 'Wrote to ',outfilename
