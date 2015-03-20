@@ -14,7 +14,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='sleep_hmm.proto',
   package='',
-  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"*\n\nGammaModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\x12\x0e\n\x06stddev\x18\x02 \x02(\x01\"\xb5\x02\n\nStateModel\x12\x1e\n\nsleep_mode\x18\x04 \x01(\x0e\x32\n.SleepMode\x12\x1a\n\x08\x62\x65\x64_mode\x18\x05 \x01(\x0e\x32\x08.BedMode\x12 \n\x0bsleep_depth\x18\x06 \x01(\x0e\x32\x0b.SleepDepth\x12\x1a\n\x05light\x18\x0b \x01(\x0b\x32\x0b.GammaModel\x12#\n\x0cmotion_count\x18\x0c \x01(\x0b\x32\r.PoissonModel\x12,\n\x0c\x64isturbances\x18\r \x01(\x0b\x32\x16.DiscreteAlphabetModel\x12$\n\x0flog_sound_count\x18\x0e \x01(\x0b\x32\x0b.GammaModel\x12\x34\n\x14natural_light_filter\x18\x0f \x01(\x0b\x32\x16.DiscreteAlphabetModel\"\xfb\x02\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12\x12\n\nnum_states\x18\x04 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x05 \x03(\x01\x12#\n\x1binitial_state_probabilities\x18\x06 \x03(\x01\x12&\n\x1e\x61udio_disturbance_threshold_db\x18\x07 \x01(\x01\x12\x30\n(pill_magnitude_disturbance_threshold_lsb\x18\x08 \x01(\x01\x12\'\n\x1fnatural_light_filter_start_hour\x18\t \x01(\x01\x12&\n\x1enatural_light_filter_stop_hour\x18\n \x01(\x01\x12\x18\n\x10num_model_params\x18\x0b \x01(\x05\x12\x12\n\nmodel_name\x18\x0c \x01(\t\"-\n\x10SleepHmmModelSet\x12\x19\n\x06models\x18\x01 \x03(\x0b\x32\t.SleepHmm* \n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x08\n\x04WAKE\x10\x01*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01*G\n\nSleepDepth\x12\x12\n\x0eNOT_APPLICABLE\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0b\n\x07REGULAR\x10\x02\x12\r\n\tDISTURBED\x10\x03\x42\x32\n com.hello.suripu.api.datascienceB\x0eSleepHmmProtos')
+  serialized_pb='\n\x0fsleep_hmm.proto\"\x1c\n\x0cPoissonModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\".\n\x15\x44iscreteAlphabetModel\x12\x15\n\rprobabilities\x18\x01 \x03(\x01\"*\n\nGammaModel\x12\x0c\n\x04mean\x18\x01 \x02(\x01\x12\x0e\n\x06stddev\x18\x02 \x02(\x01\"\xb5\x02\n\nStateModel\x12\x1e\n\nsleep_mode\x18\x04 \x01(\x0e\x32\n.SleepMode\x12\x1a\n\x08\x62\x65\x64_mode\x18\x05 \x01(\x0e\x32\x08.BedMode\x12 \n\x0bsleep_depth\x18\x06 \x01(\x0e\x32\x0b.SleepDepth\x12\x1a\n\x05light\x18\x0b \x01(\x0b\x32\x0b.GammaModel\x12#\n\x0cmotion_count\x18\x0c \x01(\x0b\x32\r.PoissonModel\x12,\n\x0c\x64isturbances\x18\r \x01(\x0b\x32\x16.DiscreteAlphabetModel\x12$\n\x0flog_sound_count\x18\x0e \x01(\x0b\x32\x0b.GammaModel\x12\x34\n\x14natural_light_filter\x18\x0f \x01(\x0b\x32\x16.DiscreteAlphabetModel\"\xbf\x03\n\x08SleepHmm\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\x1b\n\x06states\x18\x03 \x03(\x0b\x32\x0b.StateModel\x12\x12\n\nnum_states\x18\x04 \x01(\x05\x12\x1f\n\x17state_transition_matrix\x18\x05 \x03(\x01\x12#\n\x1binitial_state_probabilities\x18\x06 \x03(\x01\x12&\n\x1e\x61udio_disturbance_threshold_db\x18\x07 \x01(\x01\x12\x30\n(pill_magnitude_disturbance_threshold_lsb\x18\x08 \x01(\x01\x12\'\n\x1fnatural_light_filter_start_hour\x18\t \x01(\x01\x12&\n\x1enatural_light_filter_stop_hour\x18\n \x01(\x01\x12\x18\n\x10num_model_params\x18\x0b \x01(\x05\x12\x12\n\nmodel_name\x18\x0c \x01(\t\x12\"\n\x1anum_minutes_in_meas_period\x18\r \x01(\x05\x12\x1e\n\x16\x65nable_interval_search\x18\x0e \x01(\x08\"-\n\x10SleepHmmModelSet\x12\x19\n\x06models\x18\x01 \x03(\x0b\x32\t.SleepHmm* \n\tSleepMode\x12\t\n\x05SLEEP\x10\x00\x12\x08\n\x04WAKE\x10\x01*\"\n\x07\x42\x65\x64Mode\x12\n\n\x06ON_BED\x10\x00\x12\x0b\n\x07OFF_BED\x10\x01*G\n\nSleepDepth\x12\x12\n\x0eNOT_APPLICABLE\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0b\n\x07REGULAR\x10\x02\x12\r\n\tDISTURBED\x10\x03\x42\x32\n com.hello.suripu.api.datascienceB\x0eSleepHmmProtos')
 
 _SLEEPMODE = _descriptor.EnumDescriptor(
   name='SleepMode',
@@ -33,8 +33,8 @@ _SLEEPMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=882,
-  serialized_end=914,
+  serialized_start=950,
+  serialized_end=982,
 )
 
 SleepMode = enum_type_wrapper.EnumTypeWrapper(_SLEEPMODE)
@@ -55,8 +55,8 @@ _BEDMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=916,
-  serialized_end=950,
+  serialized_start=984,
+  serialized_end=1018,
 )
 
 BedMode = enum_type_wrapper.EnumTypeWrapper(_BEDMODE)
@@ -85,8 +85,8 @@ _SLEEPDEPTH = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=952,
-  serialized_end=1023,
+  serialized_start=1020,
+  serialized_end=1091,
 )
 
 SleepDepth = enum_type_wrapper.EnumTypeWrapper(_SLEEPDEPTH)
@@ -360,6 +360,20 @@ _SLEEPHMM = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='num_minutes_in_meas_period', full_name='SleepHmm.num_minutes_in_meas_period', index=12,
+      number=13, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='enable_interval_search', full_name='SleepHmm.enable_interval_search', index=13,
+      number=14, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -370,7 +384,7 @@ _SLEEPHMM = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=454,
-  serialized_end=833,
+  serialized_end=901,
 )
 
 
@@ -397,8 +411,8 @@ _SLEEPHMMMODELSET = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=835,
-  serialized_end=880,
+  serialized_start=903,
+  serialized_end=948,
 )
 
 _STATEMODEL.fields_by_name['sleep_mode'].enum_type = _SLEEPMODE
