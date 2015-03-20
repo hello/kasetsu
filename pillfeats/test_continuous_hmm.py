@@ -22,7 +22,7 @@ save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-03-01'
+k_min_date = '2015-03-07'
 k_num_days_of_data = 14
 
 k_period_in_seconds = 15 * 60.0
@@ -55,7 +55,7 @@ def get_unix_time_as_datetime(unix_time):
 def get_unix_time_as_string(unix_time): 
     return get_unix_time_as_datetime(unix_time).isoformat(' ')   
 
-def pull_data():    
+def pull_data(params):    
     if os.path.isfile(save_filename): 
         print 'loading from %s' % save_filename
         f = open(save_filename, 'r')
@@ -67,8 +67,11 @@ def pull_data():
         #d = dbdata.DataGetter('benjo_sensors_1','benjo','localhost')
         #data = d.get_all_minute_data(k_min_date,1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
 
-        d = serverdata.ServerDataGetter(k_user_list)
-        data = d.get_all_minute_data(k_min_date, k_num_days_of_data, 1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
+        #d = serverdata.ServerDataGetter(k_user_list)
+        #data = d.get_all_minute_data(k_min_date, k_num_days_of_data, 1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
+        a = serverdata.BinnedDataGetter(k_user_list,params)
+        data = a.get_all_binned_data(k_min_date,k_num_days_of_data)
+        
         
         f = open(save_filename, 'w')
         json.dump(data, f)
@@ -179,7 +182,7 @@ if __name__ == '__main__':
     params['enable_interval_search'] = k_enable_interval_search
 
     #get the data
-    data = pull_data()
+    data = pull_data(params)
    
     all_times = []
     flat_seg = []
@@ -212,7 +215,8 @@ if __name__ == '__main__':
         
         if key in forbidden_keys:
             continue 
-            
+        
+        '''
         t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
 
         tod = (t % 86400) / 3600.0
@@ -240,8 +244,14 @@ if __name__ == '__main__':
             vec = [l[i], c[i],waves[i], sc[i],non_natural_light[i], soundmags[i], energy[i]]
             flat_seg.append(vec)
             myseg.append(vec)
-
-        indiv_user_sensor_data[key] = t, array(myseg)
+        '''
+        
+        binnedata = data[key]['data']
+        t = data[key]['times']
+        
+        flat_seg.extend(binnedata)
+        
+        indiv_user_sensor_data[key] = t, array(binnedata)
 
         count += 1
         
