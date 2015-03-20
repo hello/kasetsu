@@ -35,6 +35,7 @@ k_natural_light_filter_start_time = 16 #hour in 24 hours
 k_natural_light_filter_stop_time = 4 #hour in 24 hours
 k_sound_disturbance_threshold = 60.0
 k_energy_disturbance_threshold = 12000
+k_enable_interval_search = False
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
@@ -175,6 +176,7 @@ if __name__ == '__main__':
     params['audio_disturbance_threshold_db'] = k_sound_disturbance_threshold
     params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
     params['users'] = '-1'
+    params['enable_interval_search'] = k_enable_interval_search
 
     #get the data
     data = pull_data()
