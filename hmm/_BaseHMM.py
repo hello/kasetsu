@@ -393,7 +393,7 @@ class _BaseHMM(object):
         
         return gamma
     
-    def train(self, observations, iterations=1,epsilon=0.0001,thres=-0.001):
+    def train(self, observations, iterations=1,states=None, epsilon=0.0001,thres=-0.001):
         '''
         Updates the HMMs parameters given a new set of observed sequences.
         
@@ -408,10 +408,14 @@ class _BaseHMM(object):
         from one iteration to the other.
         '''        
         self._mapB(observations)
-
+        
+        if states is None:
+            states = range(0, self.n)
+        
+        print 'TRAINING STATES: ', states
         
         for i in xrange(iterations):
-            prob_old, prob_new = self.trainiter(observations)
+            prob_old, prob_new = self.trainiter(observations, states)
 
             if (self.verbose):      
                 print "iter: ", i, ", L(model|O) =", prob_old, ", L(model_new|O) =", prob_new, ", converging =", ( prob_new-prob_old > thres )
@@ -427,7 +431,7 @@ class _BaseHMM(object):
         self.pi = new_model['pi']
         self.A = new_model['A']
                 
-    def trainiter(self,observations):
+    def trainiter(self,observations, states):
         '''
         A single iteration of an EM algorithm, which given the current HMM,
         computes new model parameters and internally replaces the old model
@@ -437,7 +441,7 @@ class _BaseHMM(object):
         and the one for the new model.
         '''        
         # call the EM algorithm
-        new_model = self._baumwelch(observations)
+        new_model = self._baumwelch(observations, states)
         
         # calculate the log likelihood of the previous model
         prob_old = self.forwardbackward(observations, cache=True)
@@ -450,7 +454,7 @@ class _BaseHMM(object):
         
         return prob_old, prob_new
     
-    def _reestimateA(self,observations,xi,gamma):
+    def _reestimateA(self,observations,xi,gamma, states):
         '''
         Reestimation of the transition matrix (part of the 'M' step of Baum-Welch).
         Computes A_new = expected_transitions(i->j)/expected_transitions(i)
@@ -493,7 +497,7 @@ class _BaseHMM(object):
         
         return stats
     
-    def _reestimate(self,stats,observations):
+    def _reestimate(self,stats,observations, states):
         '''
         Performs the 'M' step of the Baum-Welch algorithm.
         
@@ -507,11 +511,11 @@ class _BaseHMM(object):
         
         # new init vector is set to the frequency of being in each step at t=0 
         new_model['pi'] = stats['gamma'][0]
-        new_model['A'] = self._reestimateA(observations,stats['xi'],stats['gamma'])
+        new_model['A'] = self._reestimateA(observations,stats['xi'],stats['gamma'], states)
         
         return new_model
     
-    def _baumwelch(self,observations):
+    def _baumwelch(self,observations, states):
         '''
         An EM(expectation-modification) algorithm devised by Baum-Welch. Finds a local maximum
         that outputs the model that produces the highest probability, given a set of observations.
@@ -522,7 +526,7 @@ class _BaseHMM(object):
         stats = self._calcstats(observations)
         
         # M step
-        return self._reestimate(stats,observations)
+        return self._reestimate(stats,observations, states)
 
     def _mapB(self,observations):
         '''

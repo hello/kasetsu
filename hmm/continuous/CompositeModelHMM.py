@@ -407,12 +407,12 @@ class CompositeModelHMM(_BaseHMM):
         for i in xrange(len(self.models)):
             print "model %d: %s" % (i, self.models[i].get_status())
             
-    def _reestimate(self,stats,observations):
+    def _reestimate(self,stats,observations, states):
         #get A and pi
-        new_model = _BaseHMM._reestimate(self, stats, observations)
+        new_model = _BaseHMM._reestimate(self, stats, observations, states)
         
         gamma = stats['gamma']
-        for i in xrange(len(self.models)):
+        for i in states:
             self.models[i].reestimate(observations, gamma[:, i])
     
         self.get_status()
