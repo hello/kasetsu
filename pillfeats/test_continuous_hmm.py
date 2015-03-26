@@ -160,7 +160,7 @@ if __name__ == '__main__':
     parser.add_argument("--iter", type=int, help="number of training iterations", default=4)
     parser.add_argument("--adapt", action='store_true', default=False, help='compute a model for each individual user ids')
     parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
-    parser.add_argument('--saveadapt', action='store_true', default=False, help='save the adaptation for each user')
+    parser.add_argument('--sleeponly', action='store_true', default=False, help='only train on the sleep states')
     parser.add_argument('--initmodel', default='default', help='which initial model to choose')
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
@@ -170,6 +170,17 @@ if __name__ == '__main__':
         hmm, params = initial_models.get_apnea_model()
     else:
         hmm, params = initial_models.get_default_model()
+
+    
+    
+    if args.sleeponly == True:
+        trainstates = params['sleep_states']
+        reestimation_obs = [1] #motion
+    else:
+        trainstates = None #do them all
+        reestimation_obs = None #do them all
+        
+    hmm.set_reestimation_obs(reestimation_obs)
 
     
     params['natural_light_filter_start_hour'] = k_natural_light_filter_start_time
@@ -274,7 +285,7 @@ if __name__ == '__main__':
     #if we are training, then go do it
     if args.train == True:
         print ('TRAINING')
-        hmm.train(flat_seg, args.iter)
+        hmm.train(flat_seg, args.iter, trainstates)
         
         print ('saving to %s' % dict_filename)
 
@@ -316,15 +327,10 @@ if __name__ == '__main__':
 
         if args.adapt:
             print ('ADAPTING for %s' % str(key))
-            myhmm.train(seg, args.iter, params['sleep_states'] )
+            myhmm.train(seg, args.iter, trainstates )
             print hmm.A
 
-            if args.saveadapt:
-                hmm_dict[key] = myhmm.to_dict()
-                f = open(dict_filename, 'w')
-                json.dump(hmm_dict, f)
-                f.close()
-            
+           
         
         path = myhmm.decode(seg)
         bic = myhmm.get_bic(seg, path, params['num_model_params'])

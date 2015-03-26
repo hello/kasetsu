@@ -336,9 +336,14 @@ class CompositeModel(object):
         
         return logliks
         
-    def reestimate(self, x, gammaForThisState):
-        for i in range(len(self.models)):
-            self.models[i].reestimate(x, gammaForThisState)
+    def reestimate(self, x, gammaForThisState, reestimation_obs):
+        if reestimation_obs == None:
+            for i in range(len(self.models)):
+                self.models[i].reestimate(x, gammaForThisState)
+        else:
+            print "reestimation_obs", reestimation_obs
+            for i in reestimation_obs:
+                self.models[i].reestimate(x, gammaForThisState)
             
     def to_dict(self):
         my_dicts = []
@@ -356,7 +361,7 @@ class CompositeModel(object):
 
 class CompositeModelHMM(_BaseHMM):
 
-    def __init__(self,model_list = [], A=None,pi=None,precision=numpy.double,verbose=False):
+    def __init__(self,model_list = [], A=None,pi=None, precision=numpy.double,verbose=False):
         '''
         "Comments are for the weak" -- benjo
         
@@ -373,9 +378,13 @@ class CompositeModelHMM(_BaseHMM):
         self.A = A
         self.pi = pi
         self.n = n
+        self.reestimation_obs = None
         
         self._initModels(model_list)
 
+    def set_reestimation_obs(self, reestimation_obs):
+        self.reestimation_obs = reestimation_obs
+        
     def _initModels(self, model_list):
         self.models = []
         if self.n is not None:
@@ -413,7 +422,7 @@ class CompositeModelHMM(_BaseHMM):
         
         gamma = stats['gamma']
         for i in states:
-            self.models[i].reestimate(observations, gamma[:, i])
+            self.models[i].reestimate(observations, gamma[:, i], self.reestimation_obs)
     
         self.get_status()
 

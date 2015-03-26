@@ -4,8 +4,13 @@ import requests
 import datetime
 import calendar
 import numpy
-k_minute_data_url = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/datascience/device_sensors_motion/'
-k_binned_url = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/datascience/binneddata/'
+
+
+#k_server = 'http://research-api-benjo.hello.is'
+k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
+
+k_minute_data_url = k_server + '/v1/datascience/device_sensors_motion/'
+k_binned_url = k_server + '/v1/datascience/binneddata/'
 
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 #k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
