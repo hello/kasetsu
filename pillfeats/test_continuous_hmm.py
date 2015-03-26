@@ -34,7 +34,7 @@ k_natural_light_filter_start_time = 16 #hour in 24 hours
 k_natural_light_filter_stop_time = 4 #hour in 24 hours
 k_sound_disturbance_threshold = 65.0
 k_energy_disturbance_threshold = 15000
-k_enable_interval_search = False
+k_enable_interval_search = True
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     #parser.add_argument("-t",  "--train",help="evaluate,train", required=True, type=str)
     parser.add_argument("-f",  "--file", help="output file of predicted sleep / wake times")
     parser.add_argument("-m",  "--model", help="model file (usually a .json)")
-    parser.add_argument("-u",  "--user",  help="particular user to train on / evaluate, otherwise we do all users in database")
+    parser.add_argument("-u",  "--user", help="particular user to train on / evaluate, otherwise we do all users in database")
     parser.add_argument("--iter", type=int, help="number of training iterations", default=4)
     parser.add_argument("--adapt", action='store_true', default=False, help='compute a model for each individual user ids')
     parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
@@ -173,14 +173,7 @@ if __name__ == '__main__':
 
     
     
-    if args.sleeponly == True:
-        trainstates = params['sleep_states']
-        reestimation_obs = [1] #motion
-    else:
-        trainstates = None #do them all
-        reestimation_obs = None #do them all
-        
-    hmm.set_reestimation_obs(reestimation_obs)
+ 
 
     
     params['natural_light_filter_start_hour'] = k_natural_light_filter_start_time
@@ -202,6 +195,19 @@ if __name__ == '__main__':
     timestring = strftime("HMM_%Y-%m-%d_%H:%M:%S")
     
     dict_filename = timestring + '.json'
+
+    if args.sleeponly == True:
+        trainstates = params['sleep_states']
+        reestimation_obs = [1] #motion
+        if args.user != None:
+            dict_filename =  str(args.user) + '.json'
+            params['model_name']  = 'model_for_' + str(args.user) 
+    else:
+        trainstates = None #do them all
+        reestimation_obs = None #do them all
+
+        
+    hmm.set_reestimation_obs(reestimation_obs)
 
     #if user is specified, deal with that
     if args.user != None:

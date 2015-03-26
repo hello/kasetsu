@@ -332,8 +332,8 @@ def get_default_model():
     [0.10, 0.10, 0.65, 0.10,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
     [0.10, 0.10, 0.10, 0.65,   0.10,  0.10,   0.00, 0.00, 0.00,   0.00, 0.00], 
     
-    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.00, 0.00,   0.00, 0.00], 
-    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.00, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.70, 0.10,    0.10, 0.10, 0.00,   0.00, 0.00], 
+    [0.05, 0.05, 0.05, 0.05,   0.10, 0.70,    0.10, 0.10, 0.00,   0.00, 0.00], 
     
     [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.55, 0.10, 0.05,   0.10, 0.10], 
     [0.00, 0.00, 0.00, 0.00,   0.00,  0.05,   0.45, 0.50, 0.00,   0.00, 0.00], 
@@ -357,9 +357,9 @@ def get_default_model():
     model4 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
     model5 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
 
-    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_penalty(vlow_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
-    model7 = [make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),   make_penalty(vlow_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
-    model8 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(low_motion, 1),    make_penalty(vlow_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(yes_penalty, 4)]
+    model6 = [make_gamma(low_light,low_light_stddev, 0),   make_poisson(low_motion, 1),    make_discrete(vlow_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(no_penalty, 4)]
+    model7 = [make_gamma(low_light,low_light_stddev, 0),    make_poisson(low_motion, 1),   make_discrete(vlow_wave, 2),    make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
+    model8 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(low_motion, 1),    make_discrete(vlow_wave, 2),    make_gamma(sc_low, sc_low_stddev, 3),   make_penalty(yes_penalty, 4)]
     
     model9 = [make_gamma(high_light,high_light_stddev, 0), make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]
     model10 = [make_gamma(low_light,low_light_stddev, 0),  make_poisson(high_motion, 1),   make_discrete(high_wave, 2),   make_gamma(sc_high, sc_high_stddev, 3), make_penalty(no_penalty, 4)]

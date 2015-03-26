@@ -341,7 +341,6 @@ class CompositeModel(object):
             for i in range(len(self.models)):
                 self.models[i].reestimate(x, gammaForThisState)
         else:
-            print "reestimation_obs", reestimation_obs
             for i in reestimation_obs:
                 self.models[i].reestimate(x, gammaForThisState)
             
