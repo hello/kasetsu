@@ -378,7 +378,8 @@ def get_default_model():
     num_model_params = len(models) * 7
     
     params = get_model_interpretation_params(on_bed_states, sleep_states, num_model_params)
-
+    params['kickoff_count_threshold'] = 10
+    params['duration_threshold'] = 10
     hmm = CompositeModelHMM(models, A, pi0, verbose=True)
     
     return hmm, params
