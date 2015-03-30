@@ -163,7 +163,7 @@ class _BaseHMM(object):
         
         return beta
     
-    def decode(self, observations, npadding=0, path_cost_allowance = -1):
+    def decode(self, observations):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
@@ -171,12 +171,9 @@ class _BaseHMM(object):
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
         
-        ret = self._viterbi(observations, len(observations), npadding, path_cost_allowance)
+        return self._viterbi(observations, len(observations))
         
-        if path_cost_allowance  == -1:
-            return ret.keys()[0]
-        else:
-            return ret
+       
     
     #given original viterbi path, deviate from it
     #starting at tstart, and moving towards the max incming in state idxstart at that time
@@ -189,92 +186,9 @@ class _BaseHMM(object):
             
         return path
         
-    def _get_second_best_path_costs(self,depth, path_dict, path,viterbi_info):
-        
-        viterbi_path, vi, viterbi_pathcost, phi, npadding, path_cost_allowance = viterbi_info
-        numobs = len(viterbi_path)
-        second_best_merge_from_idx = numpy.zeros((numobs, )).astype(int)
-        second_best_costs = numpy.zeros((numobs, ))
-        
-        #just start and end at state zero
-        second_best_costs[0] = phi[0][0]
-        
-        #phi2(path[t][t]) = min [ phi2(path[t-1][t-1])  + cost[path[t-1][path[t]]; 
-        #                         min( phi[j][t-1] + cost[j][path[t]] j != path[t-1]
-        cost = numpy.zeros((self.n, ))
-        
-        for t in xrange(1, numobs):
-            j = path[t]
-            
-            obscost = -numpy.log(self.B_map[j][t] + 1e-15)
-                
-            for i in xrange(self.n): #i means the incoming from ith hidden state
-                #compute incoming costs
-                
-                pc = -numpy.log(self.A[i][j] + 1e-15) + obscost
-                minval = float("Inf")
-                minidx = -1
-                #if incoming state is not the previous viterbi path
-                if i != path[t-1]:
-                    cost = pc + phi[i][t-1]
-                    if cost < minval:
-                        minidx = i;
-                        minval = cost
-               
-
-            second_best_costs[t] = minval
-            second_best_merge_from_idx[t] = minidx
-        
-        final_viterbi_cost = viterbi_pathcost[-1]
-        remaining_costs = final_viterbi_cost - viterbi_pathcost
-        second_best_costs =  second_best_costs + remaining_costs
-        
-        cost_idx = numpy.argsort(second_best_costs)
-        
-        paths = []
-        
-        
-        count = 0
-        for cidx in cost_idx:
-            
-            if cidx < npadding:
-                continue
-            
-            cost = second_best_costs[cidx]
-            statestart = second_best_merge_from_idx[cidx]
-            
-            costdiff = cost - final_viterbi_cost
-            relcost = costdiff / final_viterbi_cost
-            
-            if count > k_nbest_in_branch:
-                break;
-                        
-            #if  relcost < k_percentage_of_best_cutoff: #within x% of original best cost
-            if costdiff < path_cost_allowance:
-                #get new path (merged at min index)
-                newpath = self._backtrace_viterbi_path(path, vi, cidx, statestart)
-                
-                #check to see if we have already found this path by hashing the path
-                v = tuple(newpath.tolist())
-                if not path_dict.has_key(v):
-                    count = count + 1
-
-                    #found too many?  oh god, stop it all
-                    if len(path_dict) >= k_max_paths:
-                        return
-                        
-                    #add new path because it's unique
-                    path_dict[v] = cost
-                    paths.append(newpath)
-            else:
-                break
-
-        if depth > 0:
-            for p in paths:
-                self._get_second_best_path_costs(depth-1, path_dict, p,viterbi_info)
         
 
-    def _viterbi(self, observations, numobs, npadding, path_cost_allowance):
+    def _viterbi(self, observations, numobs):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
         very similar to the forward-backward algorithm, with the added step of maximization and eventual
@@ -301,6 +215,8 @@ class _BaseHMM(object):
         #do viterbi
         cost = numpy.zeros((self.n, ))
         pathcost = numpy.zeros((numobs, ))
+        reliability = numpy.zeros((numobs, ))
+        
         for t in xrange(1, numobs):
             for j in xrange(self.n): #"j" mean THIS (the jth) hidden state
                 obscost = -numpy.log(self.B_map[j][t] + 1e-15)
@@ -309,12 +225,21 @@ class _BaseHMM(object):
                     #compute incoming costs
                     cost[i] = -numpy.log(self.A[i][j] + 1e-15) + obscost 
                 
-                
                 for i in xrange(self.n): 
                     cost[i] = cost[i] + phi[i][t-1]
                     
+                
+                    
                 minidx = numpy.argmin(cost)
                 minval = cost[minidx]
+                
+                cost -= minval
+                ecost = numpy.exp(-cost)
+                denom = numpy.sum(ecost)
+                ecost /= denom
+                
+                reliability[t] = ecost[minidx]
+                
                 pathcost[t] = minval
                 
                 phi[j][t] = minval
@@ -329,17 +254,9 @@ class _BaseHMM(object):
         for t in xrange(numobs - 2, -1, -1):
             path[t] = viterbi_indices[path[t+1]][t]
                
-        viterbi_info = path, viterbi_indices, pathcost, phi, npadding, path_cost_allowance
         
-        path_dict = {}
-        v = tuple(path.tolist())
-        path_dict[v] = 0.0
-        
-        if path_cost_allowance >= 0.0:
-            #recursive
-            self._get_second_best_path_costs(k_max_depth, path_dict, path,viterbi_info)
-        
-        return path_dict
+         
+        return path, reliability
      
     def _calcxi(self,observations,alpha=None,beta=None):
         '''

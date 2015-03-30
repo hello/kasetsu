@@ -16,13 +16,14 @@ import os.path
 import initial_models
 import matplotlib.dates as mdates
     
-k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043 ,  1049 ,  1050  , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,  1086,1310  , 1609 ,  1629 ,  1648]
+#k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043 ,  1049 ,  1050  , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,  1086,1310  , 1609 ,  1629 ,  1648]
+k_user_list = [1012]
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-03-01'
-k_num_days_of_data = 21
+k_min_date = '2015-03-28'
+k_num_days_of_data = 1
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -35,6 +36,9 @@ k_natural_light_filter_stop_time = 4 #hour in 24 hours
 k_sound_disturbance_threshold = 65.0
 k_energy_disturbance_threshold = 15000
 k_enable_interval_search = True
+
+k_reliability_threshold = 0.6
+
 
 #k_raw_light_to_lux = 125.0 / (2 ** 16)
 k_raw_light_to_lux = 1.0
@@ -338,7 +342,7 @@ if __name__ == '__main__':
 
            
         
-        path = myhmm.decode(seg)
+        path, reliability = myhmm.decode(seg)
         bic = myhmm.get_bic(seg, path, params['num_model_params'])
         aic = myhmm.get_aic(seg, path, params['num_model_params'])
 
@@ -375,7 +379,7 @@ if __name__ == '__main__':
             print s
 
         if outfile == None:
-            t2 = [get_unix_time_as_datetime(tt) for tt in t]
+            t2 = array([get_unix_time_as_datetime(tt) for tt in t])
             figure(1)
             ax = subplot(2, 1, 1)
 
@@ -393,7 +397,11 @@ if __name__ == '__main__':
             ax2 = subplot(2, 1, 2, sharex=ax)
             ax2.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
             ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M:')
-            plot(t2, path, 'k.-')
+            questionable_indices = where(reliability < k_reliability_threshold)
+            t2_marked = t2[questionable_indices]
+            path_marked = path[questionable_indices]
+            plot(t2, path, 'k.-',t2_marked, path_marked, 'ro')
+            legend(['path', 'possible bad decisions'])
             #plot(t2, path_cost, 'ro')
             grid('on')
             

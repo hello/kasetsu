@@ -8,7 +8,7 @@ import time
 import json
 
 k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
-#k_uri = 'http://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 
 def get_time_as_string(timestamp,offset):

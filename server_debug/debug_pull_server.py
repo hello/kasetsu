@@ -29,7 +29,7 @@ my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171',
 #my_users={'am' : '3.2260a267c7b54ad093d765c63f066dcc'}
 
 num_days = 6
-start_date_string = '2015-02-15'
+start_date_string = '2015-02-19'
 def pull_date(users_dict):
 #    users_dict2 = {'fm' : users_dict['fm']}
     for user in users_dict:
