@@ -49,9 +49,7 @@ class BinnedDataGetter(object):
                     'sound_threshold_db' : self.aux_params['audio_disturbance_threshold_db'], 
                     'nat_light_start_hour' : self.aux_params['natural_light_filter_start_hour'], 
                     'nat_light_stop_hour' : self.aux_params['natural_light_filter_stop_hour'],
-                    'kickoff_count_threshold' : self.aux_params['kickoff_count_threshold'],
-                    'duration_threshold' : self.aux_params['duration_threshold'], 
-                    'meas_period' : 15
+                    'meas_period' : self.aux_params['meas_period_minutes']
                     }
         
        

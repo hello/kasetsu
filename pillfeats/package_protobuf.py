@@ -23,7 +23,7 @@ def to_proto(composite_hmm,aux_params, input_filename):
     audio_disturbance_threshold_db = aux_params['audio_disturbance_threshold_db']
     pill_magnitude_disturbance_threshold_lsb = aux_params['pill_magnitude_disturbance_threshold_lsb']
     enable_interval_search = aux_params['enable_interval_search']
-    
+    meas_period = aux_params['meas_period_minutes']
     
     sleep_hmm = sleep_hmm_pb2.SleepHmm()
     
@@ -36,6 +36,7 @@ def to_proto(composite_hmm,aux_params, input_filename):
     sleep_hmm.natural_light_filter_start_hour = natural_light_filter_start_hour
     sleep_hmm.natural_light_filter_stop_hour = natural_light_filter_stop_hour
     sleep_hmm.enable_interval_search = enable_interval_search
+    sleep_hmm.num_minutes_in_meas_period = meas_period
     
     Nstates = len(composite_hmm.models)
     

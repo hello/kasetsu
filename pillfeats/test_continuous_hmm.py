@@ -16,19 +16,17 @@ import os.path
 import initial_models
 import matplotlib.dates as mdates
     
-k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043 ,  1049 ,  1050  , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,  1086,1310  , 1609 ,  1629 ,  1648]
-#k_user_list = [1012]
-save_filename = 'savedata3.json'
+k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043    , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,1310  , 1609 ,  1629 ,  1648]
+k_user_list2 = [1086, 1050, 1049]
+k_user_list.extend(k_user_list2)
+save_filename = 'savedata10min.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-03-20'
-k_num_days_of_data = 9
+k_min_date = '2015-03-01'
+k_num_days_of_data = 20
 
-k_period_in_seconds = 15 * 60.0
-k_segment_spacing_in_seconds = 120 * 60.0
-k_min_segment_length_in_seconds = 240*60.0
-k_segment_padding_in_seconds = 180 * 60.0
+
 k_min_sleep_duration_hours = 1.5
 
 k_natural_light_filter_start_time = 16 #hour in 24 hours
@@ -203,6 +201,8 @@ if __name__ == '__main__':
     params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
     params['users'] = '-1'
     params['enable_interval_search'] = k_enable_interval_search
+
+    print 'USING MEASUREMENT PERIOD OF %d MINUTES' % params['meas_period_minutes']
 
     #get the data
     data = pull_data(params, args.user, args.date)
