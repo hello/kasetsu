@@ -48,7 +48,9 @@ class BinnedDataGetter(object):
                     'pill_threshold_counts' : self.aux_params['pill_magnitude_disturbance_threshold_lsb'], 
                     'sound_threshold_db' : self.aux_params['audio_disturbance_threshold_db'], 
                     'nat_light_start_hour' : self.aux_params['natural_light_filter_start_hour'], 
-                    'nat_light_stop_hour' : self.aux_params['natural_light_filter_stop_hour'], 
+                    'nat_light_stop_hour' : self.aux_params['natural_light_filter_stop_hour'],
+                    'kickoff_count_threshold' : self.aux_params['kickoff_count_threshold'],
+                    'duration_threshold' : self.aux_params['duration_threshold'], 
                     'meas_period' : 15
                     }
         
@@ -131,15 +133,18 @@ class ServerDataGetter(object):
             key = record['account_id']
             
             if not datadict.has_key(key):
-                datadict[key] = [[], [], [], [], [], [], []]
+                datadict[key] = [[], [], [], [], [], [], [], [], [], []]
                 
             datadict[key][0].append(record['ts']/1000)
-            datadict[key][1].append(record['light'])
-            datadict[key][2].append(record['sound_num_disturbances'])
-            datadict[key][3].append(record['sound_peak_disturbances'])
-            datadict[key][4].append(record['svm_no_gravity'])
-            datadict[key][5].append(record['wave_count'])
-            datadict[key][6].append(record['offset_millis']/1000)
+            datadict[key][1].append(record['offset_millis']/1000)
+            datadict[key][2].append(record['light'])
+            datadict[key][3].append(record['sound_num_disturbances'])
+            datadict[key][4].append(record['sound_peak_disturbances'])
+            datadict[key][5].append(record['svm_no_gravity'])
+            datadict[key][6].append(record['wave_count'])
+            datadict[key][7].append(record['motion_range'])
+            datadict[key][8].append(record['on_duration_seconds'])
+            datadict[key][9].append(record['kickoff_counts'])
             
         badkeys = []
         for key in datadict:

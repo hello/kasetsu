@@ -16,14 +16,14 @@ import os.path
 import initial_models
 import matplotlib.dates as mdates
     
-#k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043 ,  1049 ,  1050  , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,  1086,1310  , 1609 ,  1629 ,  1648]
-k_user_list = [1012]
+k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043 ,  1049 ,  1050  , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,  1086,1310  , 1609 ,  1629 ,  1648]
+#k_user_list = [1012]
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-03-28'
-k_num_days_of_data = 1
+k_min_date = '2015-03-20'
+k_num_days_of_data = 9
 
 k_period_in_seconds = 15 * 60.0
 k_segment_spacing_in_seconds = 120 * 60.0
@@ -58,8 +58,11 @@ def get_unix_time_as_datetime(unix_time):
 def get_unix_time_as_string(unix_time): 
     return get_unix_time_as_datetime(unix_time).isoformat(' ')   
 
-def pull_data(params):    
-    if os.path.isfile(save_filename): 
+def pull_data(params, user, date): 
+ 
+    have_valid_user_date_combo = (user != None and date != None)
+
+    if os.path.isfile(save_filename) and not have_valid_user_date_combo: 
         print 'loading from %s' % save_filename
         f = open(save_filename, 'r')
         data = json.load(f)
@@ -72,8 +75,20 @@ def pull_data(params):
 
         #d = serverdata.ServerDataGetter(k_user_list)
         #data = d.get_all_minute_data(k_min_date, k_num_days_of_data, 1440 * k_min_num_days_of_sense_data,k_min_count_pill_data)
-        a = serverdata.BinnedDataGetter(k_user_list,params)
-        data = a.get_all_binned_data(k_min_date,k_num_days_of_data)
+        user_list = k_user_list
+        
+        if user != None:
+            user_list = [user]
+            
+        min_date = k_min_date
+        num_days = k_num_days_of_data
+        
+        if date != None:
+            min_date = date
+            num_days = 1
+            
+        a = serverdata.BinnedDataGetter(user_list,params)
+        data = a.get_all_binned_data(min_date,num_days)
         
         
         f = open(save_filename, 'w')
@@ -166,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--train', action='store_true', default=False, help='compute an aggregate model for all user ids')
     parser.add_argument('--sleeponly', action='store_true', default=False, help='only train on the sleep states')
     parser.add_argument('--initmodel', default='default', help='which initial model to choose')
+    parser.add_argument('--date', help = 'optional target date, use in conjuction with a user')
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=np.nan)
     
@@ -189,7 +205,7 @@ if __name__ == '__main__':
     params['enable_interval_search'] = k_enable_interval_search
 
     #get the data
-    data = pull_data(params)
+    data = pull_data(params, args.user, args.date)
    
     all_times = []
     flat_seg = []
