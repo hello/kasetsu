@@ -2,4 +2,5 @@
 #define _HIDDENMARKOVMODEL_H_
 
 
+
 #endif //_HIDDENMARKOVMODEL_H_

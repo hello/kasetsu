@@ -11,6 +11,8 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 #compile our alg code
 add_library(cpphmm STATIC
 HiddenMarkovModel.cpp
+AllModels.cpp
+CompositeModel.cpp
 )
 
 
