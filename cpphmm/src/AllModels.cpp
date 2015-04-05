@@ -24,7 +24,11 @@ GammaModel::~GammaModel() {
     
 }
 
-HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) {
+HmmPdfInterface * GammaModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+    return NULL;
+}
+
+HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     HmmDataVec_t ret;
     const HmmDataVec_t & vec = x[_obsnum];
     
@@ -49,7 +53,11 @@ PoissonModel::~PoissonModel() {
     
 }
 
-HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) {
+HmmPdfInterface * PoissonModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+    return NULL;
+}
+
+HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     HmmDataVec_t ret;
     const HmmDataVec_t & vec = x[_obsnum];
     
@@ -77,7 +85,11 @@ AlphabetModel::~AlphabetModel() {
     
 }
 
-HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) {
+HmmPdfInterface * AlphabetModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+    return NULL;
+}
+
+HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     HmmDataVec_t ret;
     const HmmDataVec_t & vec = x[_obsnum];
     

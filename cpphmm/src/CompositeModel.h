@@ -8,7 +8,9 @@ public:
     CompositeModel();
     ~CompositeModel();
     
-    HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x);
+    HmmPdfInterface * reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const;
+
+    HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     
     
 };
