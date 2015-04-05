@@ -2,8 +2,12 @@ cmake_minimum_required (VERSION 2.8)
 
 project(CppHmmLibrary)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
 
 add_definitions(-DUSE_CPP_DEBUG_LOGGING)
+
+FIND_PACKAGE(gsl REQUIRED)
+include_directories("${GSL_INCLUDE_DIR}")
 
 include_directories ("${PROJECT_SOURCE_DIR}")
 
@@ -15,4 +19,4 @@ AllModels.cpp
 CompositeModel.cpp
 )
 
-
+target_link_libraries(cpphmm ${GSL_LIBRARIES})

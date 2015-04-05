@@ -2,6 +2,7 @@
 #define _HMMTYPES_H_
 #include <stdint.h>
 #include <vector>
+#include <stdint.h>
 
 typedef float HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;

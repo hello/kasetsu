@@ -6,7 +6,7 @@
 class HmmPdfInterface {
 public:
     virtual ~HmmPdfInterface() {};
-    virtual HmmFloat_t getLogOfPdf(const HmmDataMatrix_t & x) = 0;
+    virtual HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) = 0;
 };
 
 #endif //HMMPDFINTERFACE_H_
