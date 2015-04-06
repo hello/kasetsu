@@ -8,9 +8,16 @@ public:
     CompositeModel();
     ~CompositeModel();
     
-    HmmPdfInterface * reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const;
+    void addModel(HmmPdfInterface * model);
+    
+    HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
 
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
+private:
+    
+    typedef std::vector<HmmPdfInterface *> ModelVec_t;
+    
+    ModelVec_t _models;
     
     
 };

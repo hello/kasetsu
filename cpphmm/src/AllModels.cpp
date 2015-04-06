@@ -24,7 +24,7 @@ GammaModel::~GammaModel() {
     
 }
 
-HmmPdfInterface * GammaModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
     return NULL;
 }
 
@@ -35,7 +35,7 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     ret.resize(vec.size());
 
     for (int32_t i = 0; i < vec.size(); i++) {
-        ret[i] = logf(gsl_ran_gamma_pdf(vec[i],_A,_B));
+        ret[i] = logf(gsl_ran_gamma_pdf(vec[i],_A,1.0/_B));
     }
     
     return ret;
@@ -53,7 +53,7 @@ PoissonModel::~PoissonModel() {
     
 }
 
-HmmPdfInterface * PoissonModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+HmmPdfInterface * PoissonModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
     return NULL;
 }
 
@@ -85,7 +85,7 @@ AlphabetModel::~AlphabetModel() {
     
 }
 
-HmmPdfInterface * AlphabetModel::reestimate(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+HmmPdfInterface * AlphabetModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
     return NULL;
 }
 
