@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 2.8)
 PROJECT (HmmTests)
 
 set(CMAKE_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/)
+include_directories("../src/")
 
 
 
@@ -17,7 +18,8 @@ include_directories("./gtest/include")
 
 add_executable(unit-test
                main.cpp 
-               testhmm.cpp)
+               testhmm.cpp
+               testmodels.cpp)
 
 target_link_libraries(unit-test gtest cpphmm)
 

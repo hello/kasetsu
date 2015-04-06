@@ -1,7 +1,7 @@
 
 #include "AllModels.h"
 #include <gsl/gsl_randist.h>
-
+#include <cmath>
 
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
 : _A(mean*mean / (stddev*stddev))
@@ -35,7 +35,7 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     ret.resize(vec.size());
 
     for (int32_t i = 0; i < vec.size(); i++) {
-        ret[i] = gsl_ran_gamma_pdf(vec[i],_A,_B);
+        ret[i] = logf(gsl_ran_gamma_pdf(vec[i],_A,_B));
     }
     
     return ret;
@@ -65,7 +65,7 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     
     for (int32_t i = 0; i < vec.size(); i++) {
         const int32_t meas = (int32_t) vec[i];
-        ret[i] = gsl_ran_poisson_pdf(meas, _mu);
+        ret[i] = logf(gsl_ran_poisson_pdf(meas, _mu));
     }
     
     return ret;
@@ -98,7 +98,7 @@ HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     for (int32_t i = 0; i < vec.size(); i++) {
         int32_t idx = (int32_t)vec[i];
         
-        ret[i] = _alphabetprobs[idx];
+        ret[i] = logf(_alphabetprobs[idx]);
     }
     
     return ret;
