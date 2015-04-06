@@ -23,7 +23,18 @@ CompositeModel::~CompositeModel() {
 }
 
 HmmPdfInterface * CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
-    return NULL;
+    CompositeModel * newModel = new CompositeModel();
+    
+    for (ModelVec_t::const_iterator vecIterator = _models.begin();
+         vecIterator != _models.end(); vecIterator++) {
+        
+        const HmmPdfInterface * const model = *vecIterator;
+    
+        newModel->addModel(model->reestimate(gammaForThisState, meas));
+    
+    }
+    
+    return newModel;
 }
 
 HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
