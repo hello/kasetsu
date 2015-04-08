@@ -17,6 +17,7 @@ private:
     const int32_t _obsnum;
 };
 
+///////////////////////////////////
 
 class PoissonModel : public HmmPdfInterface {
 public:
@@ -30,9 +31,11 @@ private:
     const float _mu;
 };
 
+////////////////////////////////////
+
 class AlphabetModel : public HmmPdfInterface {
 public:
-    AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs);
+    AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs,bool allowreestimation);
     ~AlphabetModel();
     
     HmmPdfInterface * reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas) const;
@@ -41,6 +44,7 @@ public:
 private:
     const int32_t _obsnum;
     const HmmDataVec_t _alphabetprobs;
+    const bool _allowreestimation;
 };
 
 #endif //_ALLMODELS_H_

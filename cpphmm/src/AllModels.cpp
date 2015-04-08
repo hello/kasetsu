@@ -3,6 +3,11 @@
 #include <gsl/gsl_randist.h>
 #include <cmath>
 
+#define  MIN_POISSON_MEAN (0.01)
+#define  MIN_GAMMA_MEAN (0.01)
+#define  MIN_GAMMA_VARIANCE (0.01)
+
+
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
 : _A(mean*mean / (stddev*stddev))
 , _B(mean/(stddev*stddev))
@@ -24,8 +29,42 @@ GammaModel::~GammaModel() {
     
 }
 
-HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
-    return NULL;
+HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+    const HmmDataVec_t & obsvec = meas[_obsnum];
+    
+    
+    HmmFloat_t newmean = 0.0;
+    HmmFloat_t oldmean = _A / _B;
+    HmmFloat_t newvariance = 0.0;
+    HmmFloat_t dx;
+    
+    HmmFloat_t numermean = 0.0;
+    HmmFloat_t numervariance = 0.0;
+
+    HmmFloat_t denom = 0.0;
+    
+    
+    
+    for (int32_t t = 0; t < obsvec.size(); t++) {
+        dx = obsvec[t] - oldmean;
+        numermean += obsvec[t]*gammaForThisState[t];
+        numervariance += gammaForThisState[t]*dx*dx;
+        denom += gammaForThisState[t];
+    }
+    
+    newmean = numermean / denom;
+    newvariance = numervariance / denom;
+    
+    if (newmean < MIN_GAMMA_MEAN) {
+        newmean = MIN_GAMMA_MEAN;
+    }
+    
+    if (newvariance < MIN_GAMMA_VARIANCE) {
+        newvariance = MIN_GAMMA_VARIANCE;
+    }
+    
+    
+    return new GammaModel(_obsnum,newmean,sqrt(newvariance));
 }
 
 HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
@@ -53,8 +92,28 @@ PoissonModel::~PoissonModel() {
     
 }
 
-HmmPdfInterface * PoissonModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
-    return NULL;
+HmmPdfInterface * PoissonModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+    const HmmDataVec_t & obsvec = meas[_obsnum];
+
+    
+    HmmFloat_t newmean = 0.0;
+    
+    HmmFloat_t numer = 0.0;
+    HmmFloat_t denom = 0.0;
+    
+    for (int32_t t = 0; t < obsvec.size(); t++) {
+        numer += obsvec[t]*gammaForThisState[t];
+        denom += gammaForThisState[t];
+    }
+    
+    newmean = numer / denom;
+    
+    if (newmean < MIN_POISSON_MEAN) {
+        newmean = MIN_POISSON_MEAN;
+    }
+    
+    return new PoissonModel(_obsnum,newmean);
+    
 }
 
 HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
@@ -76,17 +135,46 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
 ///////////////////////////////////
 
 
-AlphabetModel::AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs)
+AlphabetModel::AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs,bool allowreestimation)
 :_obsnum(obsnum)
-,_alphabetprobs(alphabetprobs) {
+,_alphabetprobs(alphabetprobs)
+,_allowreestimation(allowreestimation) {
 }
 
 AlphabetModel::~AlphabetModel() {
     
 }
 
-HmmPdfInterface * AlphabetModel::reestimate(const HmmDataVec_t & gamma, const HmmDataMatrix_t & meas) const {
-    return NULL;
+HmmPdfInterface * AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+    
+    const HmmDataVec_t & obsvec = meas[_obsnum];
+
+    if  (!_allowreestimation) {
+        return new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation);
+    }
+    
+    HmmDataVec_t counts;
+    counts.resize(_alphabetprobs.size());
+    
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        counts[i] = 0.0;
+    }
+    
+    HmmFloat_t denom = 0.0;
+    
+    
+    for (int32_t t = 0; t < obsvec.size(); t++) {
+        const int32_t idx = (int32_t)obsvec[t];
+        counts[idx] += gammaForThisState[t];
+        denom += gammaForThisState[t];
+    }
+    
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        counts[i] /= denom;
+    }
+
+    return new AlphabetModel(_obsnum,counts,_allowreestimation);
+
 }
 
 HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
