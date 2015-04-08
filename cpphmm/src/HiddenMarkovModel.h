@@ -24,18 +24,22 @@ public:
 
 
 
+
 class HiddenMarkovModel {
 public:
     HiddenMarkovModel(int32_t numStates);
     ~HiddenMarkovModel();
     
-    void addModelForState(int32_t stateNum, HmmPdfInterface * model);
+    void addModelForState(HmmPdfInterface * model);
     
 private:
     
+    ModelVec_t _models;
     
     AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t A) const;
-    void reestimate();
+    HmmDataMatrix_t getLogBMap(const HmmDataMatrix_t & meas) const;
+    
+    void reestimate(const HmmDataMatrix_t & meas);
     
     int32_t _numStates;
     

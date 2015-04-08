@@ -2,6 +2,7 @@
 #define HMMPDFINTERFACE_H_
 
 #include "HmmTypes.h"
+#include <vector>
 
 class HmmPdfInterface {
 public:
@@ -9,5 +10,8 @@ public:
     virtual HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const = 0;
     virtual HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const = 0;
 };
+
+typedef std::vector<HmmPdfInterface *> ModelVec_t;
+
 
 #endif //HMMPDFINTERFACE_H_

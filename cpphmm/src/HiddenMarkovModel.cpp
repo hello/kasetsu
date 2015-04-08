@@ -12,10 +12,14 @@ HiddenMarkovModel::HiddenMarkovModel(int32_t numStates)
 
 HiddenMarkovModel::~HiddenMarkovModel() {
     
+    for (ModelVec_t::iterator it = _models.begin(); it != _models.end(); it++) {
+        delete *it;
+    }
+    
 }
 
-void HiddenMarkovModel::addModelForState(int32_t stateNum, HmmPdfInterface * model) {
-    
+void HiddenMarkovModel::addModelForState(HmmPdfInterface * model) {
+    _models.push_back(model);
 }
 
 
@@ -60,6 +64,16 @@ static HmmDataVec_t getZeroedVec(size_t vecSize) {
     return vec;
 }
 
+static HmmDataVec_t getUniformVec(size_t vecSize) {
+    HmmDataVec_t vec;
+    HmmFloat_t a = 1.0 / (HmmFloat_t)vecSize;
+    vec.resize(vecSize);
+    for (int i = 0; i < vecSize; i++) {
+        vec[i] = a;
+    }
+    return vec;
+}
+
 static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
     HmmDataMatrix_t mtx;
     mtx.resize(numVecs);
@@ -70,6 +84,17 @@ static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
     }
     
     return mtx;
+}
+
+HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) const {
+    HmmDataMatrix_t logbmap;
+    
+    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
+        const HmmPdfInterface * ref = *it;
+        logbmap.push_back(ref->getLogOfPdf(meas));
+    }
+    
+    return logbmap;
 }
 
 
@@ -158,6 +183,18 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
 
 }
 
-void HiddenMarkovModel::reestimate() {
+void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
+    if (meas.empty()) {
+        return;
+    }
     
+    size_t numObs = meas[0].size();
+    HmmDataVec_t pi = getUniformVec(_numStates);
+    HmmDataMatrix_t logbmap = getLogBMap(meas);
+    
+    AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, <#const HmmDataMatrix_t A#>)
 }
+
+
+
+
