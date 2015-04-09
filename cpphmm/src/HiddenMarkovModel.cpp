@@ -5,17 +5,24 @@
 #define MIN_NORMALIZING_VALUE (1e-3)
 #define MIN_LOG_BMAP (-15.0)
 
-HiddenMarkovModel::HiddenMarkovModel(int32_t numStates)
-: _numStates(numStates) {
+HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
+: _numStates(_A.size())
+,_A(A) {
     
 }
 
 HiddenMarkovModel::~HiddenMarkovModel() {
     
+    clearModels();
+    
+}
+
+void HiddenMarkovModel::clearModels() {
     for (ModelVec_t::iterator it = _models.begin(); it != _models.end(); it++) {
         delete *it;
     }
     
+    _models.clear();
 }
 
 void HiddenMarkovModel::addModelForState(HmmPdfInterface * model) {
@@ -84,6 +91,17 @@ static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
     }
     
     return mtx;
+}
+
+static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
+    Hmm3DMatrix_t mtx3;
+    mtx3.reserve(numMats);
+    
+    for (int i = 0; i < numMats; i++) {
+        mtx3.push_back(getZeroedMatrix(numVecs, vecSize));
+    }
+    
+    return mtx3;
 }
 
 HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) const {
@@ -175,12 +193,112 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     
     sumc += logmaximum * numObs;
     
-    const AlphaBetaResult_t result(alpha,beta,sumc);
+    const AlphaBetaResult_t result(alpha,beta,bmap,sumc);
     
     return result;
     
     
 
+}
+
+Hmm3DMatrix_t HiddenMarkovModel::getXi(const AlphaBetaResult_t & alphabeta,size_t numObs) const {
+    /*
+    Calculates 'xi', a joint probability from the 'alpha' and 'beta' variables.
+    
+    The xi variable is a numpy array indexed by time, state, and state (TxNxN).
+    xi[t][i][j] = the probability of being in state 'i' at time 't', and 'j' at
+    time 't+1' given the entire observation sequence.
+    */
+    int32_t t,i,j;
+
+    const HmmDataMatrix_t & alpha = alphabeta.alpha;
+    const HmmDataMatrix_t & beta = alphabeta.beta;
+    const HmmDataMatrix_t & bmap = alphabeta.bmap;
+
+    Hmm3DMatrix_t xi = getZeroed3dMatrix(_numStates,_numStates, numObs);
+    
+    
+    for (t = 0; t < numObs - 1; t++) {
+        HmmFloat_t denom = 0.0;
+        for (i = 0; i < _numStates; i++) {
+            for (j = 0; j < _numStates; j++) {
+                HmmFloat_t thing = 1.0;
+                thing *= alpha[i][t];
+                thing *= _A[i][j];
+                thing *= bmap[j][t+1];
+                thing *= beta[j][t+1];
+                
+                denom += thing;
+            }
+        }
+        
+        for (i = 0; i < _numStates; i++) {
+            for (j = 0; j < _numStates; j++) {
+                HmmFloat_t numer = 1.0;
+                numer *= alpha[i][t];
+                numer *= _A[i][j];
+                numer *= bmap[j][t+1];
+                numer *= beta[j][t+1];
+                
+                xi[i][j][t] = numer / denom;
+            }
+            
+        }
+        
+    }
+    
+                
+    return xi;
+
+}
+
+HmmDataMatrix_t HiddenMarkovModel::getGamma(const Hmm3DMatrix_t & xi,size_t numObs) const {
+    /*
+    Calculates 'gamma' from xi.
+    
+    Gamma is a (TxN) numpy array, where gamma[t][i] = the probability of being
+    in state 'i' at time 't' given the full observation sequence.
+    */
+    
+    int32_t t,i,j;
+    HmmDataMatrix_t gamma = getZeroedMatrix(_numStates, numObs);
+    
+    for (t = 0; t < numObs; t++) {
+        for (i = 0; i < _numStates; i++) {
+            for (j = 0; j < _numStates; j++) {
+                gamma[i][t] += xi[i][j][t];
+            }
+        }
+    }
+    
+    return gamma;
+
+}
+
+HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const {
+    
+    int32_t i,j,t;
+    HmmDataMatrix_t A = getZeroedMatrix(_numStates, _numStates);
+    
+    for (i = 0; i < _numStates; i++) {
+        HmmFloat_t denom = 0.0;
+        
+        for (t = 0; t < numObs; t++) {
+            denom += gamma[i][t];
+        }
+    
+        for (j = 0; j < numObs; j++) {
+            HmmFloat_t numer = 0.0;
+            for (t = 0; t < numObs; t++) {
+                numer += xi[i][j][t];
+            }
+            
+            A[i][j] = numer / denom;
+        }
+    }
+    
+    return A;
+    
 }
 
 void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
@@ -192,7 +310,34 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     HmmDataVec_t pi = getUniformVec(_numStates);
     HmmDataMatrix_t logbmap = getLogBMap(meas);
     
-    AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, <#const HmmDataMatrix_t A#>)
+    AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, _A);
+    
+    Hmm3DMatrix_t xi = getXi(alphabeta,numObs);
+    
+    HmmDataMatrix_t gamma = getGamma(xi,numObs);
+    
+    HmmDataMatrix_t newA = reestimateA(xi, gamma, numObs);
+    
+    ModelVec_t newmodels;
+    
+    //TODO parallelize
+    for (size_t iState = 0; iState < _numStates; iState++) {
+        const HmmDataVec_t & gammaForThisState = gamma[iState];
+        
+        HmmPdfInterface * newModel = _models[iState]->reestimate(gammaForThisState, meas);
+        
+        newmodels.push_back(newModel);
+    }
+    
+    
+    //free up memory of old models
+    clearModels();
+    
+    
+    _models = newmodels;
+    _A = newA;
+
+    
 }
 
 
