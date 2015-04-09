@@ -1,6 +1,8 @@
 #include "HiddenMarkovModel.h"
 #include "HmmTypes.h"
 #include <math.h>
+#include "ThreadPool.h"
+#include <iostream>
 
 #define MIN_NORMALIZING_VALUE (1e-3)
 #define MIN_LOG_BMAP (-15.0)
@@ -318,8 +320,26 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     
     HmmDataMatrix_t newA = reestimateA(xi, gamma, numObs);
     
-    ModelVec_t newmodels;
     
+    ModelVec_t localModels = _models; //copies all the pointers
+    typedef std::vector<std::future<HmmPdfInterface *>> FutureModelVec_t;
+    FutureModelVec_t newmodels;
+    
+    
+    {
+        //destructor of threadpool joins all threads
+        ThreadPool pool(4);
+        
+        for (int32_t iState = 0; iState < _numStates; iState++) {
+            newmodels.emplace_back(
+                pool.enqueue([iState,&gamma,&meas,&localModels] {
+                return localModels[iState]->reestimate(gamma[iState], meas);
+            }));
+        }
+    }
+    
+    
+    /*
     //TODO parallelize
     for (size_t iState = 0; iState < _numStates; iState++) {
         const HmmDataVec_t & gammaForThisState = gamma[iState];
@@ -328,13 +348,17 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
         
         newmodels.push_back(newModel);
     }
+     */
     
     
     //free up memory of old models
     clearModels();
     
+    //go get results and place in models vec
+    for(auto && result : newmodels) {
+        _models.push_back(result.get());
+    }
     
-    _models = newmodels;
     _A = newA;
 
     

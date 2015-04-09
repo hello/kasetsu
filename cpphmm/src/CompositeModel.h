@@ -14,9 +14,7 @@ public:
 
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
 private:
-    
-    typedef std::vector<HmmPdfInterface *> ModelVec_t;
-    
+        
     ModelVec_t _models;
     
     
