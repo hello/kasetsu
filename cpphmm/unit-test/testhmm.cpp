@@ -32,12 +32,12 @@ TEST_F(TestHmm,TestHmm) {
     
     poissonmeas.reserve(10000);
     
-    for (int i = 0; i < 1; i++) {
-        for (int j = 0; j < 100; j++) {
+    for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 10; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 1.0));
         }
     
-        for (int j = 0; j < 100; j++) {
+        for (int j = 0; j < 20; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 3.0));
         }
     }
@@ -64,7 +64,7 @@ TEST_F(TestHmm,TestHmm) {
     hmm.addModelForState(new PoissonModel(0,1.0));
 
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
         hmm.reestimate(meas);
     }
     

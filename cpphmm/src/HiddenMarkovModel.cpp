@@ -105,6 +105,45 @@ static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t ve
     return mtx3;
 }
 
+static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
+    
+    std::cout << name << std::endl;
+    
+    for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
+        bool first = true;
+        for (HmmDataVec_t::const_iterator itvec2 = (*it).begin(); itvec2 != (*it).end(); itvec2++) {
+            if (!first) {
+                std::cout << ",";
+            }
+            
+            std::cout << *itvec2;
+
+            
+            first = false;
+        }
+        
+        std::cout << std::endl;
+    }
+    
+    
+}
+
+static void printVec(const std::string & name, const HmmDataVec_t & vec) {
+    bool first = true;
+    for (HmmDataVec_t::const_iterator itvec2 = vec.begin(); itvec2 != vec.end(); itvec2++) {
+        if (!first) {
+            std::cout << ",";
+        }
+        
+        std::cout << *itvec2;
+        
+        
+        first = false;
+    }
+    std::cout << std::endl;
+
+}
+
 HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) const {
     HmmDataMatrix_t logbmap;
     
@@ -134,6 +173,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     HmmDataMatrix_t bmap = getNormalizedBMap(logbmap,logmaximum);
     
     HmmDataVec_t c = getZeroedVec(numObs);
+
     c[0] = 1.0;
     
     //init stage - alpha_1(x) = pi(x)b_x(O1)
@@ -146,7 +186,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     for (t = 1; t < numObs; t++) {
         for (j = 0; j < _numStates; j++) {
             for (i = 0; i < _numStates; i++) {
-                alpha[j][t] += alpha[j][t-1]*A[i][j];
+                alpha[j][t] += alpha[i][t-1]*A[i][j];
             }
             
             alpha[j][t] *= bmap[j][t];
@@ -176,15 +216,19 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
         beta[s][numObs - 1] = 1.0;
     }
     
+
+    
     for (t = numObs - 2; t >= 0; t--) {
         for (i = 0; i < _numStates; i++) {
-            for (j = 0;  j< _numStates; j++) {
+            for (j = 0;  j < _numStates; j++) {
                 beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
             }
             
-            for (j = 0; j < _numStates; j++) {
-                beta[j][t] /= c[t];
-            }
+        
+        }
+        
+        for (j = 0; j < _numStates; j++) {
+            beta[j][t] /= c[t];
         }
     }
     
@@ -197,6 +241,12 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     
     const AlphaBetaResult_t result(alpha,beta,bmap,sumc);
     
+    (void)printMat;
+    (void)printVec;
+    //printVec("c",c);
+    //printMat("alpha",alpha);
+    //printMat("beta",beta);
+
     return result;
     
     
