@@ -8,9 +8,8 @@
 #define MIN_LOG_BMAP (-15.0)
 
 HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
-: _numStates(_A.size())
-,_A(A) {
-    
+:_A(A) {
+    _numStates = A.size();
 }
 
 HiddenMarkovModel::~HiddenMarkovModel() {
@@ -109,6 +108,7 @@ static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t ve
 HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) const {
     HmmDataMatrix_t logbmap;
     
+    //TODO parallelize
     for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
         const HmmPdfInterface * ref = *it;
         logbmap.push_back(ref->getLogOfPdf(meas));
@@ -179,7 +179,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     for (t = numObs - 2; t >= 0; t--) {
         for (i = 0; i < _numStates; i++) {
             for (j = 0;  j< _numStates; j++) {
-                beta[i][t] += A[i][j]*bmap[t+1][j] * beta[j][t+1];
+                beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
             }
             
             for (j = 0; j < _numStates; j++) {
@@ -289,7 +289,7 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & xi, const H
             denom += gamma[i][t];
         }
     
-        for (j = 0; j < numObs; j++) {
+        for (j = 0; j < _numStates; j++) {
             HmmFloat_t numer = 0.0;
             for (t = 0; t < numObs; t++) {
                 numer += xi[i][j][t];
