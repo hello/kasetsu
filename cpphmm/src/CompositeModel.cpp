@@ -39,14 +39,12 @@ HmmPdfInterface * CompositeModel::reestimate(const HmmDataVec_t & gammaForThisSt
 
 HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     HmmDataVec_t vec;
-    vec.resize(x.size());
+    vec.resize(x[0].size());
     
-    //log of 0 is 1
-    for (int32_t i = 0; i < vec.size(); i++) {
-        vec[i] = 1.0f;
-    }
-    
-    
+    //log of 1 is 0
+    memset(vec.data(),0,sizeof(HmmFloat_t)*vec.size());
+   
+
     for (ModelVec_t::const_iterator vecIterator = _models.begin();
              vecIterator != _models.end(); vecIterator++) {
 

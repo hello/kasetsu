@@ -2,6 +2,7 @@
 #include <gsl/gsl_randist.h>
 #include "HiddenMarkovModel.h"
 #include "AllModels.h"
+#include "CompositeModel.h"
 
 class TestHmm : public ::testing::Test {
 protected:
@@ -27,18 +28,23 @@ TEST_F(TestHmm,TestHmm) {
     T = gsl_rng_default;
     r = gsl_rng_alloc (T);
     
-    int idx = 0;
-    std::vector<float> poissonmeas;
+    std::vector<HmmFloat_t> poissonmeas;
+    std::vector<HmmFloat_t> gammameas;
+
     
-    poissonmeas.reserve(10000);
+    poissonmeas.reserve(100000);
+    gammameas.reserve(100000);
     
-    for (int i = 0; i < 100; i++) {
-        for (int j = 0; j < 10; j++) {
+    for (int i = 0; i < 1000; i++) {
+        for (int j = 0; j < 50; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 1.0));
+            gammameas.push_back(gsl_ran_gamma(r, 1.0, 1.0/2.0));
         }
     
-        for (int j = 0; j < 20; j++) {
+        for (int j = 0; j < 100; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 3.0));
+            gammameas.push_back(gsl_ran_gamma(r, 2.0, 1.0/3.0));
+
         }
     }
     
@@ -57,14 +63,26 @@ TEST_F(TestHmm,TestHmm) {
     
     HmmDataMatrix_t meas;
     meas.push_back(poissonmeas);
+    meas.push_back(gammameas);
     
     HiddenMarkovModel hmm(A);
     
-    hmm.addModelForState(new PoissonModel(0,0.5));
-    hmm.addModelForState(new PoissonModel(0,1.0));
+    {
+        CompositeModel * model1 = new CompositeModel();
+        CompositeModel * model2 = new CompositeModel();
+
+        model1->addModel(new PoissonModel(0,0.5) );
+        model1->addModel(new GammaModel(1,1.0,1.0));
+    
+        model2->addModel(new PoissonModel(0,1.0));
+        model2->addModel(new GammaModel(1,2.0,1.0));
+        
+        hmm.addModelForState(model1);
+        hmm.addModelForState(model2);
+    }
 
     
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 10; i++) {
         hmm.reestimate(meas);
     }
     

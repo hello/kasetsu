@@ -74,7 +74,8 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     ret.resize(vec.size());
 
     for (int32_t i = 0; i < vec.size(); i++) {
-        ret[i] = logf(gsl_ran_gamma_pdf(vec[i],_A,1.0/_B));
+        HmmFloat_t val = vec[i];
+        ret[i] = logf(gsl_ran_gamma_pdf(val,_A,1.0/_B));
     }
     
     return ret;

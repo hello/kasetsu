@@ -4,8 +4,17 @@
 #include "ThreadPool.h"
 #include <iostream>
 
-#define MIN_NORMALIZING_VALUE (1e-3)
+#define MIN_NORMALIZING_VALUE (1e-8)
 #define MIN_LOG_BMAP (-15.0)
+
+#define THREAD_POOL_SIZE (4)
+
+typedef std::pair<int32_t,HmmPdfInterface *> StateIdxModelPair_t;
+typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
+
+typedef std::vector<std::future<StateIdxModelPair_t>> FutureModelVec_t;
+typedef std::vector<std::future<StateIdxPdfEvalPair_t>> FuturePdfEvalVec_t;
+
 
 HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
 :_A(A) {
@@ -147,11 +156,43 @@ static void printVec(const std::string & name, const HmmDataVec_t & vec) {
 HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) const {
     HmmDataMatrix_t logbmap;
     
+    
+    ModelVec_t localModels = _models; //copies all the pointers
+    FuturePdfEvalVec_t newevals;
+    
+    
+    {
+        //destructor of threadpool joins all threads
+        ThreadPool pool(THREAD_POOL_SIZE);
+        
+        for (int32_t iState = 0; iState < _numStates; iState++) {
+            newevals.emplace_back(
+                                   pool.enqueue([iState,&meas,&localModels] {
+                return std::make_pair(iState,localModels[iState]->getLogOfPdf(meas));
+            }));
+        }
+    }
+    
+    
+    logbmap.resize(_numStates);
+    
+    //go get results and place in models vec
+    for(auto && result : newevals) {
+        StateIdxPdfEvalPair_t v = result.get();
+        logbmap[v.first] = v.second;
+    }
+
+    
+    
+    
+    
     //TODO parallelize
+    /*
     for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
         const HmmPdfInterface * ref = *it;
         logbmap.push_back(ref->getLogOfPdf(meas));
     }
+     */
     
     return logbmap;
 }
@@ -372,18 +413,17 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     
     
     ModelVec_t localModels = _models; //copies all the pointers
-    typedef std::vector<std::future<HmmPdfInterface *>> FutureModelVec_t;
     FutureModelVec_t newmodels;
     
     
     {
         //destructor of threadpool joins all threads
-        ThreadPool pool(4);
+        ThreadPool pool(THREAD_POOL_SIZE);
         
         for (int32_t iState = 0; iState < _numStates; iState++) {
             newmodels.emplace_back(
                 pool.enqueue([iState,&gamma,&meas,&localModels] {
-                return localModels[iState]->reestimate(gamma[iState], meas);
+                return std::make_pair(iState,localModels[iState]->reestimate(gamma[iState], meas));
             }));
         }
     }
@@ -404,9 +444,11 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     //free up memory of old models
     clearModels();
     
+    _models.resize(_numStates);
     //go get results and place in models vec
     for(auto && result : newmodels) {
-        _models.push_back(result.get());
+        StateIdxModelPair_t v = result.get();
+        _models[v.first] = v.second;
     }
     
     _A = newA;
