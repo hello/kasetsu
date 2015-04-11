@@ -15,7 +15,8 @@ add_subdirectory("../src/" "${CMAKE_CURRENT_BINARY_DIR}/main")
 add_executable(trainer
                main.cpp
                trainer.cpp
-               hmmfactory.cpp)
+               hmmfactory.cpp
+               input.cpp)
 
 target_link_libraries(trainer cpphmm )
 

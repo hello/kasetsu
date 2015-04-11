@@ -1,5 +1,6 @@
 #include <iostream>
 #include "hmmfactory.h"
+#include "input.h"
 
 int main(int argc,const char * args[]) {
 
@@ -17,15 +18,18 @@ int main(int argc,const char * args[]) {
     const std::string model = args[2];
     
     
-    const HiddenMarkovModel * hmm = HmmFactory::getModel(model);
+    HiddenMarkovModel * hmm = HmmFactory::getModel(model);
     
     if (hmm == NULL) {
         std::cout << "could not find model " << model << std::endl;
         return 0;
     }
     
+    HmmDataMatrix_t meas = parseCsvFileFromFile(filename);
     
-    
+
+    hmm->reestimate(meas);
+
     /* TODO 
      
      1) load up data vector from file
