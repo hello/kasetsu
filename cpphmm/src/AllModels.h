@@ -12,8 +12,8 @@ public:
     HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
 private:
-    const float _A;
-    const float _B;
+    const float _mean;
+    const float _stddev;
     const int32_t _obsnum;
 };
 

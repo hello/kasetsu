@@ -9,8 +9,8 @@
 
 
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
-: _A(mean*mean / (stddev*stddev))
-, _B(mean/(stddev*stddev))
+: _mean(mean)
+, _stddev(stddev)
 , _obsnum(obsnum){
 
     //A/B = MEAN
@@ -21,6 +21,7 @@ GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev
     //
     //  B * mean = A
     //  mean^2 /variance= A
+
     
 }
 
@@ -34,7 +35,7 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
     
     
     HmmFloat_t newmean = 0.0;
-    HmmFloat_t oldmean = _A / _B;
+    HmmFloat_t oldmean = _mean;
     HmmFloat_t newvariance = 0.0;
     HmmFloat_t dx;
     
@@ -43,7 +44,7 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
 
     HmmFloat_t denom = 0.0;
     
-    
+
     
     for (int32_t t = 0; t < obsvec.size(); t++) {
         dx = obsvec[t] - oldmean;
@@ -71,11 +72,15 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     HmmDataVec_t ret;
     const HmmDataVec_t & vec = x[_obsnum];
     
+    const HmmFloat_t A = _mean*_mean / (_stddev*_stddev);
+    const HmmFloat_t B = _mean/(_stddev*_stddev);
+    const HmmFloat_t scale = 1.0 / B;
+    
     ret.resize(vec.size());
 
     for (int32_t i = 0; i < vec.size(); i++) {
         HmmFloat_t val = vec[i];
-        ret[i] = logf(gsl_ran_gamma_pdf(val,_A,1.0/_B));
+        ret[i] = logf(gsl_ran_gamma_pdf(val,A,scale));
     }
     
     return ret;

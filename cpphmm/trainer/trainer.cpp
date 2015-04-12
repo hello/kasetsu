@@ -1,9 +1,10 @@
 
 
 #include "trainer.h"
+#include <iostream>
 
-#define MAX_ITER (50)
-#define MIN_PERCENTAGE_CHANGE (0.001)
+#define MAX_ITER (10)
+#define MIN_PERCENTAGE_CHANGE (0.005)
 #define MAX_CONVERGE_COUNT (3)
 
 bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas) {
@@ -14,19 +15,18 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas) {
     for (int iter = 0; iter < MAX_ITER; iter++) {
         const ReestimationResult_t result =  hmm->reestimate(meas);
         
+        std::cout << result.getLogLikelihood() << std::endl;
+        
         if (lastResult.isValid() && result.isValid()) {
-            const HmmFloat_t dy = lastResult.getLogLikelihood() - result.getLogLikelihood();
+            const HmmFloat_t dy = result.getLogLikelihood() - lastResult.getLogLikelihood();
             const HmmFloat_t avg = 0.5 * (lastResult.getLogLikelihood() + result.getLogLikelihood());
             const HmmFloat_t percentageChange = dy / avg;
             
-            if (percentageChange > 0 && percentageChange < MIN_PERCENTAGE_CHANGE) {
+            if (percentageChange > -MIN_PERCENTAGE_CHANGE) {
                 convergeCount++;
             }
-            else {
-                convergeCount = 0;
-            }
             
-            if (convergeCount > MAX_CONVERGE_COUNT) {
+            if (convergeCount >= MAX_CONVERGE_COUNT) {
                 converged = true;
                 break;
             }

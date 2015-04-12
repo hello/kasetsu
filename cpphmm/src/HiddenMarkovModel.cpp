@@ -453,7 +453,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     
     _A = newA;
     
-    return ReestimationResult_t(alphabeta.logmodelcost);
+    return ReestimationResult_t(-alphabeta.logmodelcost);
 
 }
 
