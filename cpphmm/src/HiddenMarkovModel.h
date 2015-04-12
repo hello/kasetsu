@@ -2,6 +2,7 @@
 #define _HIDDENMARKOVMODEL_H_
 
 #include "HmmPdfInterface.h"
+#include "ReestimationResult.h"
 /*  
       does forwards backwards calcs, computes gamma, xi, etc.
  
@@ -34,7 +35,7 @@ public:
     
     void addModelForState(HmmPdfInterface * model);
     
-    void reestimate(const HmmDataMatrix_t & meas);
+    ReestimationResult_t reestimate(const HmmDataMatrix_t & meas);
 
 
 private:

@@ -18,6 +18,7 @@ add_library(cpphmm STATIC
 HiddenMarkovModel.cpp
 AllModels.cpp
 CompositeModel.cpp
+ReestimationResult.cpp
 )
 
 target_link_libraries(cpphmm ${GSL_LIBRARIES})

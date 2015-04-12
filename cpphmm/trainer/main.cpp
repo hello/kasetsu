@@ -1,6 +1,7 @@
 #include <iostream>
 #include "hmmfactory.h"
 #include "input.h"
+#include "trainer.h"
 
 int main(int argc,const char * args[]) {
 
@@ -18,28 +19,25 @@ int main(int argc,const char * args[]) {
     const std::string model = args[2];
     
     
+    
+    HmmDataMatrix_t meas = parseCsvFileFromFile(filename);
+    
+    if (meas.empty()) {
+        std::cout << "filename " << filename << " was empty." << std::endl;
+        return 0;
+    }
+    
+    
     HiddenMarkovModel * hmm = HmmFactory::getModel(model);
     
     if (hmm == NULL) {
         std::cout << "could not find model " << model << std::endl;
         return 0;
     }
-    
-    HmmDataMatrix_t meas = parseCsvFileFromFile(filename);
-    
 
-    hmm->reestimate(meas);
+    
+    bool worked = Trainer::train(hmm,meas);
 
-    /* TODO 
-     
-     1) load up data vector from file
-     2) add model creation to factory
-     3) generate model json file or protobuf file so we can plot in python
-     
-     */
-    
-    
-    
     delete hmm;
     hmm = NULL;
 

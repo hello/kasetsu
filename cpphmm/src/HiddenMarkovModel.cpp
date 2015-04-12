@@ -394,25 +394,25 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & xi, const H
     
 }
 
-void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
+ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     if (meas.empty()) {
-        return;
+        return ReestimationResult_t();
     }
     
     size_t numObs = meas[0].size();
     HmmDataVec_t pi = getUniformVec(_numStates);
     HmmDataMatrix_t logbmap = getLogBMap(meas);
     
-    AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, _A);
+    const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, _A);
     
-    Hmm3DMatrix_t xi = getXi(alphabeta,numObs);
+    const Hmm3DMatrix_t xi = getXi(alphabeta,numObs);
     
-    HmmDataMatrix_t gamma = getGamma(xi,numObs);
+    const HmmDataMatrix_t gamma = getGamma(xi,numObs);
     
-    HmmDataMatrix_t newA = reestimateA(xi, gamma, numObs);
+    const HmmDataMatrix_t newA = reestimateA(xi, gamma, numObs);
     
     
-    ModelVec_t localModels = _models; //copies all the pointers
+    const ModelVec_t localModels = _models; //copies all the pointers
     FutureModelVec_t newmodels;
     
     
@@ -452,8 +452,9 @@ void HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
     }
     
     _A = newA;
-
     
+    return ReestimationResult_t(alphabeta.logmodelcost);
+
 }
 
 
