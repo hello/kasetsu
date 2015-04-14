@@ -53,13 +53,13 @@ TEST_F(TestHmm,TestHmm) {
     for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 10; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 1.0));
-            gammameas.push_back(gsl_ran_gamma(r, 1.0, 1.0/2.0));
+            gammameas.push_back(gsl_ran_gamma(r, 0.3, 0.3));
             alphabetmeas.push_back(getRandomInt(0.8));
         }
     
         for (int j = 0; j < 10; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 3.0));
-            gammameas.push_back(gsl_ran_gamma(r, 2.0, 1.0/3.0));
+            gammameas.push_back(gsl_ran_gamma(r, 2.0, 0.8));
             alphabetmeas.push_back(getRandomInt(0.3));
 
         }
@@ -86,13 +86,13 @@ TEST_F(TestHmm,TestHmm) {
         probs2 << 0.5,0.5;
         
 
-        model1->addModel(new PoissonModel(0,0.5) );
-        model1->addModel(new GammaModel(1,1.0,1.0));
+        model1->addModel(new PoissonModel(0,1.0) );
+        model1->addModel(new GammaModel(1,.09,16));
         model1->addModel(new AlphabetModel(2,probs1,true));
 
     
-        model2->addModel(new PoissonModel(0,1.0));
-        model2->addModel(new GammaModel(1,2.0,1.0));
+        model2->addModel(new PoissonModel(0,3.0));
+        model2->addModel(new GammaModel(1,1.6,1.13));
         model2->addModel(new AlphabetModel(2,probs2,true));
 
         

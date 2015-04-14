@@ -12,15 +12,17 @@
 class AlphaBetaResult_t  {
 public:
     
-    AlphaBetaResult_t(const HmmDataMatrix_t & a, const HmmDataMatrix_t & b,const HmmDataMatrix_t normalizedBMap, HmmFloat_t c)
+    AlphaBetaResult_t(const HmmDataMatrix_t & a, const HmmDataMatrix_t & b,const HmmDataVec_t & normalizingVec,const HmmDataMatrix_t normalizedBMap, HmmFloat_t c)
     : alpha(a)
     , beta(b)
+    , normalizing(normalizingVec)
     , bmap(normalizedBMap)
     , logmodelcost(c)
     {}
     
     const HmmDataMatrix_t alpha;
     const HmmDataMatrix_t beta;
+    const HmmDataVec_t    normalizing;
     const HmmDataMatrix_t bmap;
     const HmmFloat_t logmodelcost;
 } ;
@@ -53,6 +55,7 @@ private:
 
     int32_t _numStates;
     HmmDataMatrix_t _A;
+    HmmDataVec_t _pi;
 
 
     

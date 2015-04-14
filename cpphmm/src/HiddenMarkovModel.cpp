@@ -16,9 +16,75 @@ typedef std::vector<std::future<StateIdxModelPair_t>> FutureModelVec_t;
 typedef std::vector<std::future<StateIdxPdfEvalPair_t>> FuturePdfEvalVec_t;
 
 
+static HmmDataVec_t getZeroedVec(size_t vecSize) {
+    HmmDataVec_t vec;
+    vec.resize(vecSize);
+    memset(vec.data(),0,sizeof(HmmFloat_t) * vecSize);
+    return vec;
+}
+
+
+static HmmDataVec_t getUniformVec(size_t vecSize) {
+    HmmDataVec_t vec;
+    HmmFloat_t a = 1.0 / (HmmFloat_t)vecSize;
+    vec.resize(vecSize);
+    for (int i = 0; i < vecSize; i++) {
+        vec[i] = a;
+    }
+    return vec;
+}
+
+static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
+    HmmDataMatrix_t mtx;
+    mtx.resize(numVecs);
+    
+    //allocate and zero out
+    for(int j = 0; j < numVecs; j++) {
+        mtx[j] = getZeroedVec(vecSize);
+    }
+    
+    return mtx;
+}
+
+static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
+    Hmm3DMatrix_t mtx3;
+    mtx3.reserve(numMats);
+    
+    for (int i = 0; i < numMats; i++) {
+        mtx3.push_back(getZeroedMatrix(numVecs, vecSize));
+    }
+    
+    return mtx3;
+}
+
+static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
+    
+    std::cout << name << std::endl;
+    
+    for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
+        bool first = true;
+        for (HmmDataVec_t::const_iterator itvec2 = (*it).begin(); itvec2 != (*it).end(); itvec2++) {
+            if (!first) {
+                std::cout << ",";
+            }
+            
+            std::cout << *itvec2;
+            
+            
+            first = false;
+        }
+        
+        std::cout << std::endl;
+    }
+    
+    
+}
+
+
 HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
 :_A(A) {
     _numStates = A.size();
+    _pi = getUniformVec(_numStates);
 }
 
 HiddenMarkovModel::~HiddenMarkovModel() {
@@ -74,68 +140,7 @@ static HmmDataMatrix_t getNormalizedBMap(const HmmDataMatrix_t & logbmap, HmmFlo
 
 }
 
-static HmmDataVec_t getZeroedVec(size_t vecSize) {
-    HmmDataVec_t vec;
-    vec.resize(vecSize);
-    memset(vec.data(),0,sizeof(HmmFloat_t) * vecSize);
-    return vec;
-}
 
-static HmmDataVec_t getUniformVec(size_t vecSize) {
-    HmmDataVec_t vec;
-    HmmFloat_t a = 1.0 / (HmmFloat_t)vecSize;
-    vec.resize(vecSize);
-    for (int i = 0; i < vecSize; i++) {
-        vec[i] = a;
-    }
-    return vec;
-}
-
-static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
-    HmmDataMatrix_t mtx;
-    mtx.resize(numVecs);
-    
-    //allocate and zero out
-    for(int j = 0; j < numVecs; j++) {
-        mtx[j] = getZeroedVec(vecSize);
-    }
-    
-    return mtx;
-}
-
-static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
-    Hmm3DMatrix_t mtx3;
-    mtx3.reserve(numMats);
-    
-    for (int i = 0; i < numMats; i++) {
-        mtx3.push_back(getZeroedMatrix(numVecs, vecSize));
-    }
-    
-    return mtx3;
-}
-
-static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
-    
-    std::cout << name << std::endl;
-    
-    for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
-        bool first = true;
-        for (HmmDataVec_t::const_iterator itvec2 = (*it).begin(); itvec2 != (*it).end(); itvec2++) {
-            if (!first) {
-                std::cout << ",";
-            }
-            
-            std::cout << *itvec2;
-
-            
-            first = false;
-        }
-        
-        std::cout << std::endl;
-    }
-    
-    
-}
 
 static void printVec(const std::string & name, const HmmDataVec_t & vec) {
     bool first = true;
@@ -280,7 +285,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     
     sumc += logmaximum * numObs;
     
-    const AlphaBetaResult_t result(alpha,beta,bmap,sumc);
+    const AlphaBetaResult_t result(alpha,beta,c,bmap,sumc);
     
     (void)printMat;
     (void)printVec;
@@ -307,7 +312,8 @@ Hmm3DMatrix_t HiddenMarkovModel::getXi(const AlphaBetaResult_t & alphabeta,size_
     const HmmDataMatrix_t & alpha = alphabeta.alpha;
     const HmmDataMatrix_t & beta = alphabeta.beta;
     const HmmDataMatrix_t & bmap = alphabeta.bmap;
-
+    const HmmDataVec_t & c = alphabeta.normalizing;
+    (void)c;
     Hmm3DMatrix_t xi = getZeroed3dMatrix(_numStates,_numStates, numObs);
     
     
@@ -400,10 +406,9 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     }
     
     size_t numObs = meas[0].size();
-    HmmDataVec_t pi = getUniformVec(_numStates);
     HmmDataMatrix_t logbmap = getLogBMap(meas);
     
-    const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, pi, logbmap, _A);
+    const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, _pi, logbmap, _A);
     
     const Hmm3DMatrix_t xi = getXi(alphabeta,numObs);
     
@@ -452,6 +457,17 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     }
     
     _A = newA;
+    
+    for (int i = 0; i < _numStates; i++) {
+        _pi[i] = gamma[i][0];
+        
+        if (_pi[i] < 1e-6) {
+            _pi[i] = 1e-6;
+        }
+    }
+    
+
+    
     
     return ReestimationResult_t(-alphabeta.logmodelcost);
 
