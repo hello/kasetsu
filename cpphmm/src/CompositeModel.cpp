@@ -1,6 +1,7 @@
 
 #include "CompositeModel.h"
 
+#include <iostream>
 
 CompositeModel::CompositeModel() {
     
@@ -43,7 +44,6 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     
     //log of 1 is 0
     memset(vec.data(),0,sizeof(HmmFloat_t)*vec.size());
-   
 
     for (ModelVec_t::const_iterator vecIterator = _models.begin();
              vecIterator != _models.end(); vecIterator++) {
@@ -51,7 +51,7 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         const HmmPdfInterface * const model = *vecIterator;
             
         const HmmDataVec_t eval = model->getLogOfPdf(x);
-            
+        
         for (int32_t i = 0; i < vec.size(); i++) {
             vec[i] += eval[i];
         }

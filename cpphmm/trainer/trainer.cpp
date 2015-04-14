@@ -3,9 +3,9 @@
 #include "trainer.h"
 #include <iostream>
 
-#define MAX_ITER (10)
+#define MAX_ITER (5)
 #define MIN_PERCENTAGE_CHANGE (0.005)
-#define MAX_CONVERGE_COUNT (3)
+#define MAX_CONVERGE_COUNT (1)
 
 bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas) {
     ReestimationResult_t lastResult;

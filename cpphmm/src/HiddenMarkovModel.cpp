@@ -5,7 +5,7 @@
 #include <iostream>
 
 #define MIN_NORMALIZING_VALUE (1e-8)
-#define MIN_LOG_BMAP (-15.0)
+#define MIN_LOG_BMAP (-25)
 
 #define THREAD_POOL_SIZE (4)
 
@@ -127,6 +127,12 @@ static HmmDataMatrix_t getNormalizedBMap(const HmmDataMatrix_t & logbmap, HmmFlo
         HmmDataVec_t & brow = bmap[j];
         for (int i = 0; i < brow.size(); i++) {
             brow[i] -= maximum;
+        }
+    }
+    for (int j = 0; j < numStates; j++) {
+        HmmDataVec_t & brow = bmap[j];
+        
+        for (int i = 0; i < brow.size(); i++) {
             
             if (brow[i] < MIN_LOG_BMAP) {
                 brow[i] = MIN_LOG_BMAP;
@@ -135,6 +141,7 @@ static HmmDataMatrix_t getNormalizedBMap(const HmmDataMatrix_t & logbmap, HmmFlo
             brow[i] = exp(brow[i]);
         }
     }
+    
     
     return bmap;
 
