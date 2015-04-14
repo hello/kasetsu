@@ -3,6 +3,7 @@
 #include "HiddenMarkovModel.h"
 #include "AllModels.h"
 #include "CompositeModel.h"
+#include <random>
 
 class TestHmm : public ::testing::Test {
 protected:
@@ -17,6 +18,16 @@ protected:
     
 };
 
+static int getRandomInt(const float threshold) {
+    const float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    
+    if (r > threshold) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
 
 TEST_F(TestHmm,TestHmm) {
     
@@ -28,54 +39,62 @@ TEST_F(TestHmm,TestHmm) {
     T = gsl_rng_default;
     r = gsl_rng_alloc (T);
     
-    std::vector<HmmFloat_t> poissonmeas;
-    std::vector<HmmFloat_t> gammameas;
+    HmmDataVec_t poissonmeas;
+    HmmDataVec_t gammameas;
+    HmmDataVec_t alphabetmeas;
 
     
     poissonmeas.reserve(100000);
     gammameas.reserve(100000);
+    alphabetmeas.reserve(100000);
     
-    for (int i = 0; i < 1000; i++) {
-        for (int j = 0; j < 50; j++) {
+    
+    
+    for (int i = 0; i < 10000; i++) {
+        for (int j = 0; j < 10; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 1.0));
             gammameas.push_back(gsl_ran_gamma(r, 1.0, 1.0/2.0));
+            alphabetmeas.push_back(getRandomInt(0.8));
         }
     
-        for (int j = 0; j < 100; j++) {
+        for (int j = 0; j < 10; j++) {
             poissonmeas.push_back(gsl_ran_poisson(r, 3.0));
             gammameas.push_back(gsl_ran_gamma(r, 2.0, 1.0/3.0));
+            alphabetmeas.push_back(getRandomInt(0.3));
 
         }
     }
     
     HmmDataMatrix_t A;
-    
-    HmmDataVec_t a1;
-    a1.push_back(0.5);
-    a1.push_back(0.5);
-
-    HmmDataVec_t a2;
-    a2.push_back(0.5);
-    a2.push_back(0.5);
-    
-    A.push_back(a1);
-    A.push_back(a2);
+    A.resize(2);
+    A[0] << 0.9,0.1;
+    A[1] << 0.1,0.9;
     
     HmmDataMatrix_t meas;
     meas.push_back(poissonmeas);
     meas.push_back(gammameas);
+    meas.push_back(alphabetmeas);
     
     HiddenMarkovModel hmm(A);
     
     {
         CompositeModel * model1 = new CompositeModel();
         CompositeModel * model2 = new CompositeModel();
+        
+        HmmDataVec_t probs1,probs2;
+        probs1 << 0.5,0.5;
+        probs2 << 0.5,0.5;
+        
 
         model1->addModel(new PoissonModel(0,0.5) );
         model1->addModel(new GammaModel(1,1.0,1.0));
+        model1->addModel(new AlphabetModel(2,probs1,true));
+
     
         model2->addModel(new PoissonModel(0,1.0));
         model2->addModel(new GammaModel(1,2.0,1.0));
+        model2->addModel(new AlphabetModel(2,probs2,true));
+
         
         hmm.addModelForState(model1);
         hmm.addModelForState(model2);
@@ -83,7 +102,8 @@ TEST_F(TestHmm,TestHmm) {
 
     
     for (int i = 0; i < 10; i++) {
-        hmm.reestimate(meas);
+        ReestimationResult_t res = hmm.reestimate(meas);
+        std::cout << res.getLogLikelihood() << std::endl;
     }
     
     
