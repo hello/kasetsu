@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "SerializationHelpers.h"
+
 CompositeModel::CompositeModel() {
     
 }
@@ -64,17 +66,5 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
 }
 
 std::string CompositeModel::serializeToJson() const {
-    std::stringstream myjson;
-    myjson << "[";
-    
-    bool first = true;
-    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
-        if (!first) {
-            myjson << ",";
-        }
-        myjson << (*it)->serializeToJson();
-        first = false;
-    }
-    myjson << "]";
-    return myjson.str();
+    return vecToJsonArray<ModelVec_t,PdfInterfaceSerializationAdapter<ModelVec_t::value_type>>(_models);
 }

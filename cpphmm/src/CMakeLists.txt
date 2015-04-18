@@ -19,6 +19,7 @@ HiddenMarkovModel.cpp
 AllModels.cpp
 CompositeModel.cpp
 ReestimationResult.cpp
+SerializationHelpers.cpp
 )
 
 target_link_libraries(cpphmm ${GSL_LIBRARIES})

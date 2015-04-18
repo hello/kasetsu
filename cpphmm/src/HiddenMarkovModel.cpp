@@ -3,6 +3,7 @@
 #include <math.h>
 #include "ThreadPool.h"
 #include <iostream>
+#include "SerializationHelpers.h"
 
 #define MIN_NORMALIZING_VALUE (1e-8)
 #define MIN_LOG_BMAP (-10)
@@ -95,7 +96,22 @@ HiddenMarkovModel::~HiddenMarkovModel() {
 }
 
 std::string HiddenMarkovModel::serializeToJson() const {
-    return _models[0]->serializeToJson();
+    
+    typedef std::vector<std::string> StringVec_t;
+    StringVec_t bigarray;
+    
+    std::string A = vecToJsonArray<HmmDataMatrix_t,VecOfVecsSerializationAdapter<HmmDataMatrix_t::value_type>>(_A);
+    
+    bigarray.push_back(makeKeyValue("A",A));
+    
+    
+    std::string models = vecToJsonArray<ModelVec_t,PdfInterfaceSerializationAdapter<ModelVec_t::value_type>>(_models);
+    
+    bigarray.push_back(makeKeyValue("models",models));
+    
+    
+    
+    return vecToJsonArray(bigarray);
 }
 
 void HiddenMarkovModel::clearModels() {
