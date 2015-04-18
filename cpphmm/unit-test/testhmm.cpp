@@ -101,7 +101,7 @@ TEST_F(TestHmm,TestHmm) {
     }
 
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
         ReestimationResult_t res = hmm.reestimate(meas);
         std::cout << res.getLogLikelihood() << std::endl;
     }

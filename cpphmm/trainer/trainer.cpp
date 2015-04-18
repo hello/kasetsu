@@ -3,7 +3,7 @@
 #include "trainer.h"
 #include <iostream>
 
-#define MAX_ITER (5)
+#define MAX_ITER (20)
 #define MIN_PERCENTAGE_CHANGE (0.005)
 #define MAX_CONVERGE_COUNT (1)
 

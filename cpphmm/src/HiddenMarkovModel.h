@@ -12,18 +12,16 @@
 class AlphaBetaResult_t  {
 public:
     
-    AlphaBetaResult_t(const HmmDataMatrix_t & a, const HmmDataMatrix_t & b,const HmmDataVec_t & normalizingVec,const HmmDataMatrix_t normalizedBMap, HmmFloat_t c)
-    : alpha(a)
-    , beta(b)
-    , normalizing(normalizingVec)
-    , bmap(normalizedBMap)
+    AlphaBetaResult_t(const HmmDataMatrix_t & a, const HmmDataMatrix_t & b,const HmmDataMatrix_t & la, HmmFloat_t c)
+    : logalpha(a)
+    , logbeta(b)
+    , logA(la)
     , logmodelcost(c)
     {}
     
-    const HmmDataMatrix_t alpha;
-    const HmmDataMatrix_t beta;
-    const HmmDataVec_t    normalizing;
-    const HmmDataMatrix_t bmap;
+    const HmmDataMatrix_t logalpha;
+    const HmmDataMatrix_t logbeta;
+    const HmmDataMatrix_t logA;
     const HmmFloat_t logmodelcost;
 } ;
 
@@ -44,10 +42,10 @@ private:
     
     ModelVec_t _models;
     
-    AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t A) const;
+    AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A) const;
     HmmDataMatrix_t getLogBMap(const HmmDataMatrix_t & meas) const;
     
-    Hmm3DMatrix_t getXi(const AlphaBetaResult_t & alphabeta,size_t numObs) const;
+    Hmm3DMatrix_t getXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const;
     HmmDataMatrix_t getGamma(const Hmm3DMatrix_t & xi,size_t numObs) const;
     HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const;
 

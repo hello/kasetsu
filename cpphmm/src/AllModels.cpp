@@ -3,10 +3,10 @@
 #include <gsl/gsl_randist.h>
 #include <cmath>
 
-#define  MIN_POISSON_MEAN (0.05)
-#define  MIN_GAMMA_MEAN (0.05)
+#define  MIN_POISSON_MEAN (0.01)
+#define  MIN_GAMMA_MEAN (0.01)
 #define  MIN_GAMMA_VARIANCE (0.01)
-#define  MIN_GAMMA_INPUT (0.1)
+#define  MIN_GAMMA_INPUT (0.01)
 
 
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)

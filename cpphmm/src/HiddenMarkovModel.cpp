@@ -5,7 +5,8 @@
 #include <iostream>
 
 #define MIN_NORMALIZING_VALUE (1e-8)
-#define MIN_LOG_BMAP (-25)
+#define MIN_LOG_BMAP (-10)
+#define MIN_XI_LOG_RATIO (-15)
 
 #define THREAD_POOL_SIZE (4)
 
@@ -209,8 +210,23 @@ HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) cons
     return logbmap;
 }
 
+static HmmFloat_t subtracMaxInVec(HmmDataVec_t & vec) {
+    HmmFloat_t max = -INFINITY;
+    
+    for (int i = 0; i < vec.size(); i++) {
+        if (vec[i] > max) {
+            max = vec[i];
+        }
+    }
+    
+    for (int i = 0; i < vec.size(); i++) {
+        vec[i] -= max;
+    }
+    
+    return max;
+}
 
-AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t A) const {
+AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A) const {
     /*
     Calculates 'alpha' the forward variable.
     
@@ -219,40 +235,47 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     first t symbols.
     */
     int t,j,i;
-    HmmDataMatrix_t alpha = getZeroedMatrix(_numStates,numObs);
-    HmmDataMatrix_t beta = getZeroedMatrix(_numStates,numObs);
+    HmmDataMatrix_t logalpha = getZeroedMatrix(_numStates,numObs);
+    HmmDataMatrix_t logbeta = getZeroedMatrix(_numStates,numObs);
+    HmmDataVec_t tempvec = getZeroedVec(_numStates);
 
     HmmFloat_t logmaximum = 0;
     HmmDataMatrix_t bmap = getNormalizedBMap(logbmap,logmaximum);
     
-    HmmDataVec_t c = getZeroedVec(numObs);
-
-    c[0] = 1.0;
+    HmmDataMatrix_t logA = A;
+    
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            logA[j][i] = log(logA[j][i]);
+        }
+    }
+    
     
     //init stage - alpha_1(x) = pi(x)b_x(O1)
 
     for (j = 0; j < _numStates; j++) {
-        alpha[j][0] = pi[j]*bmap[j][0];
+        logalpha[j][0] = log(pi[j]) + logbmap[j][0];
     }
     
     
     for (t = 1; t < numObs; t++) {
         for (j = 0; j < _numStates; j++) {
+            
             for (i = 0; i < _numStates; i++) {
-                alpha[j][t] += alpha[i][t-1]*A[i][j];
+                tempvec[i] = logalpha[i][t-1] + logA[i][j];
+                //alpha[j][t] += alpha[i][t-1]*A[i][j];
             }
             
-            alpha[j][t] *= bmap[j][t];
-            c[t] += alpha[j][t];
+            const HmmFloat_t max = subtracMaxInVec(tempvec);
+            HmmFloat_t temp = 0.0;
+            
+            for (i = 0; i < _numStates; i++) {
+                temp += exp(tempvec[i]);
+            }
+            logalpha[j][t] = log(temp) + logbmap[j][t] + max;
+            //alpha[j][t] *= bmap[j][t];
         }
         
-        if (c[t] < MIN_NORMALIZING_VALUE) {
-            c[t] = MIN_NORMALIZING_VALUE;
-        }
-        
-        for (int j = 0; j < _numStates; j++) {
-            alpha[j][t] /= c[t];
-        }
     }
     
     /*
@@ -266,7 +289,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
                         
     // init stage
     for (int s = 0; s < _numStates; s++) {
-        beta[s][numObs - 1] = 1.0;
+        logbeta[s][numObs - 1] = 0.0;
     }
     
 
@@ -274,25 +297,36 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     for (t = numObs - 2; t >= 0; t--) {
         for (i = 0; i < _numStates; i++) {
             for (j = 0;  j < _numStates; j++) {
-                beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
+                tempvec[j] = logA[i][j] + logbmap[j][t+1] + logbeta[j][t+1];
+                //beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
             }
             
-        
-        }
-        
-        for (j = 0; j < _numStates; j++) {
-            beta[j][t] /= c[t];
+            const HmmFloat_t max = subtracMaxInVec(tempvec);
+            HmmFloat_t temp = 0.0;
+            
+            for (j = 0; j < _numStates; j++) {
+                temp += exp(tempvec[j]);
+            }
+            
+            logbeta[i][t] = log(temp) + max;
+            
         }
     }
     
-    HmmFloat_t sumc = 0.0;
-    for (t = 0; t < numObs; t++) {
-        sumc += log(c[t]);
+    for (i = 0; i < _numStates; i++) {
+        tempvec[i] = logalpha[i][numObs-1];
     }
     
-    sumc += logmaximum * numObs;
+    const HmmFloat_t max = subtracMaxInVec(tempvec);
+    HmmFloat_t temp = 0.0;
     
-    const AlphaBetaResult_t result(alpha,beta,c,bmap,sumc);
+    for (i = 0; i < _numStates; i++) {
+        temp += exp(tempvec[i]);
+    }
+
+    
+    
+    const AlphaBetaResult_t result(logalpha,logbeta,logA,log(temp) + max);
     
     (void)printMat;
     (void)printVec;
@@ -306,7 +340,7 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
 
 }
 
-Hmm3DMatrix_t HiddenMarkovModel::getXi(const AlphaBetaResult_t & alphabeta,size_t numObs) const {
+Hmm3DMatrix_t HiddenMarkovModel::getXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const {
     /*
     Calculates 'xi', a joint probability from the 'alpha' and 'beta' variables.
     
@@ -316,37 +350,66 @@ Hmm3DMatrix_t HiddenMarkovModel::getXi(const AlphaBetaResult_t & alphabeta,size_
     */
     int32_t t,i,j;
 
-    const HmmDataMatrix_t & alpha = alphabeta.alpha;
-    const HmmDataMatrix_t & beta = alphabeta.beta;
-    const HmmDataMatrix_t & bmap = alphabeta.bmap;
-    const HmmDataVec_t & c = alphabeta.normalizing;
-    (void)c;
+    const HmmDataMatrix_t & logalpha = alphabeta.logalpha;
+    const HmmDataMatrix_t & logbeta = alphabeta.logbeta;
+    const HmmDataMatrix_t & logA = alphabeta.logA;
     Hmm3DMatrix_t xi = getZeroed3dMatrix(_numStates,_numStates, numObs);
-    
+    HmmDataVec_t tempvec = getZeroedVec(_numStates);
+    HmmDataVec_t logdenomvec = getZeroedVec(_numStates);
+    HmmFloat_t temp = 0.0;
+    HmmFloat_t max;
     
     for (t = 0; t < numObs - 1; t++) {
-        HmmFloat_t denom = 0.0;
+        HmmFloat_t logdenom;
         for (i = 0; i < _numStates; i++) {
             for (j = 0; j < _numStates; j++) {
-                HmmFloat_t thing = 1.0;
-                thing *= alpha[i][t];
-                thing *= _A[i][j];
-                thing *= bmap[j][t+1];
-                thing *= beta[j][t+1];
+                HmmFloat_t thing = 0.0;
+                thing += logalpha[i][t];
+                thing += logA[i][j];
+                thing += logbmap[j][t+1];
+                thing += logbeta[j][t+1];
                 
-                denom += thing;
+                tempvec[j] = thing;
             }
+            
+            temp = 0.0;
+            max = subtracMaxInVec(tempvec);
+            
+            for (j = 0; j < _numStates; j++) {
+                temp += exp(tempvec[j]);
+            }
+            
+            logdenomvec[i] = log(temp) + max;
+            
         }
+        
+        temp = 0.0;
+        max = subtracMaxInVec(logdenomvec);
+        
+        for (j = 0; j < _numStates; j++) {
+            temp += exp(tempvec[j]);
+        }
+        
+        logdenom = log(temp) + max;
         
         for (i = 0; i < _numStates; i++) {
             for (j = 0; j < _numStates; j++) {
-                HmmFloat_t numer = 1.0;
-                numer *= alpha[i][t];
-                numer *= _A[i][j];
-                numer *= bmap[j][t+1];
-                numer *= beta[j][t+1];
+                HmmFloat_t lognumer = 0.0;
+                lognumer += logalpha[i][t];
+                lognumer += logA[i][j];
+                lognumer += logbmap[j][t+1];
+                lognumer += logbeta[j][t+1];
                 
-                xi[i][j][t] = numer / denom;
+                temp = lognumer - logdenom;
+                
+                if (temp < MIN_XI_LOG_RATIO) {
+                    temp = MIN_XI_LOG_RATIO;
+                }
+                
+               
+                temp = exp(temp);
+                
+                xi[i][j][t] = temp;
             }
             
         }
@@ -417,7 +480,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     
     const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, _pi, logbmap, _A);
     
-    const Hmm3DMatrix_t xi = getXi(alphabeta,numObs);
+    const Hmm3DMatrix_t xi = getXi(alphabeta,logbmap,numObs);
     
     const HmmDataMatrix_t gamma = getGamma(xi,numObs);
     
