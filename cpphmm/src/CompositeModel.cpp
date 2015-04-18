@@ -2,6 +2,7 @@
 #include "CompositeModel.h"
 
 #include <iostream>
+#include <sstream>
 
 CompositeModel::CompositeModel() {
     
@@ -62,3 +63,18 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     return vec;
 }
 
+std::string CompositeModel::serializeToJson() const {
+    std::stringstream myjson;
+    myjson << "[";
+    
+    bool first = true;
+    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
+        if (!first) {
+            myjson << ",";
+        }
+        myjson << (*it)->serializeToJson();
+        first = false;
+    }
+    myjson << "]";
+    return myjson.str();
+}

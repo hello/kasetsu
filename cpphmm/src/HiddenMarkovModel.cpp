@@ -94,6 +94,10 @@ HiddenMarkovModel::~HiddenMarkovModel() {
     
 }
 
+std::string HiddenMarkovModel::serializeToJson() const {
+    return _models[0]->serializeToJson();
+}
+
 void HiddenMarkovModel::clearModels() {
     for (ModelVec_t::iterator it = _models.begin(); it != _models.end(); it++) {
         delete *it;

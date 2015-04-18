@@ -2,11 +2,14 @@
 #include "AllModels.h"
 #include <gsl/gsl_randist.h>
 #include <cmath>
+#include <sstream>
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
 #define  MIN_GAMMA_VARIANCE (0.01)
 #define  MIN_GAMMA_INPUT (0.01)
+/*
+{"model_type": "gamma", "model_data": {"obs_num": 0, "stddev": 2.4510193189895877, "mean": 6.3895759408452282}}, {"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.22902424177218011}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 2, "alphabet_probs": [0.49349042140031829, 0.50650957859962087], "allow_reestimation": true}}, {"model_type": "gamma", "model_data": {"obs_num": 3, "stddev": 1.5936172416189756, "mean": 3.3320821688393307}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [1.0, 1.0], "allow_reestimation": false}}]*/
 
 
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
@@ -97,6 +100,14 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     return ret;
 }
 
+std::string GammaModel::serializeToJson() const {
+    char buf[1024];
+    memset(buf,0,sizeof(buf));
+    snprintf(buf, sizeof(buf), "{\"model_type\" : \"gamma\", \"model_data\": {\"obs_num\": %d, \"stddev\": %f, \"mean\": %f}}",_obsnum,_stddev,_mean);
+    
+    return std::string(buf);
+}
+
 ///////////////////////////////////
 
 
@@ -147,7 +158,12 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     return ret;
 }
 
-
+std::string PoissonModel::serializeToJson() const {
+    char buf[1024];
+    memset(buf,0,sizeof(buf));
+    snprintf(buf, sizeof(buf),"{\"model_type\": \"poisson\", \"model_data\": {\"obs_num\": %d, \"mean\": %f}}",_obsnum,_mu);
+    return std::string(buf);
+}
 
 ///////////////////////////////////
 
@@ -208,4 +224,28 @@ HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     
     return ret;
 
+}
+
+std::string AlphabetModel::serializeToJson() const {
+    char buf[1024];
+    memset(buf,0,sizeof(buf));
+    
+    std::stringstream probs;
+    bool first = true;
+    for (HmmDataVec_t::const_iterator it = _alphabetprobs.begin(); it != _alphabetprobs.end(); it++) {
+        if (!first) {
+            probs << ",";
+        }
+        probs << *it;
+        first = false;
+    }
+    
+    std::string allowreestiamationstring = "false";
+    
+    if (_allowreestimation) {
+        allowreestiamationstring = "true";
+    }
+    
+    snprintf(buf, sizeof(buf),"{\"model_type\": \"discrete_alphabet\", \"model_data\": {\"obs_num\": %d, \"alphabet_probs\": [%s], \"allow_reestimation\": %s}}",_obsnum,probs.str().c_str(),allowreestiamationstring.c_str());
+    return std::string(buf);
 }

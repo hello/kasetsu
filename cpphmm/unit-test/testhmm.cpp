@@ -107,6 +107,8 @@ TEST_F(TestHmm,TestHmm) {
     }
     
     
+    std::string serializedString = hmm.serializeToJson();
+    std::cout <<serializedString << std::endl;
 
     
     gsl_rng_free(r);

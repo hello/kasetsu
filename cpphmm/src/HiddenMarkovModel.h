@@ -36,6 +36,9 @@ public:
     void addModelForState(HmmPdfInterface * model);
     
     ReestimationResult_t reestimate(const HmmDataMatrix_t & meas);
+    
+    std::string serializeToJson() const;
+
 
 
 private:
