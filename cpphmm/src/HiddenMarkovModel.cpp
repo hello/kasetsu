@@ -102,16 +102,17 @@ std::string HiddenMarkovModel::serializeToJson() const {
     
     std::string A = vecToJsonArray<HmmDataMatrix_t,VecOfVecsSerializationAdapter<HmmDataMatrix_t::value_type>>(_A);
     
-    bigarray.push_back(makeKeyValue("A",A));
-    
+    A = makeKeyValue("A",A);
     
     std::string models = vecToJsonArray<ModelVec_t,PdfInterfaceSerializationAdapter<ModelVec_t::value_type>>(_models);
     
-    bigarray.push_back(makeKeyValue("models",models));
+    models = makeKeyValue("models",models);
     
+    std::string pi = makeKeyValue("pi",vecToJsonArray(_pi));
     
+    std::string stuff =  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [4, 5, 6, 7, 8, 9, 10], \"users\": \"1086,1050,1052,1053,1072,1071,1,1038,1063,1012,1013,1043,1310,1629,1025,1061,1060,1049,1062,1648,1067,1609,1005,1002,1001\", \"num_model_params\": 77, \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [6, 7, 8], \"enable_interval_search\": true, \"model_name\": \"default\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
     
-    return vecToJsonArray(bigarray);
+    return makeObj(makeKeyValue("default",makeObj(A + "," + models + "," + pi + "," + stuff)));
 }
 
 void HiddenMarkovModel::clearModels() {
@@ -126,7 +127,7 @@ void HiddenMarkovModel::addModelForState(HmmPdfInterface * model) {
     _models.push_back(model);
 }
 
-
+#if 0
 static HmmDataMatrix_t getNormalizedBMap(const HmmDataMatrix_t & logbmap, HmmFloat_t & maximum) {
     //normalize logbamp
     HmmDataMatrix_t bmap = logbmap; //should copy everything
@@ -167,6 +168,7 @@ static HmmDataMatrix_t getNormalizedBMap(const HmmDataMatrix_t & logbmap, HmmFlo
     return bmap;
 
 }
+#endif
 
 
 
@@ -258,9 +260,6 @@ AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDat
     HmmDataMatrix_t logalpha = getZeroedMatrix(_numStates,numObs);
     HmmDataMatrix_t logbeta = getZeroedMatrix(_numStates,numObs);
     HmmDataVec_t tempvec = getZeroedVec(_numStates);
-
-    HmmFloat_t logmaximum = 0;
-    HmmDataMatrix_t bmap = getNormalizedBMap(logbmap,logmaximum);
     
     HmmDataMatrix_t logA = A;
     

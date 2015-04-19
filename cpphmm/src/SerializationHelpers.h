@@ -15,9 +15,17 @@ public:
 
 
 template <class T,class Adaptor = PassThroughSerializationAdapter<typename T::value_type>  >
-std::string vecToJsonArray(const T & vec) {
+std::string vecToJsonArray(const T & vec,bool useCurlyBrace = false) {
+    std::string bracecharstart = "[";
+    std::string bracecharend = "]";
+
+    if (useCurlyBrace) {
+        bracecharstart = "{";
+        bracecharend = "}";
+    }
+    
     std::stringstream myjson;
-    myjson << "[";
+    myjson << bracecharstart;
     Adaptor adaptorFunctor;
     bool first = true;
     for (typename T::const_iterator it = vec.begin(); it != vec.end(); it++) {
@@ -27,7 +35,7 @@ std::string vecToJsonArray(const T & vec) {
         myjson << adaptorFunctor(*it);
         first = false;
     }
-    myjson << "]";
+    myjson << bracecharend;
     return myjson.str();
 }
 
@@ -48,6 +56,7 @@ public:
 };
 
 std::string makeKeyValue(const std::string & key, const std::string & value);
+std::string makeObj(const std::string & keyvalueorarray);
 
 
 #endif
