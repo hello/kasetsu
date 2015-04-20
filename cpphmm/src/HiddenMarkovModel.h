@@ -48,8 +48,8 @@ private:
     AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A) const;
     HmmDataMatrix_t getLogBMap(const HmmDataMatrix_t & meas) const;
     
-    Hmm3DMatrix_t getXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const;
-    HmmDataMatrix_t getGamma(const Hmm3DMatrix_t & xi,size_t numObs) const;
+    Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const;
+    HmmDataMatrix_t getLogGamma(const AlphaBetaResult_t & alphabeta,size_t numObs) const;
     HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const;
 
     void clearModels();

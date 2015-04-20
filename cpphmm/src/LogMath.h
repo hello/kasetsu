@@ -29,23 +29,24 @@ inline HmmFloat_t eln(const HmmFloat_t x) {
 }
 
 inline HmmFloat_t elnsum(const HmmFloat_t logx, const HmmFloat_t logy) {
-    const HmmFloat_t x = eexp(logx);
-    const HmmFloat_t y = eexp(logy);
-    
-    //if x and y are zero
-    if (x > MIN_NUMBER && y > MIN_NUMBER ) {
-        return eln(x + y);
-    }
-    // if x is zero
-    else if (x > MIN_NUMBER) {
-        return logx;
-    }
-    else if (y > MIN_NUMBER) {
-        return logy;
-    }
-    else {
+    if (logx == LOGZERO && logy == LOGZERO) {
         return LOGZERO;
     }
+    else if (logx == LOGZERO) {
+        return logy;
+    }
+    else if (logy == LOGZERO) {
+        return logx;
+    }
+    else {
+        if (logx > logy) {
+            return logx + eln(1.0 + eexp(logy - logx));
+        }
+        else {
+            return logy + eln(1.0 + eexp(logx - logy));
+        }
+    }
+
 }
 
 inline HmmFloat_t elnproduct(const HmmFloat_t logx, const HmmFloat_t logy) {

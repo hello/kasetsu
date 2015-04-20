@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sstream>
+#include "LogMath.h"
 
 #include "SerializationHelpers.h"
 
@@ -56,10 +57,8 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         const HmmDataVec_t eval = model->getLogOfPdf(x);
         
         for (int32_t i = 0; i < vec.size(); i++) {
-            vec[i] += eval[i];
+            vec[i] = elnproduct(vec[i], eval[i]);
         }
-
-        
     }
     
     return vec;

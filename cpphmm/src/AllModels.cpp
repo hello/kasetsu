@@ -1,7 +1,7 @@
 
 #include "AllModels.h"
 #include <gsl/gsl_randist.h>
-#include <cmath>
+#include "LogMath.h"
 #include <sstream>
 
 #define  MIN_POISSON_MEAN (0.01)
@@ -58,6 +58,7 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
     
     newmean = numermean / denom;
     newvariance = numervariance / denom;
+    const HmmFloat_t newstddev = sqrt(newvariance);
     
     if (newmean < MIN_GAMMA_MEAN) {
         newmean = MIN_GAMMA_MEAN;
@@ -68,7 +69,7 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
     }
     
     
-    return new GammaModel(_obsnum,newmean,sqrt(newvariance));
+    return new GammaModel(_obsnum,newmean,newstddev);
 }
 
 HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
@@ -94,7 +95,7 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
             int foo = 3;
             foo++;
         }
-        ret[i] = log(evalValue);
+        ret[i] = eln(evalValue);
     }
     
     return ret;
@@ -152,7 +153,7 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     
     for (int32_t i = 0; i < vec.size(); i++) {
         const int32_t meas = (int32_t) vec[i];
-        ret[i] = log(gsl_ran_poisson_pdf(meas, _mu));
+        ret[i] = eln(gsl_ran_poisson_pdf(meas, _mu));
     }
     
     return ret;
@@ -219,7 +220,7 @@ HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     for (int32_t i = 0; i < vec.size(); i++) {
         int32_t idx = (int32_t)vec[i];
         
-        ret[i] = log(_alphabetprobs[idx]);
+        ret[i] = eln(_alphabetprobs[idx]);
     }
     
     return ret;
