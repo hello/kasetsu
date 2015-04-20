@@ -7,6 +7,7 @@
 
 
 #define THREAD_POOL_SIZE (4)
+#define USE_THREADPOOL
 
 typedef std::pair<int32_t,HmmPdfInterface *> StateIdxModelPair_t;
 typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
@@ -198,6 +199,9 @@ HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) cons
     ModelVec_t localModels = _models; //copies all the pointers
     FuturePdfEvalVec_t newevals;
     
+
+#ifdef USE_THREADPOOL
+
     
     {
         //destructor of threadpool joins all threads
@@ -222,15 +226,16 @@ HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & meas) cons
 
     
     
+#else
     
     
-    //TODO parallelize
-    /*
     for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
         const HmmPdfInterface * ref = *it;
         logbmap.push_back(ref->getLogOfPdf(meas));
     }
-     */
+    
+    
+#endif
     
     return logbmap;
 }
@@ -459,11 +464,14 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     
     HmmDataMatrix_t gamma = getEEXPofMatrix(loggamma);
     
+    
+    
+#ifdef USE_THREADPOOL
     const ModelVec_t localModels = _models; //copies all the pointers
     FutureModelVec_t newmodels;
-    
-    
+
     {
+      
         //destructor of threadpool joins all threads
         ThreadPool pool(THREAD_POOL_SIZE);
         
@@ -473,19 +481,9 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
                 return std::make_pair(iState,localModels[iState]->reestimate(gamma[iState], meas));
             }));
         }
-    }
-    
-    
-    /*
-    //TODO parallelize
-    for (size_t iState = 0; iState < _numStates; iState++) {
-        const HmmDataVec_t & gammaForThisState = gamma[iState];
         
-        HmmPdfInterface * newModel = _models[iState]->reestimate(gammaForThisState, meas);
-        
-        newmodels.push_back(newModel);
+       
     }
-     */
     
     
     //free up memory of old models
@@ -497,6 +495,28 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
         StateIdxModelPair_t v = result.get();
         _models[v.first] = v.second;
     }
+
+    
+#else
+    {
+        ModelVec_t newmodels;
+        for (size_t iState = 0; iState < _numStates; iState++) {
+            
+            const HmmDataVec_t & gammaForThisState = gamma[iState];
+            
+            HmmPdfInterface * newModel = _models[iState]->reestimate(gammaForThisState, meas);
+            
+            newmodels.push_back(newModel);
+        }
+        
+        clearModels();
+        
+        _models = newmodels;
+    }
+    
+#endif
+    
+    
     
     _A = newA;
     
