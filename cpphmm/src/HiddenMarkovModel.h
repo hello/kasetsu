@@ -26,6 +26,18 @@ public:
 } ;
 
 
+class ViterbiDecodeResult_t {
+public:
+    ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost)
+    :path(vpath)
+    ,cost(vcost)
+    {}
+    
+    const ViterbiPath_t path;
+    const HmmFloat_t cost;
+};
+
+
 
 
 class HiddenMarkovModel {
@@ -35,7 +47,11 @@ public:
     
     void addModelForState(HmmPdfInterface * model);
     
+    void InitializeReestimation(const HmmDataMatrix_t & meas);
+    
     ReestimationResult_t reestimate(const HmmDataMatrix_t & meas);
+    
+    ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
     
     std::string serializeToJson() const;
 
@@ -51,6 +67,7 @@ private:
     Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const;
     HmmDataMatrix_t getLogGamma(const AlphaBetaResult_t & alphabeta,size_t numObs) const;
     HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const;
+    void reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas);
 
     void clearModels();
 

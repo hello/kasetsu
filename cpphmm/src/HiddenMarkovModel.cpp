@@ -4,6 +4,7 @@
 #include "ThreadPool.h"
 #include <iostream>
 #include "SerializationHelpers.h"
+#include <assert.h>
 
 
 #define THREAD_POOL_SIZE (4)
@@ -105,6 +106,38 @@ static Hmm3DMatrix_t getLogZeroed3dMatrix(size_t numMats, size_t numVecs, size_t
     }
     
     return mtx3;
+}
+
+static ViterbiPath_t getZeroedPathVec(size_t vecSize) {
+    ViterbiPath_t path;
+    path.resize(vecSize);
+    memset(path.data(),0,sizeof(ViterbiPath_t::value_type)*path.size());
+    return path;
+}
+
+static ViterbiPathMatrix_t getZeroedPathMatrix(size_t numVecs, size_t vecSize) {
+    ViterbiPathMatrix_t mtx;
+    
+    for (int i = 0; i < numVecs; i++) {
+        mtx.push_back(getZeroedPathVec(vecSize));
+    }
+    
+    return mtx;
+}
+
+static int32_t getArgMaxInVec(const HmmDataVec_t & x) {
+    HmmFloat_t max = -INFINITY;
+    int32_t imax = -1;
+    for (int32_t i = 0; i < x.size(); i++) {
+        if (x[i] > max) {
+            max = x[i];
+            imax = i;
+        }
+    }
+    
+    assert(imax >= 0);
+    
+    return imax;
 }
 
 static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
@@ -446,43 +479,121 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, cons
     
 }
 
-ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
-    if (meas.empty()) {
-        return ReestimationResult_t();
+static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & paths) {
+    size_t len = paths[0].size();
+    
+    ViterbiPath_t path;
+    path.resize(len);
+    
+    path[len-1] = startidx;
+    for(int i = len - 2; i >= 0; i--) {
+        path[i] = paths[path[i+1]][i];
     }
     
-    size_t numObs = meas[0].size();
-    HmmDataMatrix_t logbmap = getLogBMap(meas);
+    return path;
+}
+
+static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi) {
+    size_t len = paths[0].size();
+    HmmFloat_t cost;
     
-    const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, _pi, logbmap, _A);
+    ViterbiPath_t path = decodePath(startidx,paths);
     
-    const Hmm3DMatrix_t logxi = getLogXi(alphabeta,logbmap,numObs);
+    cost = phi[path[len-1]][len-1];
+    for(int i = len - 2; i >= 0; i--) {
+        cost += phi[path[i]][i];
+    }
     
-    const HmmDataMatrix_t loggamma = getLogGamma(alphabeta,numObs);
+    return ViterbiDecodeResult_t(path,cost);
+}
+
+
+void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
+    const size_t numObs = meas[0].size();
+
+    const ViterbiDecodeResult_t res = this->decode(meas);
     
-    const HmmDataMatrix_t newA = reestimateA(logxi, loggamma, numObs);
+    HmmDataMatrix_t gamma = getZeroedMatrix(_numStates, numObs);
     
-    HmmDataMatrix_t gamma = getEEXPofMatrix(loggamma);
+    for (int t = 0; t < numObs; t++) {
+        gamma[res.path[t]][t] = 1;
+    }
+    
+    reestimateFromGamma(gamma,meas);
+    
+}
+
+
+
+ViterbiDecodeResult_t HiddenMarkovModel::decode(const HmmDataMatrix_t & meas) const {
+    int j,i,t;
+    
+    const HmmDataMatrix_t logbmap = getLogBMap(meas);
+    const size_t numObs = meas[0].size();
+
+    HmmDataVec_t costs;
+    costs.resize(_numStates);
+    
+    HmmDataMatrix_t phi = getLogZeroedMatrix(_numStates, numObs);
+    ViterbiPathMatrix_t vindices = getZeroedPathMatrix(_numStates, numObs);
+    HmmDataMatrix_t logA = _A; //copy
+    
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            logA[j][i] = eln(logA[j][i]);
+        }
+    }
+    
+    //init
+    for (i = 0; i < _numStates; i++) {
+        phi[i][0] = elnproduct(logbmap[i][0], eln(_pi[i]));
+    }
+
+        
+
+    for (t = 1; t < numObs; t++) {
+        for (j = 0; j < _numStates; j++) {
+            const HmmFloat_t obscost = logbmap[j][t];
+            
+            for (i = 0; i < _numStates; i++) {
+                costs[i] = elnproduct(logA[i][j], obscost);
+            }
+            
+            for (i = 0; i < _numStates; i++) {
+                costs[i] = elnproduct(costs[i], phi[i][t-1]);
+            }
+            
+            const int32_t maxidx = getArgMaxInVec(costs);
+            const HmmFloat_t maxval = costs[maxidx];
+            
+            phi[j][t] = maxval;
+            vindices[j][t] = maxidx;
+        }
+    }
+    
+    const ViterbiDecodeResult_t result = decodePathAndGetCost(0, vindices, phi);
     
     
+    return result;
     
+}
+
+void HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) {
 #ifdef USE_THREADPOOL
     const ModelVec_t localModels = _models; //copies all the pointers
     FutureModelVec_t newmodels;
-
+    
     {
-      
         //destructor of threadpool joins all threads
         ThreadPool pool(THREAD_POOL_SIZE);
         
         for (int32_t iState = 0; iState < _numStates; iState++) {
             newmodels.emplace_back(
-                pool.enqueue([iState,&gamma,&meas,&localModels] {
+                                   pool.enqueue([iState,&gamma,&meas,&localModels] {
                 return std::make_pair(iState,localModels[iState]->reestimate(gamma[iState], meas));
             }));
         }
         
-       
     }
     
     
@@ -495,7 +606,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
         StateIdxModelPair_t v = result.get();
         _models[v.first] = v.second;
     }
-
+    
     
 #else
     {
@@ -515,9 +626,30 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     }
     
 #endif
+}
+
+ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas) {
+    if (meas.empty()) {
+        return ReestimationResult_t();
+    }
+    
+    const size_t numObs = meas[0].size();
+    
+    const HmmDataMatrix_t logbmap = getLogBMap(meas);
+    
+    const AlphaBetaResult_t alphabeta = getAlphaAndBeta(numObs, _pi, logbmap, _A);
+    
+    const Hmm3DMatrix_t logxi = getLogXi(alphabeta,logbmap,numObs);
+    
+    const HmmDataMatrix_t loggamma = getLogGamma(alphabeta,numObs);
+    
+    const HmmDataMatrix_t newA = reestimateA(logxi, loggamma, numObs);
+    
+    HmmDataMatrix_t gamma = getEEXPofMatrix(loggamma);
     
     
-    
+    reestimateFromGamma(gamma,meas);
+
     _A = newA;
     
     for (int i = 0; i < _numStates; i++) {

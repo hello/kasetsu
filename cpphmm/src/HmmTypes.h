@@ -8,7 +8,8 @@ typedef double HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;
 typedef std::vector<HmmDataVec_t> HmmDataMatrix_t;
 typedef std::vector<HmmDataMatrix_t> Hmm3DMatrix_t;
-
+typedef std::vector<int32_t> ViterbiPath_t;
+typedef std::vector<ViterbiPath_t> ViterbiPathMatrix_t;
 /* for populating a vector  */
 template <class T>
 T & operator << (T & ref,typename T::value_type val) {

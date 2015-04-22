@@ -22,10 +22,17 @@ int main(int argc,const char * args[]) {
         std::cout << "need to output file" << std::endl;
         return 0;
     }
-
+    
+    if (argc <= 4) {
+        std::cout << "need max iters" << std::endl;
+        return 0;
+    }
+ 
     const std::string filename = args[1];
     const std::string model = args[2];
     const std::string outputfilename = args[3];
+    const std::string maxiterstr = args[4];
+    const int maxiter = atoi(maxiterstr.c_str());
     
     
     HmmDataMatrix_t meas = parseCsvFileFromFile(filename);
@@ -44,12 +51,8 @@ int main(int argc,const char * args[]) {
     }
 
     
-    bool worked = Trainer::train(hmm.get(),meas);
+    bool worked = Trainer::train(hmm.get(),meas,maxiter);
     
-    if (!worked) {
-        return 0;
-    }
-
     std::ofstream outfile(outputfilename);
     
     if (outfile.is_open()) {

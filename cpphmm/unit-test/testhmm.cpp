@@ -48,20 +48,29 @@ TEST_F(TestHmm,TestHmm) {
     gammameas.reserve(100000);
     alphabetmeas.reserve(100000);
     
+    float mode1TransitionProb = 0.1;
+    float mode2TransitionProb = 0.2;
+    bool isMode1 = true;
     
-    
-    for (int i = 0; i < 100; i++) {
-        for (int j = 0; j < 10; j++) {
+    for (int i = 0; i < 100000; i++) {
+        if (isMode1) {
             poissonmeas.push_back(gsl_ran_poisson(r, 1.0));
             gammameas.push_back(gsl_ran_gamma(r, 0.8, 0.3));
             alphabetmeas.push_back(getRandomInt(0.8));
+            
+            if (getRandomInt(1.0 - mode1TransitionProb)) {
+                isMode1 = false;
+            }
+            
         }
-    
-        for (int j = 0; j < 10; j++) {
+        else {
             poissonmeas.push_back(gsl_ran_poisson(r, 3.0));
             gammameas.push_back(gsl_ran_gamma(r, 2.0, 0.8));
             alphabetmeas.push_back(getRandomInt(0.3));
-
+            
+            if (getRandomInt(1.0 - mode2TransitionProb)) {
+                isMode1 = true;
+            }
         }
     }
     
@@ -100,6 +109,7 @@ TEST_F(TestHmm,TestHmm) {
         hmm.addModelForState(model2);
     }
 
+    hmm.InitializeReestimation(meas);
     
     for (int i = 0; i < 20; i++) {
         ReestimationResult_t res = hmm.reestimate(meas);
