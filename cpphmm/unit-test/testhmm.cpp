@@ -109,9 +109,13 @@ TEST_F(TestHmm,TestHmm) {
         hmm.addModelForState(model2);
     }
 
-    hmm.InitializeReestimation(meas);
     
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 3; i++) {
+        ReestimationResult_t res = hmm.reestimateViterbi(meas);
+        std::cout << res.getLogLikelihood() << std::endl;
+    }
+    
+    for (int i = 0; i < 8; i++) {
         ReestimationResult_t res = hmm.reestimate(meas);
         std::cout << res.getLogLikelihood() << std::endl;
     }

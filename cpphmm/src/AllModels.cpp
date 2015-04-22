@@ -6,7 +6,7 @@
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
-#define  MIN_GAMMA_VARIANCE (0.01)
+#define  MIN_GAMMA_STDDEV (0.1)
 #define  MIN_GAMMA_INPUT (0.01)
 /*
 {"model_type": "gamma", "model_data": {"obs_num": 0, "stddev": 2.4510193189895877, "mean": 6.3895759408452282}}, {"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.22902424177218011}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 2, "alphabet_probs": [0.49349042140031829, 0.50650957859962087], "allow_reestimation": true}}, {"model_type": "gamma", "model_data": {"obs_num": 3, "stddev": 1.5936172416189756, "mean": 3.3320821688393307}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [1.0, 1.0], "allow_reestimation": false}}]*/
@@ -56,16 +56,23 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
         denom += gammaForThisState[t];
     }
     
-    newmean = numermean / denom;
-    newvariance = numervariance / denom;
-    const HmmFloat_t newstddev = sqrt(newvariance);
+    if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
+        newmean = numermean / denom;
+        newvariance = numervariance / denom;
+    }
+    else {
+        newmean = 0.0;
+        newvariance = 0.0;
+    }
+    
+    HmmFloat_t newstddev = sqrt(newvariance);
     
     if (newmean < MIN_GAMMA_MEAN) {
         newmean = MIN_GAMMA_MEAN;
     }
     
-    if (newvariance < MIN_GAMMA_VARIANCE) {
-        newvariance = MIN_GAMMA_VARIANCE;
+    if (newstddev < MIN_GAMMA_STDDEV) {
+        newstddev = MIN_GAMMA_STDDEV;
     }
     
     
@@ -135,7 +142,12 @@ HmmPdfInterface * PoissonModel::reestimate(const HmmDataVec_t & gammaForThisStat
         denom += gammaForThisState[t];
     }
     
-    newmean = numer / denom;
+    if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
+        newmean = numer / denom;
+    }
+    else {
+        newmean = 0.0;
+    }
     
     if (newmean < MIN_POISSON_MEAN) {
         newmean = MIN_POISSON_MEAN;
@@ -203,8 +215,14 @@ HmmPdfInterface * AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisSta
         denom += gammaForThisState[t];
     }
     
-    for (int i = 0; i < _alphabetprobs.size(); i++) {
-        counts[i] /= denom;
+    if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
+        for (int i = 0; i < _alphabetprobs.size(); i++) {
+            counts[i] /= denom;
+        }
+
+    }
+    else {
+        counts = _alphabetprobs;
     }
 
     return new AlphabetModel(_obsnum,counts,_allowreestimation);

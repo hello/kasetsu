@@ -6,6 +6,8 @@
 #include "SerializationHelpers.h"
 #include <assert.h>
 
+#define MIN_VALUE_FOR_A (1e-1)
+
 
 #define THREAD_POOL_SIZE (4)
 #define USE_THREADPOOL
@@ -84,7 +86,7 @@ static HmmDataMatrix_t getLogZeroedMatrix(size_t numVecs, size_t vecSize) {
     return mtx;
 }
 
-#if 0
+
 static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
     Hmm3DMatrix_t mtx3;
     mtx3.reserve(numMats);
@@ -95,9 +97,10 @@ static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t ve
     
     return mtx3;
 }
-#endif
+
 
 static Hmm3DMatrix_t getLogZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
+    (void)getZeroed3dMatrix;
     Hmm3DMatrix_t mtx3;
     mtx3.reserve(numMats);
     
@@ -127,7 +130,7 @@ static ViterbiPathMatrix_t getZeroedPathMatrix(size_t numVecs, size_t vecSize) {
 
 static int32_t getArgMaxInVec(const HmmDataVec_t & x) {
     HmmFloat_t max = -INFINITY;
-    int32_t imax = -1;
+    int32_t imax = 0;
     for (int32_t i = 0; i < x.size(); i++) {
         if (x[i] > max) {
             max = x[i];
@@ -135,7 +138,7 @@ static int32_t getArgMaxInVec(const HmmDataVec_t & x) {
         }
     }
     
-    assert(imax >= 0);
+    //assert(imax >= 0);
     
     return imax;
 }
@@ -472,6 +475,12 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, cons
             }
             
             A[i][j] = eexp(elnproduct(numer, -denom));
+            
+            if (_A[i][j] > EPSILON) {
+                if (A[i][j] <= EPSILON) {
+                    A[i][j] = MIN_VALUE_FOR_A;
+                }
+            }
         }
     }
     
@@ -509,18 +518,9 @@ static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const Viterbi
 
 
 void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
-    const size_t numObs = meas[0].size();
-
-    const ViterbiDecodeResult_t res = this->decode(meas);
-    
-    HmmDataMatrix_t gamma = getZeroedMatrix(_numStates, numObs);
-    
-    for (int t = 0; t < numObs; t++) {
-        gamma[res.path[t]][t] = 1;
+    for (int i = 0; i < 5; i++) {
+       reestimateViterbi(meas);
     }
-    
-    reestimateFromGamma(gamma,meas);
-    
 }
 
 
@@ -658,6 +658,82 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
     
     return ReestimationResult_t(-alphabeta.logmodelcost);
 
+}
+
+HmmDataMatrix_t HiddenMarkovModel::getGammaFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const {
+    HmmDataMatrix_t gamma = getZeroedMatrix(_numStates, numObs);
+
+    for (int t = 0; t < numObs; t++) {
+        gamma[path[t]][t] = 1;
+    }
+
+    return gamma;
+}
+
+HmmDataMatrix_t HiddenMarkovModel::reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const {
+    HmmDataMatrix_t A = getZeroedMatrix(_numStates, _numStates);
+    
+    int t,j,i;
+    
+    for (t = 1; t < numObs; t++) {
+        const int32_t fromidx = path[t-1];
+        const int32_t toidx = path[t];
+        A[fromidx][toidx] += 1.0;
+    }
+    
+    for (j = 0; j < _numStates; j++) {
+        HmmFloat_t sum = 0.0;
+        for (i = 0; i < _numStates; i++) {
+            sum += A[j][i];
+        }
+        
+        if (sum > EPSILON) {
+            for (i = 0; i < _numStates; i++) {
+                A[j][i] /= sum;
+            }
+        }
+        
+    }
+    
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            
+            if (_A[j][i] > EPSILON) {
+                if (A[j][i] <= EPSILON) {
+                    A[j][i] = MIN_VALUE_FOR_A;
+                }
+            }
+            
+        }
+    }
+    
+    return A;
+    
+}
+
+
+ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t & meas) {
+    const size_t numObs = meas[0].size();
+    
+    const ViterbiDecodeResult_t res = this->decode(meas);
+    
+    const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,meas,numObs);
+    
+    reestimateFromGamma(gamma,meas);
+    
+    _A = reestimateAFromViterbiPath(res.path,meas,numObs);
+    
+    return ReestimationResult_t(res.cost);
+}
+
+HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
+    const size_t numObs = meas[0].size();
+
+    const HmmDataMatrix_t logbmap = getLogBMap(meas);
+    
+    const AlphaBetaResult_t res = getAlphaAndBeta(numObs, _pi, logbmap, _A);
+    
+    return -res.logmodelcost;
 }
 
 
