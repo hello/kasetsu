@@ -3,14 +3,37 @@
 #include <gsl/gsl_randist.h>
 #include "LogMath.h"
 #include <sstream>
+#include <random>
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
 #define  MIN_GAMMA_STDDEV (0.1)
 #define  MIN_GAMMA_INPUT (0.01)
-/*
-{"model_type": "gamma", "model_data": {"obs_num": 0, "stddev": 2.4510193189895877, "mean": 6.3895759408452282}}, {"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.22902424177218011}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 2, "alphabet_probs": [0.49349042140031829, 0.50650957859962087], "allow_reestimation": true}}, {"model_type": "gamma", "model_data": {"obs_num": 3, "stddev": 1.5936172416189756, "mean": 3.3320821688393307}}, {"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [1.0, 1.0], "allow_reestimation": false}}]*/
 
+#define GAMMA_PERTURBATION_MEAN (0.01)
+#define GAMMA_PERTURBATION_STDDEV (0.01)
+#define POISSON_PERTURBATION_MEAN (0.01)
+#define ALPHABET_PERTURBATION  (0.01)
+
+//between -1 and 1
+static HmmFloat_t getRandomFloat() {
+    const float r = 2.0 * static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX) - 1.0;
+    return r;
+}
+
+static HmmFloat_t getPerturbedValue(const HmmFloat_t x, const HmmFloat_t perturbationMaxAmplitude, const HmmFloat_t minVal = -INFINITY) {
+    HmmFloat_t y = 0.0;
+    int iter = 0;
+    
+    do {
+        y  = x + getRandomFloat() * perturbationMaxAmplitude;
+        iter++;
+    } while (y < minVal && iter < 10);
+    
+    return y;
+        
+    
+}
 
 GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
 : _mean(mean)
@@ -33,7 +56,14 @@ GammaModel::~GammaModel() {
     
 }
 
+
 HmmPdfInterface * GammaModel::clone(bool isPerturbed) const {
+    if (isPerturbed) {
+    
+        return new GammaModel(_obsnum,getPerturbedValue(_mean,GAMMA_PERTURBATION_MEAN,MIN_GAMMA_MEAN),getPerturbedValue(_stddev,GAMMA_PERTURBATION_STDDEV,MIN_GAMMA_STDDEV));
+
+    }
+    
     return new GammaModel(_obsnum,_mean,_stddev);
 }
 
@@ -133,6 +163,10 @@ PoissonModel::~PoissonModel() {
 }
 
 HmmPdfInterface * PoissonModel::clone(bool isPerturbed) const {
+    if (isPerturbed) {
+        return new PoissonModel(_obsnum,getPerturbedValue(_mu,POISSON_PERTURBATION_MEAN,MIN_POISSON_MEAN));
+    }
+
     return new PoissonModel(_obsnum,_mu);
 }
 
@@ -200,6 +234,18 @@ AlphabetModel::~AlphabetModel() {
 }
 
 HmmPdfInterface * AlphabetModel::clone(bool isPerturbed) const {
+    
+    if (isPerturbed) {
+        HmmDataVec_t newalphabet = _alphabetprobs;
+        
+        for (int i = 0; i < newalphabet.size(); i++) {
+            newalphabet[i] = getPerturbedValue(_alphabetprobs[i], ALPHABET_PERTURBATION,1e-6);
+        }
+        
+        return new AlphabetModel(_obsnum,newalphabet,_allowreestimation);
+
+    }
+    
     return new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation);
 }
 
