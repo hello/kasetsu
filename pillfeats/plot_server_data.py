@@ -6,11 +6,9 @@ import datetime
 from pylab import *
 import matplotlib.dates as mdates
 import scipy.signal
+import argparse
 
 k_num_minutes_smoothed = 5
-#users = [1,1002,1012,1085,1062]
-users = [1310]
-from_date_str = '2015-04-01'
     
 def fill_zeros_if_none(data):
     for i in xrange(len(data)):
@@ -29,6 +27,7 @@ def smooth(x):
     
 def plot_data(mydict):
     keys = mydict.keys()
+    print keys
     for key in keys:
         data = mydict[key]
             
@@ -42,13 +41,16 @@ def plot_data(mydict):
         times = []
         for lt in local_time:
             times.append(datetime.datetime.utcfromtimestamp(lt))
-            
+
+
+        print 'got %d sense points' % (len(times))            
         times = np.array(times)
         kickoff_counts = np.array(data[9])
         svm_mag = np.array(data[5] ) / 2000.0
         pillrange = np.array(data[7])  / 4096.0
         duration = np.array(data[8])
         soundmag = np.array(data[4]) / 10.0
+        wave = np.array(data[6])
         light = np.array(data[2])
         light = np.log2(4.0 * light + 1.0)
         ax = subplot(1,1,1)
@@ -59,18 +61,27 @@ def plot_data(mydict):
         times, svm_mag, 'o', 
         times, pillrange, 'o', 
         times, smooth(duration), '.-', 
-        times, soundmag, '+'); 
+        times, soundmag, '+',
+        times, wave,'h'); 
         grid('on')
-        legend(['light','counts', 'mag', 'range', 'duration', 'soundmag'])
+        legend(['light','counts', 'mag', 'range', 'duration', 'soundmag','waves'])
         title('userid=%s' % str(key))
         show()
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--date', help = 'target date')
+    parser.add_argument('-n','--numdays',default=1, help = 'num days to retrieve')
+    parser.add_argument('-u','--user',help='user id number')
+    args = parser.parse_args()
+
+    users = [int(args.user)]
+ 
     getter = serverdata.ServerDataGetter(users)
 
-    num_days = 3
-    min_num_records = 20
-    min_num_pill_records = 20
-    
-    data = getter.get_all_minute_data(from_date_str, num_days,  min_num_records, min_num_pill_records)
+    num_days = int(args.numdays)
+   
+    date = args.date
+    print date,users,num_days 
+    data = getter.get_all_minute_data(args.date, num_days) 
     plot_data(data)

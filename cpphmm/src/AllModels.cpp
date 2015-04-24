@@ -33,6 +33,10 @@ GammaModel::~GammaModel() {
     
 }
 
+HmmPdfInterface * GammaModel::clone(bool isPerturbed) const {
+    return new GammaModel(_obsnum,_mean,_stddev);
+}
+
 HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
     const HmmDataVec_t & obsvec = meas[_obsnum];
     
@@ -128,6 +132,10 @@ PoissonModel::~PoissonModel() {
     
 }
 
+HmmPdfInterface * PoissonModel::clone(bool isPerturbed) const {
+    return new PoissonModel(_obsnum,_mu);
+}
+
 HmmPdfInterface * PoissonModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
     const HmmDataVec_t & obsvec = meas[_obsnum];
 
@@ -189,6 +197,10 @@ AlphabetModel::AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetpro
 
 AlphabetModel::~AlphabetModel() {
     
+}
+
+HmmPdfInterface * AlphabetModel::clone(bool isPerturbed) const {
+    return new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation);
 }
 
 HmmPdfInterface * AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {

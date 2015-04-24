@@ -27,6 +27,19 @@ CompositeModel::~CompositeModel() {
     
 }
 
+HmmPdfInterface * CompositeModel::clone(bool isPerturbed) const {
+    CompositeModel * newModel = new CompositeModel();
+
+    for (ModelVec_t::const_iterator vecIterator = _models.begin();
+         vecIterator != _models.end(); vecIterator++) {
+
+        newModel->_models.push_back( (*vecIterator)->clone(isPerturbed));
+
+    }
+    
+    return newModel;
+}
+
 HmmPdfInterface * CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
     CompositeModel * newModel = new CompositeModel();
     

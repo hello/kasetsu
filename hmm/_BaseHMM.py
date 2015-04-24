@@ -246,16 +246,34 @@ class _BaseHMM(object):
                 viterbi_indices[j][t] = minidx
        
         path = numpy.zeros((numobs, )).astype(int)
-        #let's just say you wind up in state zero at the end? 
-        path[numobs-1] = 0
         
-
+        endingcosts = numpy.zeros((self.n, ))
+        
+        for i in xrange(self.n):
+            
+        
+            #let's just say you wind up in state zero at the end? 
+            path[numobs-1] = i
+            
+    
+            #backtrack to get optimal path
+            for t in xrange(numobs - 2, -1, -1):
+                path[t] = viterbi_indices[path[t+1]][t]
+                
+            endingcosts[i] = numpy.sum(self.evaluate_path_cost(observations, path, numobs))
+            
+        lowest_cost_path_idx = numpy.argmin(endingcosts)
+        
+        print 'picked ending state ', lowest_cost_path_idx, endingcosts
+        
+         #let's just say you wind up in state zero at the end? 
+        path[numobs-1] = lowest_cost_path_idx
+            
         #backtrack to get optimal path
         for t in xrange(numobs - 2, -1, -1):
             path[t] = viterbi_indices[path[t+1]][t]
-               
-        
-         
+                
+    
         return path, reliability
      
     def _calcxi(self,observations,alpha=None,beta=None):
@@ -380,13 +398,41 @@ class _BaseHMM(object):
         '''
         A_new = numpy.zeros((self.n,self.n),dtype=self.precision)
         for i in xrange(self.n):
+            
+            denom = 0.0
+            
+            for t in xrange(len(observations)-1):
+                denom += (self._eta(t,len(observations)-1)*gamma[t][i])
+            
             for j in xrange(self.n):
                 numer = 0.0
-                denom = 0.0
                 for t in xrange(len(observations)-1):
                     numer += (self._eta(t,len(observations)-1)*xi[t][i][j])
-                    denom += (self._eta(t,len(observations)-1)*gamma[t][i])
+                    
+                '''
+                p_est = numer/denom
+                n_est = denom
+                
+                sample_variance = n_est * p_est * (1.0 - p_est)
+                sample_stddev = numpy.sqrt(sample_variance)
+                sample_bounds = 2*sample_stddev
+                
+                print sample_bounds, numer, denom
+                if numer < sample_bounds:
+                    print 'took it', sample_bounds, numer
+                    numer = sample_bounds
+                '''
+                
+                '''
+                frac = 0.05
+                if numer < frac * denom and numer > 1e-14:
+                    numer = frac * denom
+                
+                '''
+                
                 A_new[i][j] = numer/denom
+                
+                
         return A_new
     
     def _calcstats(self,observations):
@@ -429,7 +475,7 @@ class _BaseHMM(object):
         # new init vector is set to the frequency of being in each step at t=0 
         new_model['pi'] = stats['gamma'][0]
         new_model['A'] = self._reestimateA(observations,stats['xi'],stats['gamma'], states)
-        
+        print new_model['A']
         return new_model
     
     def _baumwelch(self,observations, states):

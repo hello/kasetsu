@@ -166,6 +166,10 @@ static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
     
 }
 
+HiddenMarkovModel::HiddenMarkovModel(const HiddenMarkovModel & copyme) {
+    _A = copyme._A;
+    
+}
 
 HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
 :_A(A) {
@@ -521,6 +525,71 @@ void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
     for (int i = 0; i < 5; i++) {
        reestimateViterbi(meas);
     }
+}
+
+
+HiddenMarkovModel * HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
+    int i,j;
+    const uint32_t splitIndices[2] = {stateToSplit,_numStates};
+    
+    //enlarge A by 1 row and 1 column
+    HmmDataMatrix_t splitA = _A; //copy
+
+    for (i = 0; i < _numStates; i++) {
+        splitA[i].push_back(0.0);
+    }
+    
+    splitA.push_back(getZeroedVec(_numStates + 1));
+    
+    //fill out new values
+    for (i = 0; i < 2; i++) {
+        const int idx = splitIndices[i];
+        
+        //s' --> si
+        for (j = 0; j < _numStates; j++) {
+            splitA[j][idx] = 0.5 * _A[j][stateToSplit];
+        }
+    }
+    
+    for (i = 0; i < 2; i++) {
+        const int idx = splitIndices[i];
+
+        HmmDataVec_t & row = splitA[idx];
+
+        for (j = 0; j < row.size(); j++) {
+            
+            //si --> s'
+            if (j != splitIndices[0] && j != splitIndices[1]) {
+                row[j] = _A[stateToSplit][j];
+            }
+        }
+    }
+    
+    //si1 --> si2,, si2 --> si1, etc. etc.
+    splitA[splitIndices[0]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[0]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[1]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[1]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
+
+
+    
+    HiddenMarkovModel * splitModel = new HiddenMarkovModel(splitA);
+    
+    const HmmPdfInterface * modelToSplit = NULL;
+    int iModel = 0;
+    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
+        splitModel->addModelForState((*it)->clone(false));
+        
+        if (iModel == stateToSplit) {
+            modelToSplit = *it;
+        }
+        
+        iModel++;
+    }
+    
+    splitModel->addModelForState(modelToSplit->clone(true));
+    
+    return splitModel;
 }
 
 

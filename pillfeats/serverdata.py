@@ -6,7 +6,7 @@ import calendar
 import numpy
 
 
-#k_server = 'http://research-api-benjo.hello.is'
+#k_server = 'https://research-api-benjo.hello.is'
 k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
 
 k_minute_data_url = k_server + '/v1/datascience/device_sensors_motion/'
@@ -19,7 +19,10 @@ k_headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 
 def get_datestr_as_timestamp(datestr):
     mydate = datetime.datetime.strptime(datestr, '%Y-%m-%d')
-    return calendar.timegm(mydate.utctimetuple())*1000
+    ts = calendar.timegm(mydate.utctimetuple())
+    print ts
+    
+    return 1000 * ts;
 
     
 class BinnedDataGetter(object):
@@ -59,6 +62,7 @@ class BinnedDataGetter(object):
         
         if not response.ok:
             print 'fail with %d ' % (response.status_code)
+            print 'content',response.content
         else:
             print 'got data for user ',  account_id
             d = response.json()
@@ -84,7 +88,7 @@ class ServerDataGetter(object):
     def __init__(self, account_id_list):
         self.account_id_list = account_id_list
         
-    def get_all_minute_data(self, from_date_str, num_days,  min_num_records, min_num_pill_records):
+    def get_all_minute_data(self, from_date_str, num_days):
         t0 = get_datestr_as_timestamp(from_date_str)
         data = []
         for account_id in self.account_id_list:
@@ -93,8 +97,7 @@ class ServerDataGetter(object):
             if ret_data is not None:
                 data.extend(ret_data)
                 
-
-        return self.get_records_as_dict_entry(data, min_num_records, min_num_pill_records)
+        return self.get_records_as_dict_entry(data)
                 
             
     def get_data_for_user(self, from_time, account_id, num_days):
@@ -107,13 +110,14 @@ class ServerDataGetter(object):
         
         if not response.ok:
             print 'fail with %d ' % (response.status_code)
+            print 'content',response.content
         else:
             print 'got data for user ',  account_id
             d = response.json()
             
         return d
         
-    def get_records_as_dict_entry(self, data,  min_num_records, min_num_pill_records):
+    def get_records_as_dict_entry(self, data):
         '''
         [u'account_id', u'sound_num_disturbances', u'sound_peak_disturbances', u'light', u'svm_no_gravity', u'ts', u'kickoff_counts', u'motion_range', u'offset_millis', u'on_duration_seconds']
        device_sensors_master.account_id,
@@ -144,11 +148,7 @@ class ServerDataGetter(object):
             datadict[key][8].append(record['on_duration_seconds'])
             datadict[key][9].append(record['kickoff_counts'])
             
-        badkeys = []
         for key in datadict:
-            if len(datadict[key][0]) < min_num_records:
-                badkeys.append(key)
-                continue
                 
             pill_data = datadict[key][3]
             pill_counts = 0
@@ -156,11 +156,7 @@ class ServerDataGetter(object):
                 if p != None:
                     pill_counts += 1;
                     
-            if pill_counts < min_num_pill_records:
-                badkeys.append(key)
                 
-        for key in badkeys:
-            del datadict[key]
 
         return datadict
             

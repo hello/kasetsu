@@ -19,7 +19,7 @@ import matplotlib.dates as mdates
 k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043    , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,1310  , 1609 ,  1629 ,  1648]
 k_user_list2 = [1086, 1050, 1049]
 k_user_list.extend(k_user_list2)
-save_filename = 'savedata10min.json'
+save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
@@ -88,10 +88,11 @@ def pull_data(params, user, date):
         a = serverdata.BinnedDataGetter(user_list,params)
         data = a.get_all_binned_data(min_date,num_days)
         
-        
-        f = open(save_filename, 'w')
-        json.dump(data, f)
-        f.close()
+        #only save if no date specified
+        if date == None:
+            f = open(save_filename, 'w')
+            json.dump(data, f)
+            f.close()
 
 
     return data

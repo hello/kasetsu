@@ -42,6 +42,7 @@ public:
 
 class HiddenMarkovModel {
 public:
+    HiddenMarkovModel(const HiddenMarkovModel & copyme);
     HiddenMarkovModel(const HmmDataMatrix_t & A);
     ~HiddenMarkovModel();
     
@@ -55,12 +56,13 @@ public:
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
     
     std::string serializeToJson() const;
+    HiddenMarkovModel * splitState(uint32_t state) const;
+
 
 
 
 private:
     
-    ModelVec_t _models;
     
     AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A) const;
     HmmDataMatrix_t getLogBMap(const HmmDataMatrix_t & meas) const;
@@ -76,7 +78,8 @@ private:
 
     void clearModels();
 
-    int32_t _numStates;
+    ModelVec_t _models;
+    uint32_t _numStates;
     HmmDataMatrix_t _A;
     HmmDataVec_t _pi;
 
