@@ -54,6 +54,8 @@ public:
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
+    void reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
+    void enlargeWithVSTACS(const HmmDataMatrix_t & meas);
     
     std::string serializeToJson() const;
     HiddenMarkovModel * splitState(uint32_t state) const;
@@ -72,7 +74,7 @@ private:
     HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const;
     void reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas);
     
-    HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const;
+    HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates, const size_t numObs) const;
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const;
 
 

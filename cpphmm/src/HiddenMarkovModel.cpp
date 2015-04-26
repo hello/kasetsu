@@ -729,8 +729,8 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas)
 
 }
 
-HmmDataMatrix_t HiddenMarkovModel::getGammaFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const {
-    HmmDataMatrix_t gamma = getZeroedMatrix(_numStates, numObs);
+HmmDataMatrix_t HiddenMarkovModel::getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates,const size_t numObs) const {
+    HmmDataMatrix_t gamma = getZeroedMatrix(numStates, numObs);
 
     for (int t = 0; t < numObs; t++) {
         gamma[path[t]][t] = 1;
@@ -786,13 +786,128 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     
     const ViterbiDecodeResult_t res = this->decode(meas);
     
-    const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,meas,numObs);
+    const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,_numStates,numObs);
     
     reestimateFromGamma(gamma,meas);
     
     _A = reestimateAFromViterbiPath(res.path,meas,numObs);
     
     return ReestimationResult_t(res.cost);
+}
+
+void HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas) {
+    
+    uint32_t ti,j,i;
+    uint32_t iter;
+    
+    HmmDataMatrix_t logA = _A; //copy
+    
+    HmmDataMatrix_t splitlogbmap;
+    splitlogbmap.resize(2);
+    
+    splitlogbmap[0] = _models[s1]->getLogOfPdf(meas);
+    splitlogbmap[1] = _models[s2]->getLogOfPdf(meas);
+
+    
+    const size_t numObs = meas[0].size();
+
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            logA[j][i] = eln(logA[j][i]);
+        }
+    }
+    
+    HmmDataMatrix_t splitLogA = getZeroedMatrix(2, 2);
+    splitLogA[0][0] = logA[s1][s1];
+    splitLogA[1][0] = logA[s2][s1];
+    splitLogA[0][1] = logA[s1][s2];
+    splitLogA[1][1] = logA[s2][s2];
+
+    
+    
+    UIntVec_t myTimeIndices;
+    myTimeIndices.reserve(numObs);
+    
+    //find times in which we think the state is one of our split states
+    for (ti = 0; ti < numObs; ti++) {
+        const uint32_t idx = originalViterbi[ti];
+        if (idx == s1 || idx == s2) {
+            myTimeIndices.push_back(ti);
+        }
+    }
+    
+    for (iter = 0; iter < 5; iter++) {
+        
+        ViterbiPathMatrix_t vindices = getZeroedPathMatrix(2, myTimeIndices.size());
+        HmmDataMatrix_t phi = getLogZeroedMatrix(2, myTimeIndices.size());
+        UIntSet_t restartIndices;
+        restartIndices.reserve(myTimeIndices.size());
+        uint32_t previdx = 0;
+        //skip the first time step, who cares
+        for (ti = 0; ti < myTimeIndices.size(); ti++) {
+            
+            const int32_t tidx = myTimeIndices[ti];
+            
+            if (tidx == 0) {
+                continue; //todo implement this, but not very important
+            }
+            
+            //contiguous?
+            HmmDataVec_t costs = getLogZeroedVec(2);
+            if (previdx == tidx - 1) {
+                for (j = 0; j < 2; j++) {
+                    const HmmFloat_t obscost = splitlogbmap[j][ti];
+                    
+                    for (i = 0; i < 2; i++) {
+                        costs[i] = elnproduct(splitLogA[i][j], obscost);
+                    }
+                    
+                    for (i = 0; i < 2; i++) {
+                        costs[i] = elnproduct(costs[i], phi[i][ti-1]);
+                    }
+                    
+                    const int32_t maxidx = getArgMaxInVec(costs);
+                    const HmmFloat_t maxval = costs[maxidx];
+                    
+                    phi[j][ti] = maxval;
+                    vindices[j][ti] = maxidx;
+                }
+                
+            }
+            else {
+                //otherwise, start afresh
+                const uint32_t comingFromState = originalViterbi[tidx - 1];
+                const uint32_t goingToState = originalViterbi[tidx];
+                assert(goingToState == s1 || goingToState == s2);
+                phi[0][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[0][tidx]);
+                phi[1][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[1][tidx]);
+                restartIndices.insert(ti);
+            }
+            
+            previdx = tidx;
+        }
+        
+        
+        (void)restartIndices;
+        
+        const ViterbiDecodeResult_t res = decodePathAndGetCost(0, vindices, phi);
+        
+        const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,2,numObs);
+
+        HmmPdfInterface * r1 = _models[s1]->reestimate(gamma[0], meas);
+        HmmPdfInterface * r2 = _models[s2]->reestimate(gamma[1], meas);
+        
+        delete _models[s1];
+        delete _models[s2];
+        
+        _models[s1] = r1;
+        _models[s2] = r2;
+        
+        
+    }
+    
+   
+    
 }
 
 HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
@@ -803,6 +918,33 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
     const AlphaBetaResult_t res = getAlphaAndBeta(numObs, _pi, logbmap, _A);
     
     return -res.logmodelcost;
+}
+
+void HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas) {
+    typedef std::vector<HiddenMarkovModel *> HmmVec_t;
+    HmmVec_t hmms;
+    
+    const ViterbiDecodeResult_t res = decode(meas);
+    
+    
+    for (uint32_t iState = 0; iState < _numStates; iState++) {
+        hmms.push_back(splitState(iState));
+    }
+    
+    //TODO PARALLELIZE
+    //TODO get scores from reestimateViterbiSplitState somehow
+    for (uint32_t iState = 0; iState < _numStates; iState++) {
+        hmms[iState]->reestimateViterbiSplitState(iState, _numStates + 1, res.path, meas);
+    }
+    
+    //TODO decide on the best
+    
+    for (HmmVec_t::iterator it = hmms.begin(); it != hmms.end(); it++) {
+        delete *it;
+    }
+    
+    
+    
 }
 
 
