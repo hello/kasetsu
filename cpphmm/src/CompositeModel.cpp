@@ -25,15 +25,21 @@ CompositeModel::~CompositeModel() {
         *vecIterator = NULL;
     }
     
+    _models.clear();
+    
 }
 
 HmmPdfInterface * CompositeModel::clone(bool isPerturbed) const {
     CompositeModel * newModel = new CompositeModel();
 
-    for (ModelVec_t::const_iterator vecIterator = _models.begin();
-         vecIterator != _models.end(); vecIterator++) {
+    for (ModelVec_t::const_iterator it = _models.begin();
+         it != _models.end(); it++) {
 
-        newModel->_models.push_back( (*vecIterator)->clone(isPerturbed));
+        const HmmPdfInterface *  const model = *it;
+        
+        HmmPdfInterface * newIndividualModel = model->clone(isPerturbed);
+        
+        newModel->_models.push_back(newIndividualModel);
 
     }
     
@@ -79,4 +85,15 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
 
 std::string CompositeModel::serializeToJson() const {
     return vecToJsonArray<ModelVec_t,PdfInterfaceSerializationAdapter<ModelVec_t::value_type>>(_models);
+}
+
+uint32_t CompositeModel::getNumberOfFreeParams() const {
+    uint32_t numFreeParmas = 0;
+    
+    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
+        numFreeParmas += (*it)->getNumberOfFreeParams();
+    }
+    
+    return numFreeParmas;
+
 }

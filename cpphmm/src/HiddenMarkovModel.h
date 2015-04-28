@@ -28,13 +28,15 @@ public:
 
 class ViterbiDecodeResult_t {
 public:
-    ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost)
+    ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost, const HmmFloat_t bicScore)
     :path(vpath)
     ,cost(vcost)
+    ,bic(bicScore)
     {}
     
     const ViterbiPath_t path;
     const HmmFloat_t cost;
+    const HmmFloat_t bic;
 };
 
 
@@ -55,7 +57,8 @@ public:
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
     void reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
-    HiddenMarkovModel * enlargeWithVSTACS(const HmmDataMatrix_t & meas);
+    
+    HiddenMarkovModel * enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) const ;
     
     std::string serializeToJson() const;
     HiddenMarkovModel * splitState(uint32_t state) const;
@@ -76,6 +79,7 @@ private:
     
     HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates, const size_t numObs) const;
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const;
+    ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi) const;
 
 
     void clearModels();

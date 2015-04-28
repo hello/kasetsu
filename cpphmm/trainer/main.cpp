@@ -51,7 +51,14 @@ int main(int argc,const char * args[]) {
     }
 
     
-    bool worked = Trainer::train(hmm.get(),meas,maxiter);
+    bool worked = false;
+    
+    if (model == "seed") {
+        worked = Trainer::grow(hmm.get(),meas,maxiter);
+    }
+    else {
+        worked = Trainer::train(hmm.get(),meas,maxiter);
+    }
     
     std::ofstream outfile(outputfilename);
     

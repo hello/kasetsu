@@ -150,6 +150,10 @@ std::string GammaModel::serializeToJson() const {
     return std::string(buf);
 }
 
+uint32_t GammaModel::getNumberOfFreeParams() const {
+    return 2;
+}
+
 ///////////////////////////////////
 
 
@@ -218,6 +222,10 @@ std::string PoissonModel::serializeToJson() const {
     memset(buf,0,sizeof(buf));
     snprintf(buf, sizeof(buf),"{\"model_type\": \"poisson\", \"model_data\": {\"obs_num\": %d, \"mean\": %f}}",_obsnum,_mu);
     return std::string(buf);
+}
+
+uint32_t PoissonModel::getNumberOfFreeParams() const {
+    return 1;
 }
 
 ///////////////////////////////////
@@ -325,4 +333,8 @@ std::string AlphabetModel::serializeToJson() const {
     
     snprintf(buf, sizeof(buf),"{\"model_type\": \"discrete_alphabet\", \"model_data\": {\"obs_num\": %d, \"alphabet_probs\": [%s], \"allow_reestimation\": %s}}",_obsnum,probs.str().c_str(),allowreestiamationstring.c_str());
     return std::string(buf);
+}
+
+uint32_t AlphabetModel::getNumberOfFreeParams() const {
+    return _alphabetprobs.size();
 }

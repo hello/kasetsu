@@ -13,6 +13,7 @@ public:
     HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
 
 private:
     const float _mean;
@@ -31,6 +32,7 @@ public:
     HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
 
 private:
     const int32_t _obsnum;
@@ -48,6 +50,7 @@ public:
     HmmPdfInterface * reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const ;
     std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
 
     
 private:

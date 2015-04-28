@@ -4,7 +4,7 @@
 #include "AllModels.h"
 #include <iostream>
 
-static HmmPdfInterface * getDefaultModelForState(float lightGammaMean, float lightGammStdDev, float movementPoissonMean, float disturbanceFraction, float soundcountGammaMean, float soundcountGammaStdDev, float natlightPenaltyFraction) {
+static HmmPdfInterface * getDefaultModelForState(float lightGammaMean, float lightGammStdDev, float movementPoissonMean, float disturbanceFraction, float soundcountGammaMean, float soundcountGammaStdDev, float natlightPenaltyFraction,bool useNatLight = true) {
     
     
     HmmDataVec_t disturbanceProbs;
@@ -23,9 +23,28 @@ static HmmPdfInterface * getDefaultModelForState(float lightGammaMean, float lig
     p->addModel(new PoissonModel(1,movementPoissonMean));
     p->addModel(new AlphabetModel(2,disturbanceProbs,true));
     p->addModel(new GammaModel(3,lightGammaMean,lightGammStdDev));
-    p->addModel(new AlphabetModel(4,natlightProbs,false));
+    
+    if (useNatLight)  {
+        p->addModel(new AlphabetModel(4,natlightProbs,false));
+    }
     
     return p;
+
+}
+
+static HiddenMarkovModel * getSingleStateModel() {
+    const int num_states = 1;
+
+    HmmDataMatrix_t A;
+    
+    A.resize(num_states);
+    A[0] << 1.0;
+
+    HiddenMarkovModel * model = new HiddenMarkovModel(A);
+
+    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,false));
+    
+    return model;
 
 }
 
@@ -174,6 +193,10 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname) {
     else if (modelname == "test") {
         std::cout << "found test model" << std::endl;
         return getTestModel();
+    }
+    else if (modelname == "seed") {
+        std::cout << "found seed model" << std::endl;
+        return getSingleStateModel();
     }
     
 
