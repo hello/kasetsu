@@ -55,7 +55,7 @@ public:
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
     void reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
-    void enlargeWithVSTACS(const HmmDataMatrix_t & meas);
+    HiddenMarkovModel * enlargeWithVSTACS(const HmmDataMatrix_t & meas);
     
     std::string serializeToJson() const;
     HiddenMarkovModel * splitState(uint32_t state) const;

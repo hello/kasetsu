@@ -128,7 +128,7 @@ static ViterbiPathMatrix_t getZeroedPathMatrix(size_t numVecs, size_t vecSize) {
     return mtx;
 }
 
-static int32_t getArgMaxInVec(const HmmDataVec_t & x) {
+static uint32_t getArgMaxInVec(const HmmDataVec_t & x) {
     HmmFloat_t max = -INFINITY;
     int32_t imax = 0;
     for (int32_t i = 0; i < x.size(); i++) {
@@ -513,10 +513,7 @@ static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const Viterbi
     ViterbiPath_t path = decodePath(startidx,paths);
     
     cost = phi[path[len-1]][len-1];
-    for(int i = len - 2; i >= 0; i--) {
-        cost += phi[path[i]][i];
-    }
-    
+   
     return ViterbiDecodeResult_t(path,cost);
 }
 
@@ -866,7 +863,7 @@ void HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
                         costs[i] = elnproduct(costs[i], phi[i][ti-1]);
                     }
                     
-                    const int32_t maxidx = getArgMaxInVec(costs);
+                    const uint32_t maxidx = getArgMaxInVec(costs);
                     const HmmFloat_t maxval = costs[maxidx];
                     
                     phi[j][ti] = maxval;
@@ -920,9 +917,14 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
     return -res.logmodelcost;
 }
 
-void HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas) {
+HiddenMarkovModel *  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas) {
     typedef std::vector<HiddenMarkovModel *> HmmVec_t;
     HmmVec_t hmms;
+    HiddenMarkovModel * best = NULL;
+    
+    for (int i = 0; i < 5; i++) {
+        this->reestimateViterbi(meas);
+    }
     
     const ViterbiDecodeResult_t res = decode(meas);
     
@@ -933,16 +935,28 @@ void HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas) {
     
     //TODO PARALLELIZE
     //TODO get scores from reestimateViterbiSplitState somehow
+    HmmDataVec_t costs;
+    costs.resize(_numStates);
     for (uint32_t iState = 0; iState < _numStates; iState++) {
-        hmms[iState]->reestimateViterbiSplitState(iState, _numStates + 1, res.path, meas);
+        hmms[iState]->reestimateViterbiSplitState(iState, _numStates, res.path, meas);
+        
+        const ViterbiDecodeResult_t res = hmms[iState]->decode(meas);
+        
+        costs[iState] = res.cost;
     }
     
-    //TODO decide on the best
+    
+    const uint32_t bestidx = getArgMaxInVec(costs);
+    
+    best = hmms[bestidx];
     
     for (HmmVec_t::iterator it = hmms.begin(); it != hmms.end(); it++) {
-        delete *it;
+        if (*it != best) {
+            delete *it;
+        }
     }
     
+    return best;
     
     
 }
