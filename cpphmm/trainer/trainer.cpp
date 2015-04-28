@@ -30,10 +30,7 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const
 
 bool Trainer::grow (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas,const int maxiter) {
    
-    HiddenMarkovModel * enlarged = hmm->enlargeWithVSTACS(meas,5);
-    
-    int foo = 3;
-    foo++;
+    hmm->enlargeWithVSTACS(meas,3);
     
     return true;
 }

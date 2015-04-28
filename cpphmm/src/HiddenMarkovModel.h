@@ -47,6 +47,8 @@ public:
     HiddenMarkovModel(const HiddenMarkovModel & copyme);
     HiddenMarkovModel(const HmmDataMatrix_t & A);
     ~HiddenMarkovModel();
+    HiddenMarkovModel & operator = (const HiddenMarkovModel & hmm);
+
     
     void addModelForState(HmmPdfInterface * model);
     
@@ -58,7 +60,7 @@ public:
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
     void reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
     
-    HiddenMarkovModel * enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) const ;
+    void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     
     std::string serializeToJson() const;
     HiddenMarkovModel * splitState(uint32_t state) const;

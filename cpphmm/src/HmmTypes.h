@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_set>
 #include <stdint.h>
+#include <iostream>
 
 typedef double HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;
@@ -28,6 +29,20 @@ template <class T>
 T & operator , (T & ref,typename T::value_type val) {
     ref.push_back(val);
     return ref;
+}
+
+inline std::ostream & operator << (std::ostream & lhs, HmmDataVec_t & rhs) {
+    bool first = true;
+    for (HmmDataVec_t::const_iterator it = rhs.begin() ; it != rhs.end(); it++) {
+        if (!first) {
+            lhs << ",";
+        }
+        
+        first = false;
+        lhs << *it;
+    }
+    
+    return lhs;
 }
 
 
