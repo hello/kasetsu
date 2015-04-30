@@ -110,7 +110,7 @@ for key in keys:
     mylist.append(dict_entry_to_list(key, results[key]))
 
 print ('\n\n\n\n\n\n\n')
-print ('succes < %d min error, utter fail > %d min error, positive error = early prediction' % (success_threshold, realbad_threshold))
+print ('succes <= %d min error,fail > %d min utter fail > %d min error, positive error = early prediction' % (success_threshold,success_threshold,  realbad_threshold))
 print tabulate(mylist, headers=headers)
 print ('\n\n\n\n\n\n\n')
 
