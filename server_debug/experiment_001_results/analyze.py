@@ -10,9 +10,11 @@ min_num_samples = 10
 success_threshold = 20 #minutes
 realbad_threshold = 60 #minutes
 
+alg_name_map = {'hmm' : 'HMM', 'wupang' : 'REGULAR'}
 
 keys_of_interest = ['IN_BED',  'SLEEP', 'WAKE_UP', 'OUT_OF_BED']
-alg_fractions = {'hmm' : 0.3, 'wupang' : 0.7}
+alg_fractions = {'HMM' : 0.3, 'REGULAR' : 0.7}
+
 
 def get_fraction_from_key(key):
     for alg in alg_fractions:
@@ -80,6 +82,12 @@ with open(filename, 'rb') as csvfile:
     for row in reader:
         et = row['event_type']
         alg = row['algorithm']
+        
+        if alg not in alg_name_map.keys():
+            continue
+        else:
+            alg = alg_name_map[alg]
+        
         key = alg + '_' + et
         if (not distributions.has_key(key)):
             distributions[key] = []
@@ -110,7 +118,8 @@ for key in keys:
     mylist.append(dict_entry_to_list(key, results[key]))
 
 print ('\n\n\n\n\n\n\n')
-print ('succes <= %d min error,fail > %d min utter fail > %d min error, positive error = early prediction' % (success_threshold,success_threshold,  realbad_threshold))
+print ('success <= %d min error, fail > %d min, utter fail > %d min error, positive error = early prediction' % (success_threshold,success_threshold,  realbad_threshold))
+print('\n')
 print tabulate(mylist, headers=headers)
 print ('\n\n\n\n\n\n\n')
 
