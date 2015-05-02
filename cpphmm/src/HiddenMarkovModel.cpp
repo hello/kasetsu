@@ -8,8 +8,9 @@
 
 #define MIN_VALUE_FOR_A (5e-2)
 
+#define NUM_REESTIMATIONS_PER_ITER (30)
 
-#define THREAD_POOL_SIZE (2)
+#define THREAD_POOL_SIZE (4)
 #define USE_THREADPOOL
 
 typedef std::pair<int32_t,HmmPdfInterface *> StateIdxModelPair_t;
@@ -980,7 +981,9 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
 
 
 void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
-    static const int N = 10;
+    static const int N = NUM_REESTIMATIONS_PER_ITER;
+    ReestimationResult_t res;
+    
     typedef std::vector<HiddenMarkovModel *> HmmVec_t;
     uint32_t numStates = _numStates;
     HiddenMarkovModel * best = new HiddenMarkovModel(*this); //init
@@ -990,7 +993,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 
         //converge to something with viterbi training
         for (int i = 0; i < N; i++) {
-            ReestimationResult_t res = best->reestimate(meas);
+            res = best->reestimateViterbi(meas);
             std::cout << res.getLogLikelihood() << std::endl;
         }
        // for (int i = 0; i < 2; i++) {
@@ -1024,13 +1027,13 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             for (int32_t iState = 0; iState < numStates; iState++) {
                 newevals.emplace_back(pool.enqueue([numStates,iState,&hmms,&meas,&res] {
                     HmmFloat_t score = -INFINITY;
-                    
+
                     if (hmms[iState]->reestimateViterbiSplitState(iState, numStates, res.path, meas)) {
-                        const ViterbiDecodeResult_t res = hmms[iState]->decode(meas);
-                        score = res.bic;
+                        const ViterbiDecodeResult_t res2 = hmms[iState]->decode(meas);
+                        score = res2.bic;
                     }
                     
-                    return std::make_pair(iState,res.bic);
+                    return std::make_pair(iState,score);
                 
                 }));
             }
@@ -1080,7 +1083,8 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     }
     
     for (int i = 0; i < N; i++) {
-        best->reestimate(meas); //converge to something with viterbi training
+        res = best->reestimate(meas); //converge to something with viterbi training
+        std::cout << res.getLogLikelihood() << std::endl;
     }
     
     //best->reestimate(meas); //finishing touches
