@@ -20,7 +20,8 @@ add_subdirectory("../src/" "${CMAKE_CURRENT_BINARY_DIR}/main")
 include_directories("./gtest/include")
 
 add_executable(unit-test
-               main.cpp 
+               main.cpp
+               signalgenerator.cpp 
                testhmm.cpp
                testmodels.cpp)
 

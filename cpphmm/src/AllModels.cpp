@@ -83,7 +83,8 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
     HmmFloat_t denom = 0.0;
     
 
-    
+    // THIS HAS A BUG
+    //OBSVEC SIZE IS NOT EQUAL TO GAMMA FOR THIS STATE WHEN ENLARGING USING VSTACS
     for (int32_t t = 0; t < obsvec.size(); t++) {
         dx = obsvec[t] - oldmean;
         numermean += obsvec[t]*gammaForThisState[t];

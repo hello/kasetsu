@@ -31,7 +31,7 @@ T & operator , (T & ref,typename T::value_type val) {
     return ref;
 }
 
-inline std::ostream & operator << (std::ostream & lhs, HmmDataVec_t & rhs) {
+inline std::ostream & operator << (std::ostream & lhs, const HmmDataVec_t & rhs) {
     bool first = true;
     for (HmmDataVec_t::const_iterator it = rhs.begin() ; it != rhs.end(); it++) {
         if (!first) {

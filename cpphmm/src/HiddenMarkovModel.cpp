@@ -10,7 +10,7 @@
 
 
 #define THREAD_POOL_SIZE (2)
-//#define USE_THREADPOOL
+#define USE_THREADPOOL
 
 typedef std::pair<int32_t,HmmPdfInterface *> StateIdxModelPair_t;
 typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
@@ -551,7 +551,7 @@ ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,c
 
 
 void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
        reestimateViterbi(meas);
     }
 }
@@ -926,12 +926,29 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         }
         
         
+        //copy out the measurement indices that belong to this split states
+        //i.e. the time indices from the viterbi path
+        
+        HmmDataMatrix_t measurementSubset;
+        measurementSubset.resize(meas.size());
+
+        for (int irow = 0; irow < measurementSubset.size(); irow++) {
+            const HmmDataVec_t & row = meas[irow];
+            measurementSubset[irow].resize(myTimeIndices.size());
+            
+            for (int t = 0; t < myTimeIndices.size(); t++) {
+                measurementSubset[irow][t] = row[myTimeIndices[t]];
+            }
+        }
+        
+        
+        
         const ViterbiDecodeResult_t res = decodePathAndGetCost(0, vindices, phi,restartIndices);
         
         const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,2,myTimeIndices.size());
 
-        HmmPdfInterface * r1 = _models[s1]->reestimate(gamma[0], meas);
-        HmmPdfInterface * r2 = _models[s2]->reestimate(gamma[1], meas);
+        HmmPdfInterface * r1 = _models[s1]->reestimate(gamma[0], measurementSubset);
+        HmmPdfInterface * r2 = _models[s2]->reestimate(gamma[1], measurementSubset);
         
         oldModels.push_back(_models[s1]);
         oldModels.push_back(_models[s2]);
@@ -963,6 +980,7 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
 
 
 void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
+    static const int N = 10;
     typedef std::vector<HiddenMarkovModel *> HmmVec_t;
     uint32_t numStates = _numStates;
     HiddenMarkovModel * best = new HiddenMarkovModel(*this); //init
@@ -971,8 +989,9 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         HmmVec_t hmms;
 
         //converge to something with viterbi training
-        for (int i = 0; i < 5; i++) {
-            best->reestimateViterbi(meas);
+        for (int i = 0; i < N; i++) {
+            ReestimationResult_t res = best->reestimate(meas);
+            std::cout << res.getLogLikelihood() << std::endl;
         }
        // for (int i = 0; i < 2; i++) {
        //     best->reestimate(meas);
@@ -1004,11 +1023,12 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             
             for (int32_t iState = 0; iState < numStates; iState++) {
                 newevals.emplace_back(pool.enqueue([numStates,iState,&hmms,&meas,&res] {
+                    HmmFloat_t score = -INFINITY;
                     
-                    hmms[iState]->reestimateViterbiSplitState(iState, numStates, res.path, meas);
-                    
-                    const ViterbiDecodeResult_t res = hmms[iState]->decode(meas);
-                    
+                    if (hmms[iState]->reestimateViterbiSplitState(iState, numStates, res.path, meas)) {
+                        const ViterbiDecodeResult_t res = hmms[iState]->decode(meas);
+                        score = res.bic;
+                    }
                     
                     return std::make_pair(iState,res.bic);
                 
@@ -1025,7 +1045,6 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 #else
 
         
-        //TODO PARALLELIZE
                std::cout << "splitting  " << numStates << " states." << std::endl;
         for (uint32_t iState = 0; iState < numStates; iState++) {
             
@@ -1060,8 +1079,8 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         numStates++;
     }
     
-    for (int i = 0; i < 5; i++) {
-        best->reestimateViterbi(meas); //converge to something with viterbi training
+    for (int i = 0; i < N; i++) {
+        best->reestimate(meas); //converge to something with viterbi training
     }
     
     //best->reestimate(meas); //finishing touches

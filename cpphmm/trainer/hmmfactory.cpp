@@ -42,7 +42,7 @@ static HiddenMarkovModel * getSingleStateModel() {
 
     HiddenMarkovModel * model = new HiddenMarkovModel(A);
 
-    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,false));
+    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,true,true));
     
     return model;
 
