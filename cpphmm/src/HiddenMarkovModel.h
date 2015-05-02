@@ -58,7 +58,7 @@ public:
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
-    void reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
+    bool reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
     
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     

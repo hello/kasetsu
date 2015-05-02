@@ -9,6 +9,7 @@
 #define  MIN_GAMMA_MEAN (0.01)
 #define  MIN_GAMMA_STDDEV (0.1)
 #define  MIN_GAMMA_INPUT (0.01)
+#define  MAX_GAMMA_INPUT  (1e5)
 
 #define GAMMA_PERTURBATION_MEAN (0.01)
 #define GAMMA_PERTURBATION_STDDEV (0.01)
@@ -109,6 +110,10 @@ HmmPdfInterface * GammaModel::reestimate(const HmmDataVec_t & gammaForThisState,
         newstddev = MIN_GAMMA_STDDEV;
     }
     
+    if (std::isnan(newmean) || std::isnan(newstddev)) {
+        int foo = 3;
+        foo++;
+    }
     
     return new GammaModel(_obsnum,newmean,newstddev);
 }
@@ -130,12 +135,13 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
             val = MIN_GAMMA_INPUT;
         }
         
+        if (val > MAX_GAMMA_INPUT) {
+            val = MAX_GAMMA_INPUT;
+        }
+        
         HmmFloat_t evalValue =gsl_ran_gamma_pdf(val,A,scale);
         
-        if (evalValue > 1) {
-            int foo = 3;
-            foo++;
-        }
+        
         ret[i] = eln(evalValue);
     }
     
