@@ -507,7 +507,7 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, cons
     
 }
 
-static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & paths) {
+static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & paths,const UIntSet_t & restartIndices) {
     size_t len = paths[0].size();
     
     
@@ -516,18 +516,24 @@ static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & pat
     
     path[len-1] = startidx;
     for(int i = len - 2; i >= 0; i--) {
-        path[i] = paths[path[i+1]][i];
+        
+        if (restartIndices.find(i + 1) != restartIndices.end()) {
+            path[i] = startidx;
+        }
+        else {
+            path[i] = paths[path[i+1]][i];
+        }
     }
     
     return path;
 }
 
-ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi) const  {
+ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi, const UIntSet_t & restartIndices) const  {
     size_t numStates = paths.size();
     size_t len = paths[0].size();
     HmmFloat_t cost;
     
-    ViterbiPath_t path = decodePath(startidx,paths);
+    ViterbiPath_t path = decodePath(startidx,paths,restartIndices);
     
     cost = phi[path[len-1]][len-1];
     
@@ -544,7 +550,7 @@ ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,c
 
 
 void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 1; i++) {
        reestimateViterbi(meas);
     }
 }
@@ -662,7 +668,8 @@ ViterbiDecodeResult_t HiddenMarkovModel::decode(const HmmDataMatrix_t & meas) co
         }
     }
     
-    const ViterbiDecodeResult_t result = decodePathAndGetCost(0, vindices, phi);
+    UIntSet_t emptySet;
+    const ViterbiDecodeResult_t result = decodePathAndGetCost(0, vindices, phi,emptySet);
     
     
     return result;
@@ -815,7 +822,7 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     
     _A = reestimateAFromViterbiPath(res.path,meas,numObs);
     
-    return ReestimationResult_t(res.cost);
+    return ReestimationResult_t(-res.cost);
 }
 
 void HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas) {
@@ -916,9 +923,7 @@ void HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         }
         
         
-        (void)restartIndices;
-        
-        const ViterbiDecodeResult_t res = decodePathAndGetCost(0, vindices, phi);
+        const ViterbiDecodeResult_t res = decodePathAndGetCost(0, vindices, phi,restartIndices);
         
         const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,2,myTimeIndices.size());
 
@@ -962,10 +967,14 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         for (int i = 0; i < 5; i++) {
             best->reestimateViterbi(meas);
         }
+        for (int i = 0; i < 2; i++) {
+            best->reestimate(meas);
+        }
+
         
-        best->reestimate(meas); //finishing touches
+        //best->reestimate(meas); //finishing touches
         
-        const ViterbiDecodeResult_t res = decode(meas);
+        const ViterbiDecodeResult_t res = best->decode(meas);
         
         
         for (uint32_t iState = 0; iState < numStates; iState++) {
@@ -1004,11 +1013,11 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         numStates++;
     }
     
-    for (int i = 0; i < 5; i++) {
-        best->reestimateViterbi(meas); //converge to something with viterbi training
+    for (int i = 0; i < 2; i++) {
+        best->reestimate(meas); //converge to something with viterbi training
     }
     
-    best->reestimate(meas); //finishing touches
+    //best->reestimate(meas); //finishing touches
     
     *this = *best;
     

@@ -81,7 +81,7 @@ private:
     
     HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates, const size_t numObs) const;
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs) const;
-    ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi) const;
+    ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi,const UIntSet_t & restartIndices) const;
 
 
     void clearModels();

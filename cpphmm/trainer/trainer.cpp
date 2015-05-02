@@ -7,7 +7,7 @@
 
 bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const int maxiter) {
     HmmFloat_t cost;
-
+    ReestimationResult_t res;
     hmm->InitializeReestimation(meas);
     
     cost = hmm->getModelCost(meas);
@@ -16,12 +16,17 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const
     
     for (int iter = 0; iter < maxiter; iter++) {
         //ReestimationResult_t res = hmm->reestimate(meas);
-        hmm->reestimateViterbi(meas);
-        //cost = res.getLogLikelihood();
-        //std::cout << cost << std::endl;
-        
+        res = hmm->reestimateViterbi(meas);
+        cost = res.getLogLikelihood();
+        std::cout << cost << std::endl;
         
     }
+    
+    //res = hmm->reestimate(meas);
+    //cost = res.getLogLikelihood();
+
+    std::cout << cost << std::endl;
+
     
     
     return true;
@@ -30,7 +35,7 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const
 
 bool Trainer::grow (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas,const int maxiter) {
    
-    hmm->enlargeWithVSTACS(meas,3);
+    hmm->enlargeWithVSTACS(meas,maxiter);
     
     return true;
 }
