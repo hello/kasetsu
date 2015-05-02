@@ -545,7 +545,8 @@ ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,c
         numFreeParams += (*it)->getNumberOfFreeParams();
     }
     
-    const HmmFloat_t bic = 2*cost + numFreeParams * log(len);
+    //really -bic
+    const HmmFloat_t bic = 2*cost - numFreeParams * log(len);
 
     return ViterbiDecodeResult_t(path,cost,bic);
 }
@@ -1084,7 +1085,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     
     for (int i = 0; i < N; i++) {
         res = best->reestimate(meas); //converge to something with viterbi training
-        std::cout << res.getLogLikelihood() << std::endl;
+        std::cout << "FINAL REESTIMATION " << res.getLogLikelihood() << std::endl;
     }
     
     //best->reestimate(meas); //finishing touches
