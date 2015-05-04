@@ -42,10 +42,32 @@ static HiddenMarkovModel * getSingleStateModel() {
 
     HiddenMarkovModel * model = new HiddenMarkovModel(A);
 
-    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,true,true));
+    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,false,false));
     
     return model;
 
+}
+
+static HiddenMarkovModel * getDualModel() {
+    const int num_states = 2;
+    
+    const bool useNatLight = false;
+    const bool estimateNatLight = false;
+    
+    HmmDataMatrix_t A;
+    
+    A.resize(num_states);
+    A[0] << 0.5,0.5;
+    A[1] << 0.5,0.5;
+
+    
+    HiddenMarkovModel * model = new HiddenMarkovModel(A);
+    
+    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
+
+    return model;
+    
 }
 
 

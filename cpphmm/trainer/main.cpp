@@ -5,6 +5,9 @@
 #include <memory>
 #include <fstream>
 
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
+
 
 int main(int argc,const char * args[]) {
 
@@ -27,6 +30,8 @@ int main(int argc,const char * args[]) {
         std::cout << "need max iters" << std::endl;
         return 0;
     }
+    
+    srand (time(NULL));
  
     const std::string filename = args[1];
     const std::string model = args[2];
