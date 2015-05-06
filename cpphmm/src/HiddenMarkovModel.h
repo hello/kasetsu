@@ -42,6 +42,9 @@ public:
 };
 
 
+class HiddenMarkovModel;
+
+typedef std::shared_ptr<HiddenMarkovModel> HmmSharedPtr_t;
 
 
 class HiddenMarkovModel {
@@ -66,7 +69,8 @@ public:
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
 
     std::string serializeToJson() const;
-    HiddenMarkovModel * splitState(uint32_t state) const;
+    HmmSharedPtr_t splitState(uint32_t state) const;
+    HmmSharedPtr_t deleteState(uint32_t stateToDelete) const;
 
     uint32_t getNumberOfFreeParams() const;
 
