@@ -34,6 +34,8 @@ public:
     ,bic(bicScore)
     {}
     
+    ViterbiDecodeResult_t() : path(ViterbiPath_t()), cost(-INFINITY),bic(-INFINITY) {}
+    
     const ViterbiPath_t path;
     const HmmFloat_t cost;
     const HmmFloat_t bic;
@@ -45,14 +47,14 @@ public:
 class HiddenMarkovModel {
 public:
     HiddenMarkovModel(const HiddenMarkovModel & copyme);
-    HiddenMarkovModel(const HmmDataMatrix_t & A);
+    HiddenMarkovModel(const HmmDataMatrix_t & A,const UIntVec_t & groupsByStateNumber = UIntVec_t());
+    HiddenMarkovModel(const UIntVec_t & groupsByStateNumber);
+    
     ~HiddenMarkovModel();
     HiddenMarkovModel & operator = (const HiddenMarkovModel & hmm);
 
     
     void addModelForState(HmmPdfInterface * model);
-    
-    void InitializeReestimation(const HmmDataMatrix_t & meas);
     
     ReestimationResult_t reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove = false);
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
@@ -61,9 +63,12 @@ public:
     bool reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
     
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
-    
+    void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
+
     std::string serializeToJson() const;
     HiddenMarkovModel * splitState(uint32_t state) const;
+
+    uint32_t getNumberOfFreeParams() const;
 
 
 
@@ -91,6 +96,8 @@ private:
     uint32_t _numStates;
     HmmDataMatrix_t _A;
     HmmDataVec_t _pi;
+    
+    UIntVec_t _groups;
 
 
     

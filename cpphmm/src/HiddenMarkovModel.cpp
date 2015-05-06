@@ -5,19 +5,24 @@
 #include <iostream>
 #include "SerializationHelpers.h"
 #include <assert.h>
+#include <iomanip>
+
 
 #define MIN_VALUE_FOR_A (1e-6)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
-#define NUM_REESTIMATIONS_PER_ITER (50)
+#define MAX_NUM_REESTIMATIONS_PER_ITER (5)
 #define MIN_NUM_REESTIMATIONS (0)
 
-#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (100)
+#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
+
+#define MIN_FRAC_IN_STATE_TO_SPLIT (0.5)
 
 
 #define THREAD_POOL_SIZE (4)
 #define USE_THREADPOOL
 #define QUIT_TRAINING_IF_NO_IMPROVEMENT
+#define QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
 
 typedef std::pair<int32_t,HmmPdfInterface *> StateIdxModelPair_t;
 typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
@@ -26,6 +31,9 @@ typedef std::pair<int32_t,HmmFloat_t> StateIdxCostPair_t;
 typedef std::vector<std::future<StateIdxModelPair_t>> FutureModelVec_t;
 typedef std::vector<std::future<StateIdxPdfEvalPair_t>> FuturePdfEvalVec_t;
 typedef std::vector<std::future<StateIdxCostPair_t>> FutureCostVec_t;
+
+typedef std::vector<HiddenMarkovModel *> HmmVec_t;
+
 
 static HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) {
     HmmDataMatrix_t y = x;
@@ -153,7 +161,7 @@ static uint32_t getArgMaxInVec(const HmmDataVec_t & x) {
 
 static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
     
-    std::cout << name << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << name << std::endl;
     
     for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
         bool first = true;
@@ -174,17 +182,90 @@ static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
     
 }
 
+static HmmDataVec_t getFractionInEachState(uint32_t numStates,const ViterbiPath_t & path) {
+    HmmDataVec_t fracInEachState;
+    fracInEachState.resize(numStates);
+    
+    
+    for (uint32_t iState = 0; iState < numStates; iState++) {
+        uint32_t count = 0;
+        for (uint32_t t = 0; t < path.size(); t++) {
+            if (path[t] == iState) {
+                count++;
+            }
+        }
+        
+        fracInEachState[iState] = (HmmFloat_t)count / (HmmFloat_t)path.size();
+    }
+    
+    return fracInEachState;
+    
+}
+
 
 HiddenMarkovModel::HiddenMarkovModel(const HiddenMarkovModel & hmm) {
     *this = hmm;
    
 }
 
-HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A)
-:_A(A) {
+HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A,const UIntVec_t & groupsByStateNumber)
+:_A(A)
+,_groups(groupsByStateNumber){
     _numStates = A.size();
     _pi = getUniformVec(_numStates);
+    
+    if (_groups.empty()) {
+        _groups.push_back(0);
+    }
 }
+
+//for creating seed models
+HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
+:_groups(groupsByStateNumber) {
+
+    _numStates = groupsByStateNumber.size();
+    
+    _pi = getUniformVec(_numStates);
+    
+    //initialize sparsely connected A
+    _A = getZeroedMatrix(_numStates, _numStates);
+    
+//   / HmmFloat_t edgeAlpha = 1.0 / 2.0;
+    HmmFloat_t alpha = 1.0 / 3.0;
+    
+    if(_numStates == 1) {
+        alpha = 1.0;
+    }
+    else if (_numStates == 2) {
+        alpha = 0.5;
+    }
+    
+    for (int i = 0; i < _numStates; i++) {
+        for (int j = 0; j < _numStates; j++) {
+            int diff = i - j;
+            
+            
+            if (diff <= 1 && diff >= -1) {
+                if (j == 0 || j == _numStates - 1) {
+                    _A[j][i] = alpha;
+
+                }
+                else {
+                    _A[j][i] = alpha;
+                }
+            }
+            
+            
+        }
+    }
+    
+    //circular connection
+    _A[_numStates - 1][0] = alpha;
+    _A[0][_numStates - 1] = alpha;
+    
+    printMat("A", _A);
+}
+
 
 HiddenMarkovModel::~HiddenMarkovModel() {
     
@@ -202,6 +283,7 @@ HiddenMarkovModel & HiddenMarkovModel::operator = (const HiddenMarkovModel & hmm
     _A = hmm._A;
     _numStates = hmm._numStates;
     _pi = hmm._pi;
+    _groups = hmm._groups;
     
     return *this;
 }
@@ -536,37 +618,28 @@ static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & pat
 }
 
 ViterbiDecodeResult_t HiddenMarkovModel::decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi, const UIntSet_t & restartIndices) const  {
-    size_t numStates = paths.size();
-    size_t len = paths[0].size();
-    HmmFloat_t cost;
+
+    const size_t len = paths[0].size();
+
     
+    //get viterbi path
     ViterbiPath_t path = decodePath(startidx,paths,restartIndices);
     
-    cost = phi[path[len-1]][len-1];
-    
-    uint32_t numFreeParams = numStates*numStates;
-    
-    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
-        numFreeParams += (*it)->getNumberOfFreeParams();
-    }
+    //compute cost stuff
+    const HmmFloat_t cost = phi[path[len-1]][len-1];
     
     //really -bic
-    const HmmFloat_t bic = 2*cost - numFreeParams * log(len);
+
+    const HmmFloat_t bic = 2*cost - this->getNumberOfFreeParams() * log(len);
 
     return ViterbiDecodeResult_t(path,cost,bic);
-}
-
-
-void HiddenMarkovModel::InitializeReestimation(const HmmDataMatrix_t & meas) {
-    for (int i = 0; i < 5; i++) {
-       reestimateViterbi(meas);
-    }
 }
 
 
 HiddenMarkovModel * HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
     int i,j;
     const uint32_t splitIndices[2] = {stateToSplit,_numStates};
+    const uint32_t myGroup = _groups[stateToSplit];
     
     //enlarge A by 1 row and 1 column
     HmmDataMatrix_t splitA = _A; //copy
@@ -607,9 +680,16 @@ HiddenMarkovModel * HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
     splitA[splitIndices[1]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
     splitA[splitIndices[1]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
 
-
+    std::stringstream ss;
+    ss << "splitA - " << stateToSplit;
+    //printMat(ss.str(), splitA);
     
-    HiddenMarkovModel * splitModel = new HiddenMarkovModel(splitA);
+
+    //create the new split model
+    UIntVec_t newgroups = _groups;
+    newgroups.push_back(myGroup);
+    
+    HiddenMarkovModel * splitModel = new HiddenMarkovModel(splitA,newgroups);
     
     const HmmPdfInterface * modelToSplit = NULL;
     int iModel = 0;
@@ -623,6 +703,7 @@ HiddenMarkovModel * HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
         iModel++;
     }
     
+   // std::cout << newgroups << std::endl;
     splitModel->addModelForState(modelToSplit->clone(true));
     
     return splitModel;
@@ -771,7 +852,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,
 
         AlphaBetaResult_t alphabeta2 = getAlphaAndBeta(numObs, _pi, logbmap2, newA);
         
-        if (alphabeta2.logmodelcost < alphabeta.logmodelcost) {
+        if (alphabeta2.logmodelcost <= alphabeta.logmodelcost) {
             //no improvement!
             
             //delete models
@@ -797,7 +878,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,
 
     _pi = newPi;
     
-    return ReestimationResult_t(-alphabeta2.logmodelcost);
+    return ReestimationResult_t(alphabeta2.logmodelcost);
 
 }
 
@@ -840,7 +921,7 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateAFromViterbiPath(const ViterbiPath_
         for (i = 0; i < numStates; i++) {
             
             if (originalA[j][i] > EPSILON) {
-                if (A[j][i] <= EPSILON) {
+                if (A[j][i] <= MIN_VALUE_FOR_A) {
                     A[j][i] = MIN_VALUE_FOR_A;
                 }
             }
@@ -861,19 +942,51 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     
     const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,_numStates,numObs);
     
-    reestimateFromGamma(gamma,meas);
+    ModelVec_t newModels = reestimateFromGamma(gamma,meas);
+    
+    //otherwise.... full steam ahead
+    clearModels();
+    
+    for (ModelVec_t::iterator it = newModels.begin(); it != newModels.end(); it++) {
+        addModelForState(*it);
+    }
+
     
     _A = reestimateAFromViterbiPath(res.path,meas,numObs,_numStates,_A);
     
-    return ReestimationResult_t(-res.cost);
+    return ReestimationResult_t(res.cost);
+}
+
+static bool isGoodStateTransitionMatrix(const HmmDataMatrix_t & A) {
+    HmmDataVec_t rowsums;
+    rowsums.resize(A.size());
+    
+    memset(rowsums.data(),0,sizeof(HmmFloat_t) * rowsums.size());
+    
+    for (int i = 0; i < A.size(); i++) {
+        for (int j = 0; j < A[i].size(); j++) {
+            rowsums[i] += A[i][j];
+        }
+    }
+    
+    for (int i = 0; i < A.size(); i++) {
+        if (rowsums[i] < 0.99) {
+            return false;
+        }
+    }
+
+    return true;
+    
 }
 
 bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas) {
     
     uint32_t ti,j,i;
     uint32_t iter;
+    bool worked = true;
     
     ModelVec_t oldModels;
+    HmmDataMatrix_t newA;
     
     HmmDataMatrix_t logA = _A; //copy
     
@@ -923,45 +1036,48 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         UIntSet_t restartIndices;
         restartIndices.reserve(myTimeIndices.size());
         int32_t previdx = -1;
-        //skip the first time step, who cares
+
         for (ti = 0; ti < myTimeIndices.size(); ti++) {
             
             const int32_t tidx = myTimeIndices[ti];
             
             if (tidx == 0) {
-                continue; //todo implement this, but not very important
-            }
-            
-            //contiguous?
-            HmmDataVec_t costs = getLogZeroedVec(2);
-            if (previdx == tidx - 1) {
-                for (j = 0; j < 2; j++) {
-                    const HmmFloat_t obscost = splitlogbmap[j][ti];
-                    
-                    for (i = 0; i < 2; i++) {
-                        costs[i] = elnproduct(splitLogA[i][j], obscost);
-                    }
-                    
-                    for (i = 0; i < 2; i++) {
-                        costs[i] = elnproduct(costs[i], phi[i][ti-1]);
-                    }
-                    
-                    const uint32_t maxidx = getArgMaxInVec(costs);
-                    const HmmFloat_t maxval = costs[maxidx];
-                    
-                    phi[j][ti] = maxval;
-                    vindices[j][ti] = maxidx;
-                }
-                
+                phi[0][0] = elnproduct(splitlogbmap[0][0], eln(_pi[s1]));
+                phi[1][0] = elnproduct(splitlogbmap[1][0], eln(_pi[s2]));
             }
             else {
-                //otherwise, start afresh
-                const uint32_t comingFromState = originalViterbi[tidx - 1];
-                const uint32_t goingToState = originalViterbi[tidx];
-                assert(goingToState == s1 || goingToState == s2);
-                phi[0][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[0][tidx]);
-                phi[1][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[1][tidx]);
-                restartIndices.insert(ti);
+            
+                //contiguous?
+                HmmDataVec_t costs = getLogZeroedVec(2);
+                if (previdx == tidx - 1) {
+                    for (j = 0; j < 2; j++) {
+                        const HmmFloat_t obscost = splitlogbmap[j][ti];
+                        
+                        for (i = 0; i < 2; i++) {
+                            costs[i] = elnproduct(splitLogA[i][j], obscost);
+                        }
+                        
+                        for (i = 0; i < 2; i++) {
+                            costs[i] = elnproduct(costs[i], phi[i][ti-1]);
+                        }
+                        
+                        const uint32_t maxidx = getArgMaxInVec(costs);
+                        const HmmFloat_t maxval = costs[maxidx];
+                        
+                        phi[j][ti] = maxval;
+                        vindices[j][ti] = maxidx;
+                    }
+                    
+                }
+                else {
+                    //otherwise, start afresh
+                    const uint32_t comingFromState = originalViterbi[tidx - 1];
+                    const uint32_t goingToState = originalViterbi[tidx];
+                    assert(goingToState == s1 || goingToState == s2);
+                    phi[0][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[0][tidx]);
+                    phi[1][ti] = elnproduct(logA[comingFromState][goingToState],splitlogbmap[1][tidx]);
+                    restartIndices.insert(ti);
+                }
             }
             
             previdx = tidx;
@@ -987,28 +1103,15 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         
         const ViterbiDecodeResult_t res = decodePathAndGetCost(0, vindices, phi,restartIndices);
         
+        const HmmDataVec_t fracs = getFractionInEachState(2, res.path);
+        (void)fracs;
+        
         const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.path,2,myTimeIndices.size());
 
         HmmPdfInterface * r1 = _models[s1]->reestimate(gamma[0], measurementSubset);
         HmmPdfInterface * r2 = _models[s2]->reestimate(gamma[1], measurementSubset);
         
         
-        HmmDataMatrix_t originalA = getZeroedMatrix(2, 2);
-        
-        for (j = 0; j < 2; j++) {
-            for (i = 0; i < 2; i++) {
-                originalA[j][i] = eexp(splitLogA[j][i]);
-            }
-        }
-        
-        
-        HmmDataMatrix_t newA = reestimateAFromViterbiPath(res.path, meas, myTimeIndices.size(),2,originalA);
-        
-        for (j = 0; j < 2; j++) {
-            for (i = 0; i < 2; i++) {
-                splitLogA[j][i] = eln(newA[j][i]);
-            }
-        }
         
         oldModels.push_back(_models[s1]);
         oldModels.push_back(_models[s2]);
@@ -1016,20 +1119,61 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         _models[s1] = r1;
         _models[s2] = r2;
         
-        
+        if (iter == NUM_SPLIT_STATE_VITERBI_ITERATIONS - 1) {
+            
+            HmmDataMatrix_t originalA = getZeroedMatrix(2, 2);
+            
+            for (j = 0; j < 2; j++) {
+                for (i = 0; i < 2; i++) {
+                    originalA[j][i] = eexp(splitLogA[j][i]);
+                }
+            }
+            
+            
+            newA = reestimateAFromViterbiPath(res.path, measurementSubset, myTimeIndices.size(),2,originalA);
+            
+            if (!isGoodStateTransitionMatrix(newA)) {
+                delete r1;
+                delete r2;
+                
+                worked = false;
+                break;
+            }
+            
+            for (j = 0; j < 2; j++) {
+                for (i = 0; i < 2; i++) {
+                    splitLogA[j][i] = eln(newA[j][i]);
+                }
+            }
+
+        }
     }
     
     _A[s1][s1] = eexp(splitLogA[0][0]);
     _A[s1][s2] = eexp(splitLogA[0][1]);
     _A[s2][s1] = eexp(splitLogA[1][0]);
     _A[s2][s2] = eexp(splitLogA[1][1]);
-
+    
+    /*
+    HmmDataMatrix_t originalA = getZeroedMatrix(2, 2);
+    
+    for (j = 0; j < 2; j++) {
+        for (i = 0; i < 2; i++) {
+            originalA[j][i] = eexp(splitLogA[j][i]);
+        }
+    }
+    
+    
+    std::stringstream ss;
+    ss << "state " << s2;
+    printMat(ss.str(),originalA);
+     */
     
     for (ModelVec_t::iterator it = oldModels.begin(); it != oldModels.end(); it++) {
         delete *it;
     }
     
-    return true;
+    return worked;
     
 }
 
@@ -1043,16 +1187,32 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
     return -res.logmodelcost;
 }
 
+uint32_t HiddenMarkovModel::getNumberOfFreeParams() const {
+    uint32_t sum = 0.0;
+    for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
+        sum = (*it)->getNumberOfFreeParams();
+    }
+    
+    return sum;
+}
 
-static void train (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas) {
+
+static HmmFloat_t train (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas) {
     ReestimationResult_t res;
+    const HmmFloat_t bicSecondTerm = hmm->getNumberOfFreeParams() * log(meas[0].size());
+    HmmFloat_t bestScore = -INFINITY;
     bool stopTrainingIfReestimationDoesNotImprove = false;
     
 #ifdef QUIT_TRAINING_IF_NO_IMPROVEMENT
     stopTrainingIfReestimationDoesNotImprove = true;
 #endif
     
-    for (int i = 0; i < NUM_REESTIMATIONS_PER_ITER; i++) {
+    for (int i = 0; i < NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER; i++) {
+        res = hmm->reestimateViterbi(meas);
+        std::cout << res.getLogLikelihood() << std::endl;
+    }
+    
+    for (int i = 0; i < MAX_NUM_REESTIMATIONS_PER_ITER; i++) {
         bool quitIfBad = stopTrainingIfReestimationDoesNotImprove;
         
         if (i < MIN_NUM_REESTIMATIONS) {
@@ -1064,39 +1224,52 @@ static void train (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas) {
         if (!res.isValid()) {
             break;
         }
+        
+        bestScore = 2 * res.getLogLikelihood() - bicSecondTerm;
 
         std::cout << res.getLogLikelihood() << std::endl;
     }
-
+    
+    return bestScore;
 }
+
 
 
 void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
     ReestimationResult_t res;
     HmmFloat_t lastBIC = -INFINITY;
     
-    typedef std::vector<HiddenMarkovModel *> HmmVec_t;
     uint32_t numStates = _numStates;
     HiddenMarkovModel * best = new HiddenMarkovModel(*this); //init
     
     for (uint32_t iter = 0; iter < numToGrow; iter++) {
         HmmVec_t hmms;
+        UIntVec_t modelidx;
 
         std::cout << "BEGIN GROWING STATE " << numStates << std::endl;
         
+        const ViterbiDecodeResult_t res1 = best->decode(meas);
+        const HmmDataVec_t fractionInEachState1 = getFractionInEachState(numStates,res1.path);
+
         train(best,meas);
         
         const ViterbiDecodeResult_t res = best->decode(meas);
         
-        
+        const HmmDataVec_t fractionInEachState = getFractionInEachState(numStates,res.path);
+        std::cout << fractionInEachState1 << std::endl;
+        std::cout << fractionInEachState << std::endl;
+
         for (uint32_t iState = 0; iState < numStates; iState++) {
-            HiddenMarkovModel * newSplitModel = best->splitState(iState);
-            hmms.push_back(newSplitModel);
+            if (fractionInEachState[iState] > MIN_FRAC_IN_STATE_TO_SPLIT / (HmmFloat_t)numStates) {
+                HiddenMarkovModel * newSplitModel = best->splitState(iState);
+                hmms.push_back(newSplitModel);
+                modelidx.push_back(iState);
+            }
         }
         
         
         HmmDataVec_t costs;
-        costs.resize(numStates);
+        costs.resize(hmms.size());
 
         
         
@@ -1107,16 +1280,16 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             //destructor of threadpool joins all threads
             ThreadPool pool(THREAD_POOL_SIZE);
             
-            for (int32_t iState = 0; iState < numStates; iState++) {
-                newevals.emplace_back(pool.enqueue([numStates,iState,&hmms,&meas,&res] {
+            for (int32_t iModel = 0; iModel < hmms.size(); iModel++) {
+                newevals.emplace_back(pool.enqueue([numStates,iModel,&hmms,&meas,&res,&modelidx] {
                     HmmFloat_t score = -INFINITY;
 
-                    if (hmms[iState]->reestimateViterbiSplitState(iState, numStates, res.path, meas)) {
-                        const ViterbiDecodeResult_t res2 = hmms[iState]->decode(meas);
+                    if (hmms[iModel]->reestimateViterbiSplitState(modelidx[iModel], numStates, res.path, meas)) {
+                        const ViterbiDecodeResult_t res2 = hmms[iModel]->decode(meas);
                         score = res2.bic;
                     }
                     
-                    return std::make_pair(iState,score);
+                    return std::make_pair(iModel,score);
                 
                 }));
             }
@@ -1132,10 +1305,10 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 
         
                std::cout << "splitting  " << numStates << " states." << std::endl;
-        for (uint32_t iState = 0; iState < numStates; iState++) {
+        for (uint32_t iModel = 0; iModel < hmms.size(); iModel++) {
             
-            if (hmms[iState]->reestimateViterbiSplitState(iState, numStates, res.path, meas)) {
-                const ViterbiDecodeResult_t res = hmms[iState]->decode(meas);
+            if (hmms[iState]->reestimateViterbiSplitState(modelidx[iModel], numStates, res.path, meas)) {
+                const ViterbiDecodeResult_t res = hmms[iModel]->decode(meas);
                 
                 costs[iState] = res.bic;
             }
@@ -1163,20 +1336,25 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             }
         }
        
-        /*
-        if (costs[bestidx] < lastBIC + lastBIC*1e-3) {
+#ifdef QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
+        if (costs[bestidx] < lastBIC + lastBIC*1e-1) {
             std::cout << "EXITING, NO IMPROVEMENT SEEN" << std::endl;
             break;
         }
-         */
+#endif
+        
         
         lastBIC = costs[bestidx];
+        
 
         
         numStates++;
     }
     
-    train(best,meas);
+    
+    std::cout << "BEST BIC: " << lastBIC << std::endl;
+
+    //train(best,meas);
     
     /*
     for (int i = 0; i < NUM_FINAL_ITERTIONS; i++) {
@@ -1194,5 +1372,76 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 }
 
 
+void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
+
+    int32_t numStates = _numStates;
+    HmmVec_t hmms;
+    HmmDataVec_t scores;
+    HmmFloat_t lastScore = -INFINITY;
+    bool worked = true;
+    
+    
+    HiddenMarkovModel * best = new HiddenMarkovModel(*this);
+    
+    for (int iter = 0; iter < numToGrow; iter++) {
+        std::cout << "Beginning iteration " << iter + 1 << " of " << _numStates + numToGrow <<std::endl;
+        scores.clear();
+        
+        //split each state
+        for (int imodel = 0; imodel < numStates; imodel++) {
+            hmms.push_back(best->splitState(imodel));
+        }
+        
+        //train each state
+        for (int imodel = 0; imodel < numStates; imodel++) {
+            std::cout << "Training model " << imodel + 1 << " of " << numStates << std::endl;
+            scores.push_back(train(hmms[imodel],meas));
+        }
+        
+        //get best one
+        
+        std::cout << "SCORES: " << scores << std::endl;
+        const int bestIdx = getArgMaxInVec(scores);
+        const HmmFloat_t bestScore = scores[bestIdx];
+        
+        if (lastScore < bestScore) {
+            
+            delete best;
+            best = hmms[bestIdx];
+            
+            std::cout << "picked model " << bestIdx + 1 << " in group " << best->_groups[numStates - 1] << std::endl;
+            std::cout << "BEST SCORE: " <<  scores[bestIdx] << std::endl;
+
+        }
+        else {
+            std::cout << "TERMINATING BECAUSE MODEL DID NOT IMPROVE" << std::endl;
+            worked = false;
+        }
+        
+        lastScore = bestScore;
+        
+        
+        
+        for (HmmVec_t::iterator it = hmms.begin(); it != hmms.end(); it++) {
+            if (*it != best) {
+                delete *it;
+            }
+        }
+        
+        numStates++;
+        
+        hmms.clear();
+        
+        if (!worked) {
+            break;
+        }
+        
+    }
+    
+    *this = *best;
+    
+    delete best;
+    
+}
 
 

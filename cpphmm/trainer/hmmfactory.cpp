@@ -48,23 +48,23 @@ static HiddenMarkovModel * getSingleStateModel() {
 
 }
 
-static HiddenMarkovModel * getDualModel() {
-    const int num_states = 2;
+static HiddenMarkovModel * getGroupedModel() {
+    const int N = 4;
     
     const bool useNatLight = false;
     const bool estimateNatLight = false;
     
-    HmmDataMatrix_t A;
     
-    A.resize(num_states);
-    A[0] << 0.5,0.5;
-    A[1] << 0.5,0.5;
-
+    UIntVec_t groups;
+    for (int i = 0; i < N; i++) {
+        groups.push_back(i);
+    }
     
-    HiddenMarkovModel * model = new HiddenMarkovModel(A);
+    HiddenMarkovModel * model = new HiddenMarkovModel(groups);
     
-    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
-    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
+    for (int i = 0; i < N; i++) {
+        model->addModelForState(getDefaultModelForState(1.0 + i*0.0001, 1.0+ i*0.0001, 1.0+ i*0.0001, 0.5+ i*0.0001,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
+    }
 
     return model;
     
