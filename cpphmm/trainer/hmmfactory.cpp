@@ -4,7 +4,7 @@
 #include "AllModels.h"
 #include <iostream>
 
-static HmmPdfInterface * getDefaultModelForState(float lightGammaMean, float lightGammStdDev, float movementPoissonMean, float disturbanceFraction, float soundcountGammaMean, float soundcountGammaStdDev, float natlightPenaltyFraction,bool useNatLight = true, bool estimateNatLight = false) {
+static HmmPdfInterfaceSharedPtr_t getDefaultModelForState(float lightGammaMean, float lightGammStdDev, float movementPoissonMean, float disturbanceFraction, float soundcountGammaMean, float soundcountGammaStdDev, float natlightPenaltyFraction,bool useNatLight = true, bool estimateNatLight = false) {
     
     
     HmmDataVec_t disturbanceProbs;
@@ -19,16 +19,16 @@ static HmmPdfInterface * getDefaultModelForState(float lightGammaMean, float lig
     
     CompositeModel * p = new CompositeModel();
     
-    p->addModel(new GammaModel(0,lightGammaMean,lightGammStdDev));
-    p->addModel(new PoissonModel(1,movementPoissonMean));
-    p->addModel(new AlphabetModel(2,disturbanceProbs,true));
-    p->addModel(new GammaModel(3,lightGammaMean,lightGammStdDev));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(0,lightGammaMean,lightGammStdDev)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(1,movementPoissonMean)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,disturbanceProbs,true)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(3,lightGammaMean,lightGammStdDev)));
     
     if (useNatLight)  {
-        p->addModel(new AlphabetModel(4,natlightProbs,estimateNatLight));
+        p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(4,natlightProbs,estimateNatLight)));
     }
     
-    return p;
+    return HmmPdfInterfaceSharedPtr_t(p);
 
 }
 

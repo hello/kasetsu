@@ -8,9 +8,9 @@ public:
     CompositeModel();
     ~CompositeModel();
     
-    void addModel(HmmPdfInterface * model);
-    HmmPdfInterface * clone(bool isPerturbed) const;
-    HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    void addModel(HmmPdfInterfaceSharedPtr_t model);
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
 
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     

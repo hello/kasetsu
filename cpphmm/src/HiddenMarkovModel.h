@@ -54,7 +54,7 @@ public:
     HiddenMarkovModel & operator = (const HiddenMarkovModel & hmm);
 
     
-    void addModelForState(HmmPdfInterface * model);
+    void addModelForState(HmmPdfInterfaceSharedPtr_t);
     
     ReestimationResult_t reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove = false);
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
@@ -88,9 +88,6 @@ private:
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs,size_t numStates,const HmmDataMatrix_t & originalA) const;
 
     ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi,const UIntSet_t & restartIndices) const;
-
-
-    void clearModels();
 
     ModelVec_t _models;
     uint32_t _numStates;

@@ -9,8 +9,8 @@ public:
     GammaModel(const int32_t obsnum,const float mean, const float stddev);
     ~GammaModel();
     
-    HmmPdfInterface * clone(bool isPerturbed) const;
-    HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;
@@ -28,8 +28,8 @@ public:
     PoissonModel(const int32_t obsnum,const float mu);
     ~PoissonModel();
     
-    HmmPdfInterface * clone(bool isPerturbed) const;
-    HmmPdfInterface * reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;
@@ -46,8 +46,8 @@ public:
     AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs,bool allowreestimation);
     ~AlphabetModel();
     
-    HmmPdfInterface * clone(bool isPerturbed) const;
-    HmmPdfInterface * reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const ;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;

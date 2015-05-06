@@ -11,54 +11,47 @@ CompositeModel::CompositeModel() {
     
 }
 
-void CompositeModel::addModel(HmmPdfInterface * model) {
+void CompositeModel::addModel(HmmPdfInterfaceSharedPtr_t model) {
     _models.push_back(model);
 }
 
 
 CompositeModel::~CompositeModel() {
 
-    for (ModelVec_t::iterator vecIterator = _models.begin();
-        vecIterator != _models.end(); vecIterator++) {
-            
-        delete *vecIterator;
-        *vecIterator = NULL;
-    }
-    
-    _models.clear();
     
 }
 
-HmmPdfInterface * CompositeModel::clone(bool isPerturbed) const {
+HmmPdfInterfaceSharedPtr_t CompositeModel::clone(bool isPerturbed) const {
     CompositeModel * newModel = new CompositeModel();
 
     for (ModelVec_t::const_iterator it = _models.begin();
          it != _models.end(); it++) {
 
-        const HmmPdfInterface *  const model = *it;
+        const HmmPdfInterface *  const model = (*it).get();
         
-        HmmPdfInterface * newIndividualModel = model->clone(isPerturbed);
+        HmmPdfInterfaceSharedPtr_t newIndividualModel = model->clone(isPerturbed);
         
         newModel->_models.push_back(newIndividualModel);
 
     }
     
-    return newModel;
+    return HmmPdfInterfaceSharedPtr_t(newModel);
 }
 
-HmmPdfInterface * CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+HmmPdfInterfaceSharedPtr_t CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
     CompositeModel * newModel = new CompositeModel();
     
     for (ModelVec_t::const_iterator vecIterator = _models.begin();
          vecIterator != _models.end(); vecIterator++) {
         
-        const HmmPdfInterface * const model = *vecIterator;
+        
+        const HmmPdfInterface * const model = (*vecIterator).get();
     
         newModel->addModel(model->reestimate(gammaForThisState, meas));
     
     }
     
-    return newModel;
+    return HmmPdfInterfaceSharedPtr_t(newModel);
 }
 
 HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
@@ -71,7 +64,7 @@ HmmDataVec_t CompositeModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     for (ModelVec_t::const_iterator vecIterator = _models.begin();
              vecIterator != _models.end(); vecIterator++) {
 
-        const HmmPdfInterface * const model = *vecIterator;
+        const HmmPdfInterface * const model = (*vecIterator).get();
             
         const HmmDataVec_t eval = model->getLogOfPdf(x);
         
