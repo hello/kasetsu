@@ -112,18 +112,18 @@ TEST_F(TestHmm,TestHmm) {
         probs2 << 0.5,0.5;
         
 
-        model1->addModel(new PoissonModel(0,1.0) );
-        model1->addModel(new GammaModel(1,.09,.16));
-        model1->addModel(new AlphabetModel(2,probs1,true));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.0) ));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,.09,.16)));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs1,true)));
 
     
-        model2->addModel(new PoissonModel(0,3.0));
-        model2->addModel(new GammaModel(1,1.6,1.13));
-        model2->addModel(new AlphabetModel(2,probs2,true));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,3.0)));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,1.6,1.13)));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs2,true)));
 
         
-        hmm.addModelForState(model1);
-        hmm.addModelForState(model2);
+        hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(model1));
+        hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(model2));
     }
 
     
@@ -228,12 +228,12 @@ TEST_F(DISABLED_TestHmm, TestVSTACS) {
         probs1 << 0.5,0.5;
         
         
-        model1->addModel(new PoissonModel(0,1.0) );
-        model1->addModel(new GammaModel(1,.09,.16));
-        model1->addModel(new AlphabetModel(2,probs1,true));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.0) ));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,.09,.16)));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs1,true)));
         
         
-        hmm.addModelForState(model1);
+        hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(model1));
     }
     
    // hmm.enlargeWithVSTACS(meas);

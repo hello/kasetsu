@@ -246,7 +246,7 @@ HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
             int diff = i - j;
             
             
-            if (diff <= 1 && diff >= 0) {
+            if (diff <= 1 && diff >= -1) {
                 if (j == 0 || j == _numStates - 1) {
                     _A[j][i] = alpha;
 
@@ -262,7 +262,7 @@ HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
     
     //circular connection
     _A[_numStates - 1][0] = alpha;
-    //_A[0][_numStates - 1] = alpha;
+    _A[0][_numStates - 1] = alpha;
     
     printMat("A", _A);
 }
@@ -1217,7 +1217,7 @@ uint32_t HiddenMarkovModel::getNumberOfFreeParams() const {
 }
 
 
-static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas) {
+static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool forceTraining = false) {
     ReestimationResult_t res;
     const HmmFloat_t bicSecondTerm = hmm->getNumberOfFreeParams() * log(meas[0].size());
     HmmFloat_t bestScore = -INFINITY;
@@ -1226,6 +1226,10 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas) {
 #ifdef QUIT_TRAINING_IF_NO_IMPROVEMENT
     stopTrainingIfReestimationDoesNotImprove = true;
 #endif
+    
+    if (forceTraining) {
+        stopTrainingIfReestimationDoesNotImprove = false;
+    }
     
     for (int i = 0; i < NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER; i++) {
         res = hmm->reestimateViterbi(meas);
@@ -1247,7 +1251,7 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas) {
         
         bestScore = 2 * res.getLogLikelihood() - bicSecondTerm;
 
-        std::cout << res.getLogLikelihood() << std::endl;
+        std::cout << bestScore << std::endl;
     }
     
     return bestScore;
@@ -1356,12 +1360,12 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             }
         }
 #endif
-        std::cout << costs << std::endl;
+        //std::cout << costs << std::endl;
         
         const uint32_t bestidx = getArgMaxInVec(costs);
         
         
-        std::cout << "picked split of state " << bestidx << " BIC was " << costs[bestidx] << std::endl;
+        std::cout << "picked split of state " << best->_groups[modelidx[bestidx]] << ":" <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
         
        // delete best; //replace with new
         best = hmms[bestidx];
@@ -1386,7 +1390,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     
     std::cout << "BEST BIC: " << lastBIC << std::endl;
 
-    //train(best,meas);
+    std::cout << "retrained BIC " << train(best,meas) << std::endl;
     
     /*
     for (int i = 0; i < NUM_FINAL_ITERTIONS; i++) {

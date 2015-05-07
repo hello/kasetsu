@@ -4,6 +4,37 @@
 #include "AllModels.h"
 #include <iostream>
 
+static HmmFloat_t getRandomPositiveFloat() {
+    const float r = 1.0 * static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX);
+    return r;
+}
+
+static HmmDataMatrix_t getRandomMatrix(int m, int n) {
+    HmmDataMatrix_t  A;
+    A.resize(m);
+    
+    for (int j = 0; j < m; j++) {
+        for (int i = 0; i < n; i++) {
+            A[j].push_back(getRandomPositiveFloat());
+        }
+        
+        HmmFloat_t sum = 0.0;
+        for (int i = 0; i < n; i++) {
+            sum += A[j][i];
+        }
+    
+        
+        for (int i = 0; i < n; i++) {
+            A[j][i] /= sum;
+        }
+    }
+    
+    return A;
+    
+}
+
+
+
 static HmmPdfInterfaceSharedPtr_t getDefaultModelForState(float lightGammaMean, float lightGammStdDev, float movementPoissonMean, float disturbanceFraction, float soundcountGammaMean, float soundcountGammaStdDev, float natlightPenaltyFraction,bool useNatLight = true, bool estimateNatLight = false) {
     
     
@@ -49,7 +80,7 @@ static HiddenMarkovModel * getSingleStateModel() {
 }
 
 static HiddenMarkovModel * getGroupedModel() {
-    const int N = 4;
+    const int N = 5;
     
     const bool useNatLight = false;
     const bool estimateNatLight = false;
@@ -70,6 +101,32 @@ static HiddenMarkovModel * getGroupedModel() {
     
 }
 
+static HiddenMarkovModel * getRandomModel() {
+    const int N = 4;
+    
+    const bool useNatLight = false;
+    const bool estimateNatLight = false;
+    
+    
+    UIntVec_t groups;
+    for (int i = 0; i < N; i++) {
+        groups.push_back(i);
+    }
+    
+    HiddenMarkovModel * model = new HiddenMarkovModel(getRandomMatrix(N,N));
+    
+    for (int i = 0; i < N; i++) {
+        model->addModelForState(getDefaultModelForState(
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        getRandomPositiveFloat() * 5,
+                                                        getRandomPositiveFloat(),
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        1.0,useNatLight,estimateNatLight));
+    }
+    
+    return model;
+    
+}
 
 static HiddenMarkovModel * getDefaultModel() {
     const int num_states = 12;
@@ -220,7 +277,11 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname) {
     }
     else if (modelname == "seed") {
         std::cout << "found seed model" << std::endl;
-        return getSingleStateModel();
+        return getRandomModel();
+    }
+    else if (modelname == "group") {
+        std::cout << "found seed model" << std::endl;
+        return getGroupedModel();
     }
     
 

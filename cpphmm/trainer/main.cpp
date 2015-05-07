@@ -58,7 +58,7 @@ int main(int argc,const char * args[]) {
     
     bool worked = false;
     
-    if (model == "seed") {
+    if (model == "seed" || model == "group") {
         worked = Trainer::grow(hmm.get(),meas,maxiter);
     }
     else {
