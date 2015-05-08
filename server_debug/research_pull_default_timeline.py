@@ -53,8 +53,15 @@ def pull_date_for_user(userid):
     return responses
 
 def print_results(data):
+    if len(data) == 0:
+        print 'empty timeline'
+        return
+
+    if len(data[0]) == 0:
+        print 'empty timeline'
+        return
+
     data = data[0][0]['segments']
-    print data
     for item in data:
 
 	event_type = item['event_type']
