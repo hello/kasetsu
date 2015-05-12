@@ -60,4 +60,34 @@ HmmDataVec_t getGammaSignal(const int length, const HmmDataMatrix_t & A, const H
     
 }
 
+HmmDataVec_t getPoissonSignal(const int length, const HmmDataMatrix_t & A, const HmmDataVec_t & means) {
+    
+    gsl_rng * r;
+    
+    gsl_rng_env_setup ();
+    r = gsl_rng_alloc (gsl_rng_default);
+    
+    int istate = 0;
+    
+    HmmDataVec_t signal;
+    
+    signal.resize(length);
+    
+    for (int iter = 0; iter < length; iter++) {
+        
+        //generate measurement
+        const HmmFloat_t mean = means[istate];
+        
+        signal[iter] = gsl_ran_poisson(r, mean);
+        
+        //determine state to transition to
+        istate = transitionState(A[istate]);
+    }
+    
+    gsl_rng_free(r);
+    
+    return signal;
+
+}
+
 

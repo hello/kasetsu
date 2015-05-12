@@ -212,6 +212,70 @@ TEST_F(TestHmm,TestGammaWithManyStates) {
     
 }
 
+TEST_F(TestHmm,TestPoissonWithManyStates) {
+    ReestimationResult_t res;
+    HmmDataVec_t means;
+    HmmDataVec_t stddevs;
+    
+    
+    means << 1.0,5.0,20.0;
+    
+    HmmDataMatrix_t A;
+    A.resize(3);
+    
+    A[0] << 0.80,0.10,0.10;
+    A[1] << 0.30,0.60,0.10;
+    A[2] << 0.20,0.20,0.60;
+    
+    const HmmDataVec_t measvec = getPoissonSignal(100000,A,means);
+    
+    
+    
+    
+    HmmDataMatrix_t meas;
+    meas.push_back(measvec);
+    
+    
+    /* std::ofstream fileout("foo.csv");
+     fileout << measvec;
+     fileout.close();
+     */
+    
+    
+    HmmDataMatrix_t Ainit;
+    Ainit.resize(3);
+    
+    Ainit[0] << 0.8,0.15,0.05;
+    Ainit[1] << 0.3,0.6,0.1;
+    Ainit[2] << 0.2,0.2,0.6;
+    
+    
+    HiddenMarkovModel hmm(Ainit);
+    
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.1)));
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,5.5)));
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,20.5)));
+
+    
+    
+    for (int iter = 0; iter < 30; iter++) {
+        //  res = hmm.reestimateViterbi(meas);
+        res = hmm.reestimate(meas);
+        std::cout << res.getLogLikelihood() << std::endl;
+        
+    }
+    
+    
+    std::cout << hmm.serializeToJson() << std::endl;
+    
+    int foo = 3;
+    foo++;
+    
+    
+    
+    
+}
+
 TEST_F(DISABLED_TestHmm, TestVSTACS) {
     const HmmDataMatrix_t meas = getRandom2StateMeas();
     

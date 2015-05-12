@@ -67,6 +67,8 @@ public:
     
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
+    void  enlargeWithIndirectSplits(const HmmDataMatrix_t & meas, uint32_t numToGrow);
+        
 
     std::string serializeToJson() const;
     HmmSharedPtr_t splitState(uint32_t state) const;
@@ -92,6 +94,7 @@ private:
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs,size_t numStates,const HmmDataMatrix_t & originalA) const;
 
     ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi,const UIntSet_t & restartIndices) const;
+    HmmSharedPtr_t splitIndirectly(const ViterbiDecodeResult_t & vresult,const uint32_t nstate) const;
 
     ModelVec_t _models;
     uint32_t _numStates;

@@ -2,8 +2,12 @@ cmake_minimum_required (VERSION 2.8)
 
 project(CppHmmLibrary)
 
+ADD_DEFINITIONS(
+-std=c++11
+)
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
-set("CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++11 -stdlib=libc++")
+set("CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS} -Wall -Werror -stdlib=libc++")
 
 add_definitions(-DUSE_CPP_DEBUG_LOGGING)
 

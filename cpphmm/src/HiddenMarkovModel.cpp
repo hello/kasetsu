@@ -12,12 +12,12 @@
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
 #define MAX_NUM_REESTIMATIONS_PER_ITER (5)
-#define MIN_NUM_REESTIMATIONS (1)
+#define MIN_NUM_REESTIMATIONS (0)
 
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (1)
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.005)
-#define THRESHOLD_FOR_NOT_CONSIDERING_SPLITTING (0.01)
+#define NUM_SPLITS_PER_STATE (4)
 
 #define THREAD_POOL_SIZE (4)
 #define USE_THREADPOOL
@@ -35,6 +35,21 @@ typedef std::vector<std::future<StateIdxCostPair_t>> FutureCostVec_t;
 
 typedef std::vector<HmmSharedPtr_t> HmmVec_t;
 
+template <typename T>
+UIntVec_t sort_indexes(const std::vector<T> &v) {
+    
+    // initialize original index locations
+    UIntVec_t idx(v.size());
+    for (size_t i = 0; i != idx.size(); ++i) idx[i] = i;
+    
+    // sort indexes based on comparing values in v
+    std::sort(idx.begin(), idx.end(),
+              [&v](uint32_t i1, uint32_t i2)
+              {return v[i1] < v[i2];}
+              );
+    
+    return idx;
+}
 
 static HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) {
     HmmDataMatrix_t y = x;
@@ -246,7 +261,7 @@ HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
             int diff = i - j;
             
             
-            if (diff <= 1 && diff >= -1) {
+            if (diff <= 1 && diff >= 0) {
                 if (j == 0 || j == _numStates - 1) {
                     _A[j][i] = alpha;
 
@@ -304,9 +319,10 @@ std::string HiddenMarkovModel::serializeToJson() const {
     
     std::string pi = makeKeyValue("pi",vecToJsonArray(_pi));
     
-    std::string stuff =  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [4, 5, 6, 7, 8, 9, 10], \"users\": \"1086,1050,1052,1053,1072,1071,1,1038,1063,1012,1013,1043,1310,1629,1025,1061,1060,1049,1062,1648,1067,1609,1005,1002,1001\", \"num_model_params\": 77, \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [6, 7, 8], \"enable_interval_search\": true, \"model_name\": \"default\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
+    std::stringstream ss;
+    ss <<  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [4, 5, 6, 7, 8, 9, 10], \"users\": \"\", \"num_model_params\":" << getNumberOfFreeParams() << ", \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [6, 7, 8], \"enable_interval_search\": true, \"model_name\": \"default\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
     
-    return makeObj(makeKeyValue("default",makeObj(A + "," + models + "," + pi + "," + stuff)));
+    return makeObj(makeKeyValue("default",makeObj(A + "," + models + "," + pi + "," + ss.str())));
 }
 
 
@@ -1210,14 +1226,14 @@ HmmFloat_t HiddenMarkovModel::getModelCost(const HmmDataMatrix_t & meas) const {
 uint32_t HiddenMarkovModel::getNumberOfFreeParams() const {
     uint32_t sum = 0.0;
     for (ModelVec_t::const_iterator it = _models.begin(); it != _models.end(); it++) {
-        sum = (*it)->getNumberOfFreeParams();
+        sum += (*it)->getNumberOfFreeParams();
     }
     
     return sum;
 }
 
 
-static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool forceTraining = false) {
+static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool forceTraining = false,bool printstuff = true) {
     ReestimationResult_t res;
     const HmmFloat_t bicSecondTerm = hmm->getNumberOfFreeParams() * log(meas[0].size());
     HmmFloat_t bestScore = -INFINITY;
@@ -1233,7 +1249,9 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool fo
     
     for (int i = 0; i < NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER; i++) {
         res = hmm->reestimateViterbi(meas);
-        std::cout << res.getLogLikelihood() << std::endl;
+        if (printstuff) {
+            std::cout << res.getLogLikelihood() << std::endl;
+        }
     }
     
     for (int i = 0; i < MAX_NUM_REESTIMATIONS_PER_ITER; i++) {
@@ -1251,7 +1269,9 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool fo
         
         bestScore = 2 * res.getLogLikelihood() - bicSecondTerm;
 
-        std::cout << bestScore << std::endl;
+        if (printstuff) {
+            std::cout << bestScore << std::endl;
+        }
     }
     
     return bestScore;
@@ -1300,16 +1320,12 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         //splits
         for (uint32_t iState = 0; iState < numStates; iState++) {
             
-            if (fractionInEachState[iState] > THRESHOLD_FOR_NOT_CONSIDERING_SPLITTING) {
+            for (int isplit = 0; isplit < NUM_SPLITS_PER_STATE; isplit++) {
+                HmmSharedPtr_t newSplitModel = best->splitState(iState);
                 
-                for (int isplit = 0; isplit < 4; isplit++) {
-                    HmmSharedPtr_t newSplitModel = best->splitState(iState);
-                
-                    hmms.push_back(newSplitModel);
-                    modelidx.push_back(iState);
-                }
+                hmms.push_back(newSplitModel);
+                modelidx.push_back(iState);
             }
-            
         }
         
         
@@ -1365,7 +1381,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         const uint32_t bestidx = getArgMaxInVec(costs);
         
         
-        std::cout << "picked split of state " << best->_groups[modelidx[bestidx]] << ":" <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
+        std::cout << "picked split of state " <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
         
        // delete best; //replace with new
         best = hmms[bestidx];
@@ -1428,7 +1444,7 @@ void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t 
         //train each state
         for (int imodel = 0; imodel < numStates; imodel++) {
             std::cout << "Training model " << imodel + 1 << " of " << numStates << std::endl;
-            scores.push_back(train(hmms[imodel],meas));
+            scores.push_back(train(hmms[imodel],meas,true,false));
         }
         
         //get best one
@@ -1471,4 +1487,160 @@ void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t 
     
 }
 
+HmmSharedPtr_t HiddenMarkovModel::splitIndirectly(const ViterbiDecodeResult_t & vresult,const uint32_t nstate) const {
+    typedef std::pair<uint32_t,uint32_t> Segment_t;
+    typedef std::vector<Segment_t> SegmentVec_t;
+    
+    SegmentVec_t segs;
+    SegmentVec_t fromAndToIndices;
+
+    segs.reserve(vresult.path.size() / 2);
+    fromAndToIndices.reserve(vresult.path.size() / 2);
+    
+    bool inSegment = false;
+    uint32_t startIndex;
+    uint32_t fromIndex = 0;
+    
+    for (int t = 0; t < vresult.path.size(); t++) {
+        if (vresult.path[t] == nstate) {
+            if (inSegment) {
+                continue;
+            }
+            
+            inSegment = true;
+            startIndex = t;
+            if (t != 0) {
+                fromIndex = vresult.path[t-1];
+            }
+        }
+        else {
+            if (!inSegment) {
+                continue;
+            }
+            
+            inSegment = false;
+            segs.push_back(std::make_pair(startIndex,t-1));
+            fromAndToIndices.push_back(std::make_pair(fromIndex, vresult.path[t]));
+        }
+    }
+    
+   
+    //compute stats
+    UIntVec_t lengths;
+    lengths.reserve(segs.size());
+    
+    for (SegmentVec_t::const_iterator it = segs.begin(); it != segs.end(); it++) {
+        lengths.push_back((*it).second - (*it).first + 1);
+    }
+    
+    //sort, take bottom 50%, compute self probs, then mean of these
+    //count outgoing and incoming
+    const UIntVec_t indices = sort_indexes(lengths);
+    
+    HmmFloat_t sum = 1e-6;
+    size_t numterms = lengths.size() / 4;
+    
+    if (numterms == 0) {
+        std::cout << "no valid split found" << std::endl;
+        return HmmSharedPtr_t(new HiddenMarkovModel(*this));
+    }
+    
+    
+    HmmDataVec_t incoming,outgoing;
+    incoming.resize(_numStates);
+    outgoing.resize(_numStates);
+    for (int i = 0; i < numterms; i++) {
+        //not the right calc, but close enough
+        //x^N = 0.5
+        // 0.5^(1/N) = x
+        //
+        uint32_t len = lengths[indices[i]];
+        uint32_t in = fromAndToIndices[indices[i]].first;
+        uint32_t out = fromAndToIndices[indices[i]].second;
+
+        sum += pow(0.5, 1.0 / (HmmFloat_t)len);
+        outgoing[out] += 1.0;
+        incoming[in] += 1.0;
+    }
+    
+    sum /= (HmmFloat_t)numterms; //mean self term
+    
+    for (int i = 0; i < incoming.size(); i++) {
+        if (i != nstate) {
+            incoming[i] /= (HmmFloat_t)numterms;
+            outgoing[i] /= (HmmFloat_t)numterms;
+        }
+        else {
+            incoming[i] = 0;
+            outgoing[i] = 0;
+        }
+    }
+    
+    //TODO
+    //run EM / clustering to find the "from" alphabet probs, the "to" alphabet probs, and the mean length
+    //when finished, turn this into the transition probs for the split states
+    
+    HmmDataMatrix_t A = _A; //copy
+    
+    for (int i = 0; i < _numStates; i++) {
+        A[i].push_back(incoming[i]);
+    }
+    
+    HmmDataVec_t vec;
+    vec.resize(_numStates + 1);
+    vec[_numStates] = sum;
+    
+    for (int i = 0; i < _numStates; i++) {
+        vec[i] = outgoing[i];
+    }
+    
+    A.push_back(vec);
+    
+    
+    HmmSharedPtr_t newhmm = HmmSharedPtr_t(new HiddenMarkovModel(A));
+    
+    for (int i = 0; i < _numStates; i++) {
+        newhmm->addModelForState(_models[i]->clone(false));
+    }
+    
+    newhmm->addModelForState(_models[nstate]->clone(true));
+    
+    return newhmm;
+    
+}
+
+void  HiddenMarkovModel::enlargeWithIndirectSplits(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
+    HmmSharedPtr_t best = HmmSharedPtr_t(new HiddenMarkovModel(*this));
+
+    //step 0, pre-train to fit model on data
+    train(best,meas,true);
+    
+    for (int iter = 0; iter < numToGrow; iter++) {
+        HmmVec_t hmms;
+        HmmDataVec_t scores;
+
+        //step 2, viterbi decode
+        ViterbiDecodeResult_t vresult = best->decode(meas);
+        
+        for (int isplit = 0; isplit < _numStates; isplit++) {
+            hmms.push_back(best->splitIndirectly(vresult, isplit));
+        }
+        
+        for (int isplit = 0; isplit < _numStates; isplit++) {
+            scores.push_back(train(hmms[isplit],meas,true,false));
+        }
+        
+        const uint32_t bestidx = getArgMaxInVec(scores);
+        
+        std::cout << "scores: " << scores << std::endl;
+        std::cout << "picked " << bestidx << std::endl;
+
+        
+        best = hmms[bestidx];
+        
+        
+    }
+    
+    *this = *best;
+}
 

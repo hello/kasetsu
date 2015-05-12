@@ -217,7 +217,11 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     ret.resize(vec.size());
     
     for (int32_t i = 0; i < vec.size(); i++) {
-        const int32_t meas = (int32_t) vec[i];
+        if (vec[i] < 0) {
+            continue;
+        }
+        
+        const uint32_t meas = (uint32_t) vec[i];
         ret[i] = eln(gsl_ran_poisson_pdf(meas, _mu));
     }
     

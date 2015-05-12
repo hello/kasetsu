@@ -80,7 +80,7 @@ static HiddenMarkovModel * getSingleStateModel() {
 }
 
 static HiddenMarkovModel * getGroupedModel() {
-    const int N = 5;
+    const int N = 4;
     
     const bool useNatLight = false;
     const bool estimateNatLight = false;
@@ -200,7 +200,8 @@ static HiddenMarkovModel * getDefaultModel() {
 }
 
 static HiddenMarkovModel * getTestModel() {
-    const int num_states = 9;
+    const int num_states = 11;
+    bool estimateNatLight = false;
     
     HmmDataMatrix_t A;
     
@@ -230,36 +231,40 @@ static HiddenMarkovModel * getTestModel() {
     const float yes_penalty = 1e-6;
     
     
-    A[0] << 0.65, 0.10, 0.10,   0.10, 0.10,   0.00, 0.00,   0.00, 0.00;
-    A[1] << 0.10, 0.65, 0.10,   0.10, 0.10,   0.00, 0.00,   0.00, 0.00;
-    A[2] << 0.10, 0.10, 0.65,   0.10, 0.10,   0.00, 0.00,   0.00, 0.00;
+    A[0] << 0.65, 0.10, 0.10, 0.10,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00;
+    A[1] << 0.10, 0.65, 0.10, 0.10,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00;
+    A[2] << 0.10, 0.10, 0.65, 0.10,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00;
+    A[3] << 0.10, 0.10, 0.10, 0.65,   0.10, 0.10,   0.00, 0.00, 0.00,   0.00, 0.00;
 
     
-    A[3] << 0.05, 0.05, 0.05,   0.70, 0.10,   0.10, 0.00,  0.00, 0.00;
-    A[4] << 0.05, 0.05, 0.05,   0.10, 0.70,   0.10, 0.00,  0.00, 0.00;
+    A[4] << 0.05, 0.05, 0.05, 0.05,   0.70, 0.10,   0.10, 0.00, 0.00,  0.00, 0.00;
+    A[5] << 0.05, 0.05, 0.05, 0.05,   0.10, 0.70,   0.10, 0.00, 0.00,  0.00, 0.00;
     
-    A[5] << 0.00, 0.00, 0.00,   0.00, 0.05,   0.55, 0.05,  0.10, 0.10;
-    A[6] << 0.00, 0.00, 0.00,   0.05, 0.00,   0.00, 0.65,  0.10, 0.10;
-    
-    A[7] << 0.10, 0.10, 0.10,   0.00, 0.00,   0.00, 0.05,  0.55, 0.10;
-    A[8] << 0.10, 0.10, 0.10,   0.00, 0.00,   0.05, 0.00,  0.10, 0.45;
+    A[6] << 0.00, 0.00, 0.00, 0.00,  0.00, 0.05,   0.55, 0.05, 0.05,  0.10, 0.10;
+    A[7] << 0.00, 0.00, 0.00, 0.00,  0.05, 0.05,   0.05, 0.65, 0.00,  0.10, 0.10;
+    A[8] << 0.00, 0.00, 0.00, 0.00,  0.05, 0.05,   0.05, 0.05, 0.65,  0.10, 0.10;
+
+    A[9] << 0.10, 0.10, 0.10, 0.10,   0.00, 0.00,   0.00, 0.05, 0.00,  0.55, 0.10;
+    A[10] << 0.10, 0.10, 0.10,0.10,   0.00, 0.00,   0.05, 0.00, 0.00,  0.10, 0.45;
     
     
     HiddenMarkovModel * model = new HiddenMarkovModel(A);
     
     
-    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev, no_motion, high_wave,sc_high, sc_high_stddev, no_penalty,true,true));
-    model->addModelForState(getDefaultModelForState(high_light,  high_light_stddev,  no_motion, low_wave,sc_high, sc_high_stddev, no_penalty,true,true));
-     model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,  no_motion, low_wave,sc_low, sc_low_stddev, no_penalty,true,true));
+    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev, no_motion, high_wave,sc_high, sc_high_stddev, no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev, no_motion, low_wave,sc_high, sc_high_stddev, no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,  no_motion, high_wave,sc_high, sc_high_stddev, no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,  no_motion, low_wave,sc_low, sc_low_stddev, no_penalty,true,estimateNatLight));
+
+    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev, high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,  high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,estimateNatLight));
     
-    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev, high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,true));
-    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,  high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,true));
+    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,   low_motion, vlow_wave, sc_low,  sc_low_stddev,  no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,   no_motion, vlow_wave, sc_low,  sc_low_stddev,  no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev,  low_motion, vlow_wave, sc_low,  sc_low_stddev,  yes_penalty,true,estimateNatLight));
     
-    model->addModelForState(getDefaultModelForState(low_light,  low_light_stddev,   low_motion, vlow_wave, sc_low,  sc_low_stddev,  no_penalty,true,true));
-    model->addModelForState(getDefaultModelForState(high_light, high_light_stddev,  low_motion, vlow_wave, sc_low,  sc_low_stddev,  yes_penalty,true,true));
-    
-    model->addModelForState(getDefaultModelForState(high_light,  high_light_stddev, high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,true));
-    model->addModelForState(getDefaultModelForState(low_light,   low_light_stddev,  high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,true));
+    model->addModelForState(getDefaultModelForState(high_light,  high_light_stddev, high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(low_light,   low_light_stddev,  high_motion, high_wave, sc_high,  sc_high_stddev,  no_penalty,true,estimateNatLight));
     
     
     return model;
