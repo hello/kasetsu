@@ -29,16 +29,31 @@ public:
 class ViterbiDecodeResult_t {
 public:
     ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost, const HmmFloat_t bicScore)
-    :path(vpath)
-    ,cost(vcost)
-    ,bic(bicScore)
+    :_path(vpath)
+    ,_cost(vcost)
+    ,_bic(bicScore)
     {}
     
-    ViterbiDecodeResult_t() : path(ViterbiPath_t()), cost(-INFINITY),bic(-INFINITY) {}
+    ViterbiDecodeResult_t() : _path(ViterbiPath_t()), _cost(-INFINITY),_bic(-INFINITY) {}
+   
+    ViterbiPath_t getPath() const {
+        return _path;
+    }
     
-    const ViterbiPath_t path;
-    const HmmFloat_t cost;
-    const HmmFloat_t bic;
+    HmmFloat_t getCost() const {
+        return _cost;
+    }
+    
+    HmmFloat_t getBIC() const {
+        return _bic;
+    }
+    
+
+private:
+        
+    ViterbiPath_t _path;
+    HmmFloat_t _cost;
+    HmmFloat_t _bic;
 };
 
 
@@ -68,11 +83,12 @@ public:
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
     void  enlargeWithIndirectSplits(const HmmDataMatrix_t & meas, uint32_t numToGrow);
-        
+    void getStateInfo(const ViterbiDecodeResult_t & vresult,const HmmDataMatrix_t & logbmap, const uint32_t nstate) const;
+
 
     std::string serializeToJson() const;
     HmmSharedPtr_t splitState(uint32_t state) const;
-    HmmSharedPtr_t deleteState(uint32_t stateToDelete) const;
+    HmmSharedPtr_t deleteStates(UIntSet_t statesToDelete) const;
 
     uint32_t getNumberOfFreeParams() const;
 

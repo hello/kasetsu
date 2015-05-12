@@ -38,8 +38,8 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const
 bool Trainer::grow (HiddenMarkovModel * hmm,const HmmDataMatrix_t & meas,const int maxiter) {
 
     //hmm->enlargeRandomly(meas,maxiter);
-    //hmm->enlargeWithVSTACS(meas, maxiter);
-    hmm->enlargeWithIndirectSplits(meas, maxiter);
+    hmm->enlargeWithVSTACS(meas, maxiter);
+    //hmm->enlargeWithIndirectSplits(meas, maxiter);
     return true;
 }
 

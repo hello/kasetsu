@@ -59,6 +59,20 @@ inline std::ostream & operator << (std::ostream & lhs, const UIntVec_t & rhs) {
     return lhs;
 }
 
+inline std::ostream & operator << (std::ostream & lhs, const UIntSet_t & rhs) {
+    bool first = true;
+    for (UIntSet_t::const_iterator it = rhs.begin() ; it != rhs.end(); it++) {
+        if (!first) {
+            lhs << ",";
+        }
+        
+        first = false;
+        lhs << *it;
+    }
+    
+    return lhs;
+}
+
 
 
 #endif //_HMMTYPES_H_
