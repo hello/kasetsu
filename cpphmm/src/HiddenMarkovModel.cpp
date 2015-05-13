@@ -22,7 +22,7 @@
 #define NUM_BAD_COUNTS_TO_EXIT (3)
 
 #define THREAD_POOL_SIZE (8)
-#define USE_THREADPOOL
+//#define USE_THREADPOOL
 #define QUIT_TRAINING_IF_NO_IMPROVEMENT
 #define QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
 
@@ -617,14 +617,9 @@ static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & pat
     
     path[len-1] = startidx;
     for(int i = len - 2; i >= 0; i--) {
-        
-        if (restartIndices.find(i + 1) != restartIndices.end()) {
-            path[i] = startidx;
-        }
-        else {
-            path[i] = paths[path[i+1]][i];
-        }
+        path[i] = paths[path[i+1]][i];
     }
+    
     
     return path;
 }
@@ -1005,39 +1000,16 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     return ReestimationResult_t(res.getCost());
 }
 
-static bool isGoodStateTransitionMatrix(const HmmDataMatrix_t & A) {
-    HmmDataVec_t rowsums;
-    rowsums.resize(A.size());
-    
-    memset(rowsums.data(),0,sizeof(HmmFloat_t) * rowsums.size());
-    
-    for (int i = 0; i < A.size(); i++) {
-        for (int j = 0; j < A[i].size(); j++) {
-            rowsums[i] += A[i][j];
-        }
-    }
-    
-    for (int i = 0; i < A.size(); i++) {
-        if (rowsums[i] < 0.99) {
-            return false;
-        }
-    }
-
-    return true;
-    
-}
 
 bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas) {
     
     //s1 is always the original state that was split
     //s2 is always the last state, with index = numstates (zero-based index)
-    uint32_t ti,j,i;
+    uint32_t j,i;
     uint32_t iter;
     bool worked = true;
     
     HmmDataMatrix_t newA;
-    
-    const size_t numObs = meas[0].size();
 
     HmmDataMatrix_t logA = _A; //copy
     
@@ -1066,8 +1038,8 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
     //find out which segments belong to state == s1, and where they transitioned from
     const StateSegmentVec_t segs = getStateInfo(originalViterbi,s1);
     
-    typedef std::pair<StateSegment_t,HmmDataMatrix_t> SegGamma_t;
-    typedef std::vector<SegGamma_t> SegGammaVec_t;
+    typedef std::pair<StateSegment_t,ViterbiPath_t> SegPath_t;
+    typedef std::vector<SegPath_t> SegPathVec_t;
     
     for (iter = 0; iter < NUM_SPLIT_STATE_VITERBI_ITERATIONS; iter++) {
         //get logbmap
@@ -1079,7 +1051,7 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         
         uint32_t totalLength = 0;
         
-        SegGammaVec_t segmentsWithGamma;
+        SegPathVec_t segmentsWithPath;
 
         //calculate the little phi batches
         for (StateSegmentVec_t::const_iterator it = segs.begin(); it != segs.end(); it++) {
@@ -1092,7 +1064,7 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             ViterbiPathMatrix_t vindices = getZeroedPathMatrix(2, seglength);
 
             
-            for (int t = seg.timeIndices.first; t < seg.timeIndices.second; t++) {
+            for (int t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
                 const int idx = t - seg.timeIndices.first;
                 
                 if (t == 0) {
@@ -1152,12 +1124,14 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             
             
             //now with my little phi and vindices, I will do the decode!
-            
-            const ViterbiPath_t path = decodePath(0, vindices);
-            const HmmDataMatrix_t gamma = getGammaFromViterbiPath(path,2,seglength);
+            uint32_t endingIndx = 0;
+            if (phi[1][seglength - 1] > phi[0][seglength - 1]) {
+                endingIndx = 1;
+            }
+            const ViterbiPath_t path = decodePath(endingIndx, vindices);
 
             //save gamma/segment combo off
-            segmentsWithGamma.push_back(std::make_pair(seg,gamma));
+            segmentsWithPath.push_back(std::make_pair(seg,path));
             
         }
         
@@ -1165,14 +1139,16 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         //first, assemble the measurements and gammas into one glorious whole
         HmmDataMatrix_t gamma = getZeroedMatrix(2, totalLength);
         HmmDataMatrix_t meas2 = getZeroedMatrix(meas.size(), totalLength);
-        
+       
         uint32_t pos = 0;
         
-        for (SegGammaVec_t::const_iterator it = segmentsWithGamma.begin(); it != segmentsWithGamma.end(); it++) {
+        //concatenate the gammas and measurements
+        for (SegPathVec_t::const_iterator it = segmentsWithPath.begin(); it != segmentsWithPath.end(); it++) {
         
             const StateSegment_t & seg = (*it).first;
-            const HmmDataMatrix_t & subgamma = (*it).second;
+            const ViterbiPath_t & path = (*it).second;
             const uint32_t seglength = seg.timeIndices.second - seg.timeIndices.first + 1;
+            const HmmDataMatrix_t subgamma = getGammaFromViterbiPath(path,2,seglength);
 
             //copy gamma and meas
             for (i = 0; i < seglength; i++) {
@@ -1182,16 +1158,67 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
                 for (j = 0; j < meas.size(); j++) {
                     meas2[j][pos + i] = meas[j][seg.timeIndices.first + i];
                 }
-
-                
             }
 
             pos += seglength;
         }
         
-        //now reestimate 
+        //now reestimate obs model params
         HmmPdfInterfaceSharedPtr_t r1 = _models[s1]->reestimate(gamma[0], meas2);
         HmmPdfInterfaceSharedPtr_t r2 = _models[s2]->reestimate(gamma[1], meas2);
+        
+        _models[s1] = r1;
+        _models[s2] = r2;
+        
+        
+        //count transitions
+        HmmDataMatrix_t incomingCounts = getZeroedMatrix(2, _numStates);
+        HmmDataMatrix_t outgoingCounts = getZeroedMatrix(2, _numStates);
+        
+        for (SegPathVec_t::const_iterator it = segmentsWithPath.begin(); it != segmentsWithPath.end(); it++) {
+            
+            const StateSegment_t & seg = (*it).first;
+            const ViterbiPath_t & path = (*it).second;
+            const uint32_t seglength = seg.timeIndices.second - seg.timeIndices.first + 1;
+        
+            const uint32_t startPathIdx = path[0];
+            const uint32_t endPathIdx = path[seglength - 1];
+            
+            //increment incoming and outgoing to the other states
+            incomingCounts[startPathIdx][seg.fromAndToStates.first] += 1.0;
+            outgoingCounts[endPathIdx][seg.fromAndToStates.second] += 1.0;
+            
+            //track the incoming and outgoing between the split states
+            for (i = 1; i < seglength; i++) {
+                if (path[i] == 0 && path[i-1] == 0) {
+                    incomingCounts[0][s1] += 1.0;
+                    outgoingCounts[0][s1] += 1.0;
+                }
+                else if (path[i] == 1 && path[i-1] == 1) { //BUG HERE IN THIS SECTION SOMEWHWERS
+                    incomingCounts[1][s2] += 1.0;
+                    outgoingCounts[1][s2] += 1.0;
+                }
+                else if (path[i] == 0 && path[i-1] == 1) {
+                    incomingCounts[0][s2] += 1.0;
+                    outgoingCounts[1][s1] += 1.0;
+                }
+                else if (path[i] == 1 && path[i-1] == 0) {
+                    incomingCounts[1][s1] += 1.0;
+                    outgoingCounts[0][s2] += 1.0;
+                }
+            }
+        }
+        
+        for (i = 0; i < _numStates; i++) {
+            incomingCounts[0][i] /= pos;
+            incomingCounts[1][i] /= pos;
+            outgoingCounts[0][i] /= pos;
+            outgoingCounts[1][i] /= pos;
+
+        }
+        //turn incoming/outgoing into entries into an A matrix
+        int foo = 3;
+        foo++;
 
         
     }
@@ -1361,10 +1388,10 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         
         for (uint32_t iModel = 0; iModel < hmms.size(); iModel++) {
             
-            if (hmms[iModel]->reestimateViterbiSplitState(modelidx[iModel], numStates, res.path, meas)) {
+            if (hmms[iModel]->reestimateViterbiSplitState(modelidx[iModel], numStates, path, meas)) {
                 const ViterbiDecodeResult_t res = hmms[iModel]->decode(meas);
                 
-                costs[iModel] = res.bic;
+                costs[iModel] = res.getBIC();
             }
             else {
                 costs[iModel] = -INFINITY;
