@@ -57,6 +57,15 @@ private:
     HmmFloat_t _bic;
 };
 
+typedef std::pair<uint32_t,uint32_t> Segment_t;
+
+typedef struct {
+    Segment_t timeIndices;
+    Segment_t fromAndToStates;
+} StateSegment_t;
+
+typedef std::vector<StateSegment_t> StateSegmentVec_t;
+
 
 class HiddenMarkovModel;
 
@@ -83,8 +92,7 @@ public:
     
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
-    void  enlargeWithIndirectSplits(const HmmDataMatrix_t & meas, uint32_t numToGrow);
-    void getStateInfo(const ViterbiDecodeResult_t & vresult,const HmmDataMatrix_t & logbmap, const uint32_t nstate) const;
+    StateSegmentVec_t getStateInfo(const ViterbiPath_t & path, const uint32_t nstate) const;
 
 
     std::string serializeToJson() const;
@@ -110,8 +118,7 @@ private:
     HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates, const size_t numObs) const;
     HmmDataMatrix_t reestimateAFromViterbiPath(const ViterbiPath_t & path, const HmmDataMatrix_t & meas,size_t numObs,size_t numStates,const HmmDataMatrix_t & originalA) const;
 
-    ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi,const UIntSet_t & restartIndices) const;
-    HmmSharedPtr_t splitIndirectly(const ViterbiDecodeResult_t & vresult,const uint32_t nstate) const;
+    ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi) const;
 
     ModelVec_t _models;
     uint32_t _numStates;
