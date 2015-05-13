@@ -4,10 +4,12 @@
 #include "HmmTypes.h"
 #include <vector>
 #include <string>
+#include <memory>
+#include <string.h>
 
 class HmmPdfInterface;
 
-typedef std::shared_ptr<HmmPdfInterface> HmmPdfInterfaceSharedPtr_t;
+typedef SHARED_PTR<HmmPdfInterface> HmmPdfInterfaceSharedPtr_t;
 
 class HmmPdfInterface {
 public:

@@ -4,6 +4,7 @@
 #include "LogMath.h"
 #include <sstream>
 #include <random>
+#include <string.h>
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)

@@ -6,7 +6,7 @@
 #include "SerializationHelpers.h"
 #include <assert.h>
 #include <iomanip>
-
+#include <string.h>
 
 #define MIN_VALUE_FOR_A (1e-6)
 
@@ -19,7 +19,7 @@
 #define THRESHOLD_FOR_REMOVING_STATE (0.02)
 #define NUM_SPLITS_PER_STATE (5)
 
-#define NUM_BAD_COUNTS_TO_EXIT (5)
+#define NUM_BAD_COUNTS_TO_EXIT (3)
 
 #define THREAD_POOL_SIZE (8)
 #define USE_THREADPOOL
@@ -1083,7 +1083,6 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         ViterbiPathMatrix_t vindices = getZeroedPathMatrix(2, myTimeIndices.size());
         HmmDataMatrix_t phi = getLogZeroedMatrix(2, myTimeIndices.size());
         UIntSet_t restartIndices;
-        restartIndices.reserve(myTimeIndices.size());
         int32_t previdx = -1;
 
         for (ti = 0; ti < myTimeIndices.size(); ti++) {

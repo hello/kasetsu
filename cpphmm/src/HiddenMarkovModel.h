@@ -3,6 +3,7 @@
 
 #include "HmmPdfInterface.h"
 #include "ReestimationResult.h"
+#include <cmath>
 /*  
       does forwards backwards calcs, computes gamma, xi, etc.
  
@@ -59,7 +60,7 @@ private:
 
 class HiddenMarkovModel;
 
-typedef std::shared_ptr<HiddenMarkovModel> HmmSharedPtr_t;
+typedef SHARED_PTR<HiddenMarkovModel> HmmSharedPtr_t;
 
 
 class HiddenMarkovModel {
