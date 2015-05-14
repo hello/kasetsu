@@ -8,13 +8,13 @@
 #include <iomanip>
 #include <string.h>
 
-#define MIN_VALUE_FOR_A (1e-6)
+#define MIN_VALUE_FOR_A (1e-4)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
-#define MAX_NUM_REESTIMATIONS_PER_ITER (5)
-#define MIN_NUM_REESTIMATIONS (0)
+#define MAX_NUM_REESTIMATIONS_PER_ITER (10)
+#define MIN_NUM_REESTIMATIONS (1)
 
-#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (1)
+#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (5)
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.02)
 #define NUM_SPLITS_PER_STATE (5)
@@ -22,7 +22,7 @@
 #define NUM_BAD_COUNTS_TO_EXIT (3)
 
 #define THREAD_POOL_SIZE (8)
-//#define USE_THREADPOOL
+#define USE_THREADPOOL
 #define QUIT_TRAINING_IF_NO_IMPROVEMENT
 #define QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
 
@@ -231,7 +231,7 @@ HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A,const UIntVec_t &
 ,_groups(groupsByStateNumber){
     _numStates = A.size();
     _pi = getUniformVec(_numStates);
-    
+
     if (_groups.empty()) {
         _groups.push_back(0);
     }
@@ -729,6 +729,7 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
     splitA[splitIndices[1]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
     splitA[splitIndices[1]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
 
+    
     std::stringstream ss;
     ss << "splitA - " << stateToSplit;
     //printMat(ss.str(), splitA);
@@ -1000,41 +1001,53 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     return ReestimationResult_t(res.getCost());
 }
 
+/*
+static void getMeanObsFromSegments(const StateSegmentVec_t & segs, const HmmDataMatrix_t & meas) {
+    for (StateSegmentVec_t::const_iterator it = segs.begin(); it != segs.end(); it++) {
+        const StateSegment_t & seg = *it;
+        
+        HmmDataVec_t mean = getZeroedVec(meas.size());
+        const int len = seg.timeIndices.second - seg.timeIndices.first + 1;
+        for (int t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
+            for (int i = 0; i < meas.size(); i++) {
+                mean[i] += meas[i][t];
+            }
+        }
+        
+        for (int i = 0; i < meas.size(); i++) {
+            mean[i] /= len;
+        }
+    
+        
+        int foo = 3;
+        foo++;
+    }
+    
+}
+*/
 
 bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas) {
     
     //s1 is always the original state that was split
     //s2 is always the last state, with index = numstates (zero-based index)
-    uint32_t j,i;
+    uint32_t j,i,t;
     uint32_t iter;
     bool worked = true;
-    
+    const uint32_t totalNumObs = meas[0].size();
     HmmDataMatrix_t newA;
-
-    HmmDataMatrix_t logA = _A; //copy
     
-    for (j = 0; j < _numStates; j++) {
-        for (i = 0; i < _numStates; i++) {
-            logA[j][i] = eln(logA[j][i]);
-        }
+    
+    
+    //get counts from full path before split
+    HmmDataMatrix_t countmat = getZeroedMatrix(_numStates, _numStates);
+    for (t = 1; t < totalNumObs; t++) {
+        const int32_t fromidx = originalViterbi[t-1];
+        const int32_t toidx = originalViterbi[t];
+        countmat[fromidx][toidx] += 1.0;
     }
     
-    //get incoming transition terms
-    HmmDataMatrix_t logAIncoming = getZeroedMatrix(2, _numStates);
+   
     
-    for (i = 0; i < _numStates; i++) {
-        logAIncoming[0][i] = logA[i][s1];
-        logAIncoming[1][i] = logA[i][s2];
-    }
-    
-    //get outgoing transition terms
-    HmmDataMatrix_t logAOutgoing = getZeroedMatrix(2, _numStates);
-
-    for (i = 0; i < _numStates; i++) {
-        logAOutgoing[0][i] = logA[s1][i];
-        logAOutgoing[1][i] = logA[s2][i];
-    }
-
     //find out which segments belong to state == s1, and where they transitioned from
     const StateSegmentVec_t segs = getStateInfo(originalViterbi,s1);
     
@@ -1042,6 +1055,31 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
     typedef std::vector<SegPath_t> SegPathVec_t;
     
     for (iter = 0; iter < NUM_SPLIT_STATE_VITERBI_ITERATIONS; iter++) {
+        //get incoming transition terms
+        HmmDataMatrix_t logA = _A; //copy
+        
+        for (j = 0; j < _numStates; j++) {
+            for (i = 0; i < _numStates; i++) {
+                logA[j][i] = eln(logA[j][i]);
+            }
+        }
+        
+        HmmDataMatrix_t logAIncoming = getZeroedMatrix(2, _numStates);
+        
+        for (i = 0; i < _numStates; i++) {
+            logAIncoming[0][i] = logA[i][s1];
+            logAIncoming[1][i] = logA[i][s2];
+        }
+        
+        //get outgoing transition terms
+        HmmDataMatrix_t logAOutgoing = getZeroedMatrix(2, _numStates);
+        
+        for (i = 0; i < _numStates; i++) {
+            logAOutgoing[0][i] = logA[s1][i];
+            logAOutgoing[1][i] = logA[s2][i];
+        }
+
+        
         //get logbmap
         HmmDataMatrix_t splitlogbmap;
         splitlogbmap.resize(2);
@@ -1064,7 +1102,7 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             ViterbiPathMatrix_t vindices = getZeroedPathMatrix(2, seglength);
 
             
-            for (int t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
+            for (t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
                 const int idx = t - seg.timeIndices.first;
                 
                 if (t == 0) {
@@ -1170,7 +1208,6 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         _models[s1] = r1;
         _models[s2] = r2;
         
-        
         //count transitions
         HmmDataMatrix_t incomingCounts = getZeroedMatrix(2, _numStates);
         HmmDataMatrix_t outgoingCounts = getZeroedMatrix(2, _numStates);
@@ -1194,7 +1231,7 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
                     incomingCounts[0][s1] += 1.0;
                     outgoingCounts[0][s1] += 1.0;
                 }
-                else if (path[i] == 1 && path[i-1] == 1) { //BUG HERE IN THIS SECTION SOMEWHWERS
+                else if (path[i] == 1 && path[i-1] == 1) {
                     incomingCounts[1][s2] += 1.0;
                     outgoingCounts[1][s2] += 1.0;
                 }
@@ -1209,23 +1246,51 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             }
         }
         
+        
+        //merge with countmat
+        HmmDataMatrix_t counts = countmat;
+        
         for (i = 0; i < _numStates; i++) {
-            incomingCounts[0][i] /= pos;
-            incomingCounts[1][i] /= pos;
-            outgoingCounts[0][i] /= pos;
-            outgoingCounts[1][i] /= pos;
-
+            counts[s1][i] = outgoingCounts[0][i];
+            counts[s2][i] = outgoingCounts[1][i];
+            
+            counts[i][s1] = incomingCounts[0][i];
+            counts[i][s2] = incomingCounts[1][i];
         }
-        //turn incoming/outgoing into entries into an A matrix
-        int foo = 3;
-        foo++;
-
+       
+        //compute rowsums and normalize
+        for (j = 0; j < _numStates; j++) {
+            HmmFloat_t sum = 0.0;
+            for (i = 0; i < _numStates; i++) {
+                sum += counts[j][i];
+            }
+            
+            if (sum < EPSILON) {
+                continue;
+            }
+            
+            for (i = 0; i < _numStates; i++) {
+                counts[j][i] /= sum;
+                
+                //if (j == s1 || j == s2) {
+                    if (counts[j][i] < MIN_VALUE_FOR_A) {
+                        counts[j][i] = MIN_VALUE_FOR_A;
+                    }
+                //}
+            }
+        }
+        
+        
+        _A = counts;
         
     }
     
     
-    
-    
+    /*
+    std::cout << this->serializeToJson() << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+*/
     
     return worked;
     
@@ -1311,7 +1376,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         HmmDataVec_t costs;
 
 
-        std::cout << "BEGIN GROWING STATE " << numStates << std::endl;
+        std::cout << "BEGIN GROWING, ITER = " << numStates << ", NUMSTATES = " << numStates << std::endl;
      
         train(best,meas);
         
@@ -1325,6 +1390,12 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         UIntSet_t statesToDelete;
         
         for (uint32_t iState = 0; iState < origNumberStates; iState++) {
+            for (int i = 0; i < origNumberStates; i++) {
+                if (best->_A[iState][i] > 0.995) {
+                    statesToDelete.insert(iState);
+                }
+            }
+            
             if (fractionInEachState[iState] < THRESHOLD_FOR_REMOVING_STATE) {
                 statesToDelete.insert(iState);
             }
@@ -1387,7 +1458,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 
         
         for (uint32_t iModel = 0; iModel < hmms.size(); iModel++) {
-            
+            //std::cout << hmms[iModel]->serializeToJson() << std::endl;
             if (hmms[iModel]->reestimateViterbiSplitState(modelidx[iModel], numStates, path, meas)) {
                 const ViterbiDecodeResult_t res = hmms[iModel]->decode(meas);
                 
@@ -1403,15 +1474,9 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         const uint32_t bestidx = getArgMaxInVec(costs);
         
         
-        std::cout << "picked split of state " <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
         
-       // delete best; //replace with new
-        best = hmms[bestidx];
-    
-        hmms.clear();
-       
 #ifdef QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
-        if (costs[bestidx] < lastBIC) {
+        if (costs[bestidx] < lastBIC || costs[bestidx] == -INFINITY) {
             badcount++;
             if (badcount > NUM_BAD_COUNTS_TO_EXIT) {
                 std::cout << "EXITING, NO IMPROVEMENT SEEN" << std::endl;
@@ -1423,6 +1488,12 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         }
 #endif
         
+        std::cout << "picked split of state " <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
+        
+        best = hmms[bestidx];
+        
+        hmms.clear();
+
         
         lastBIC = costs[bestidx];
         

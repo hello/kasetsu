@@ -43,7 +43,7 @@ template <class T>
 class PdfInterfaceSerializationAdapter {
 public:
     std::string operator() (const T & t) const {
-        return t->serializeToJson();
+        return t->serializeToJson() + "\n";
     }
 };
 
