@@ -4,8 +4,8 @@
 #include "ThreadPool.h"
 #include <iostream>
 #include "SerializationHelpers.h"
+#include "MatrixHelpers.h"
 #include <assert.h>
-#include <iomanip>
 #include <string.h>
 
 #define MIN_VALUE_FOR_A (1e-5)
@@ -20,7 +20,7 @@
 #define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
-#define NUM_BAD_COUNTS_TO_EXIT (0)
+#define NUM_BAD_COUNTS_TO_EXIT (1)
 
 #define THREAD_POOL_SIZE (8)
 //#define USE_THREADPOOL
@@ -54,152 +54,7 @@ UIntVec_t sort_indexes(const std::vector<T> &v) {
     return idx;
 }
 
-static HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) {
-    HmmDataMatrix_t y = x;
-    
-    for (HmmDataMatrix_t::iterator ivec = y.begin();
-         ivec != y.end(); ivec++) {
-        HmmDataVec_t & row = *ivec;
-        
-        for (int i = 0; i < row.size(); i++) {
-            row[i] = eexp(row[i]);
-        }
-    }
-    
-    return y;
-}
 
-static HmmDataVec_t getZeroedVec(size_t vecSize) {
-    HmmDataVec_t vec;
-    vec.resize(vecSize);
-    memset(vec.data(),0,sizeof(HmmFloat_t) * vecSize);
-    return vec;
-}
-
-static HmmDataVec_t getLogZeroedVec(size_t vecSize) {
-    HmmDataVec_t vec;
-    vec.resize(vecSize);
-    
-    for (int i = 0; i < vec.size(); i++) {
-        vec[i] = LOGZERO;
-    }
-    return vec;
-}
-
-
-static HmmDataVec_t getUniformVec(size_t vecSize) {
-    HmmDataVec_t vec;
-    HmmFloat_t a = 1.0 / (HmmFloat_t)vecSize;
-    vec.resize(vecSize);
-    for (int i = 0; i < vecSize; i++) {
-        vec[i] = a;
-    }
-    return vec;
-}
-
-static HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) {
-    HmmDataMatrix_t mtx;
-    mtx.resize(numVecs);
-    
-    //allocate and zero out
-    for(int j = 0; j < numVecs; j++) {
-        mtx[j] = getZeroedVec(vecSize);
-    }
-    
-    return mtx;
-}
-
-static HmmDataMatrix_t getLogZeroedMatrix(size_t numVecs, size_t vecSize) {
-    HmmDataMatrix_t mtx;
-    mtx.resize(numVecs);
-    
-    //allocate and zero out
-    for(int j = 0; j < numVecs; j++) {
-        mtx[j] = getLogZeroedVec(vecSize);
-    }
-    
-    return mtx;
-}
-
-
-static Hmm3DMatrix_t getZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
-    Hmm3DMatrix_t mtx3;
-    mtx3.reserve(numMats);
-    
-    for (int i = 0; i < numMats; i++) {
-        mtx3.push_back(getZeroedMatrix(numVecs, vecSize));
-    }
-    
-    return mtx3;
-}
-
-
-static Hmm3DMatrix_t getLogZeroed3dMatrix(size_t numMats, size_t numVecs, size_t vecSize) {
-    (void)getZeroed3dMatrix;
-    Hmm3DMatrix_t mtx3;
-    mtx3.reserve(numMats);
-    
-    for (int i = 0; i < numMats; i++) {
-        mtx3.push_back(getLogZeroedMatrix(numVecs, vecSize));
-    }
-    
-    return mtx3;
-}
-
-static ViterbiPath_t getZeroedPathVec(size_t vecSize) {
-    ViterbiPath_t path;
-    path.resize(vecSize);
-    memset(path.data(),0,sizeof(ViterbiPath_t::value_type)*path.size());
-    return path;
-}
-
-static ViterbiPathMatrix_t getZeroedPathMatrix(size_t numVecs, size_t vecSize) {
-    ViterbiPathMatrix_t mtx;
-    
-    for (int i = 0; i < numVecs; i++) {
-        mtx.push_back(getZeroedPathVec(vecSize));
-    }
-    
-    return mtx;
-}
-
-static uint32_t getArgMaxInVec(const HmmDataVec_t & x) {
-    HmmFloat_t max = -INFINITY;
-    int32_t imax = 0;
-    for (int32_t i = 0; i < x.size(); i++) {
-        if (x[i] > max) {
-            max = x[i];
-            imax = i;
-        }
-    }
-    
-    //assert(imax >= 0);
-    
-    return imax;
-}
-
-static void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
-    
-    std::cout << std::fixed << std::setprecision(2) << name << std::endl;
-    
-    for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
-        bool first = true;
-        for (HmmDataVec_t::const_iterator itvec2 = (*it).begin(); itvec2 != (*it).end(); itvec2++) {
-            if (!first) {
-                std::cout << ",";
-            }
-            
-            std::cout << *itvec2;
-            
-            
-            first = false;
-        }
-        
-        std::cout << std::endl;
-    }
-    
-    
-}
 
 static HmmDataVec_t getFractionInEachState(uint32_t numStates,const ViterbiPath_t & path) {
     HmmDataVec_t fracInEachState;

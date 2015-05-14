@@ -47,7 +47,7 @@ int main(int argc,const char * args[]) {
     }
     
     
-    HmmSharedPtr_t hmm(HmmFactory::getModel(model));
+    HmmSharedPtr_t hmm(HmmFactory::getModel(model,meas));
     
     if (hmm.get() == NULL) {
         std::cout << "could not find model " << model << std::endl;

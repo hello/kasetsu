@@ -3,6 +3,7 @@
 #include "CompositeModel.h"
 #include "AllModels.h"
 #include <iostream>
+#include "InitialModelGenerator.h"
 
 static HmmFloat_t getRandomPositiveFloat() {
     const float r = 1.0 * static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX);
@@ -112,28 +113,16 @@ static HiddenMarkovModel * getGroupedModel() {
     
 }
 
-static HiddenMarkovModel * getSeedModel() {
-    const float no_penalty = 1.0;
+static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas) {
+    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas);
     
-    const bool useNatLight = false;
-    const bool estimateNatLight = false;
+    HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A);
     
+    for (int i = 0; i < modelparams.models.size(); i++) {
+        newmodel->addModelForState(modelparams.models[i]);
+    }
     
-    HmmDataMatrix_t A;
-    A.resize(3);
-    
-    A[0] << 0.9,0.1,0.0;
-    A[1] << 0.1,0.8,0.1;
-    A[2] << 0.0,0.1,0.9;
-    
-    HiddenMarkovModel * model = new HiddenMarkovModel(A);
-    
-    model->addModelForState(getDefaultModelForState(8.0, 2.0, 0.1, 0.01,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
-    model->addModelForState(getDefaultModelForState(2.0, 2.0, 1.0, 0.01,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
-    model->addModelForState(getDefaultModelForState(5.0, 2.0, 0.1, 0.95,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
-    
-    
-    return model;
+    return newmodel;
     
 }
 
@@ -347,7 +336,7 @@ static HiddenMarkovModel * getTestModel() {
 }
 
 
-HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname) {
+HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const HmmDataMatrix_t & meas) {
     if (modelname == "default") {
         std::cout << "found default model" << std::endl;
         return getDefaultModel();
@@ -358,7 +347,7 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname) {
     }
     else if (modelname == "seed") {
         std::cout << "found seed model" << std::endl;
-        return getRandomModel();
+        return getSeedModel(meas);
     }
     else if (modelname == "group") {
         std::cout << "found seed model" << std::endl;

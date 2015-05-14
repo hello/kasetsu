@@ -19,11 +19,13 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 
 #compile our alg code
 add_library(cpphmm STATIC
+InitialModelGenerator.cpp
 HiddenMarkovModel.cpp
 AllModels.cpp
 CompositeModel.cpp
 ReestimationResult.cpp
 SerializationHelpers.cpp
+MatrixHelpers.cpp
 )
 
 target_link_libraries(cpphmm pthread ${GSL_LIBRARIES})
