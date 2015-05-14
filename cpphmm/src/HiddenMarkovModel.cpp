@@ -8,22 +8,22 @@
 #include <iomanip>
 #include <string.h>
 
-#define MIN_VALUE_FOR_A (1e-4)
+#define MIN_VALUE_FOR_A (1e-5)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
-#define MAX_NUM_REESTIMATIONS_PER_ITER (10)
+#define MAX_NUM_REESTIMATIONS_PER_ITER (100)
 #define MIN_NUM_REESTIMATIONS (1)
 
-#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (5)
+#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
 
-#define THRESHOLD_FOR_REMOVING_STATE (0.02)
-#define NUM_SPLITS_PER_STATE (5)
+#define THRESHOLD_FOR_REMOVING_STATE (0.01)
+#define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
-#define NUM_BAD_COUNTS_TO_EXIT (3)
+#define NUM_BAD_COUNTS_TO_EXIT (0)
 
 #define THREAD_POOL_SIZE (8)
-#define USE_THREADPOOL
+//#define USE_THREADPOOL
 #define QUIT_TRAINING_IF_NO_IMPROVEMENT
 #define QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
 
@@ -280,7 +280,7 @@ HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
     
     //circular connection
     _A[_numStates - 1][0] = alpha;
-    _A[0][_numStates - 1] = alpha;
+    //_A[0][_numStates - 1] = alpha;
     
     printMat("A", _A);
 }
@@ -577,7 +577,7 @@ HmmDataMatrix_t HiddenMarkovModel::getLogGamma(const AlphaBetaResult_t & alphabe
 
 }
 
-HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, const HmmDataMatrix_t & loggamma,const size_t numObs) const {
+HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, const HmmDataMatrix_t & loggamma,const size_t numObs,const HmmFloat_t damping, const HmmFloat_t minValueForA) const {
     
     int32_t i,j,t;
     HmmDataMatrix_t A = getZeroedMatrix(_numStates, _numStates);
@@ -598,10 +598,32 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, cons
             A[i][j] = eexp(elnproduct(numer, -denom));
             
             if (_A[i][j] > EPSILON) {
-                if (A[i][j] <= MIN_VALUE_FOR_A) {
-                    A[i][j] = MIN_VALUE_FOR_A;
+                if (A[i][j] <= minValueForA) {
+                    A[i][j] = minValueForA;
                 }
             }
+        }
+    }
+    
+    
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            A[j][i] = damping * A[j][i] + (1.0 - damping) * _A[j][i];
+        }
+    }
+    
+    for (j = 0; j < _numStates; j++) {
+        HmmFloat_t sum = 0.0;
+        for (i = 0; i < _numStates; i++) {
+            sum += A[j][i];
+        }
+        
+        if (sum < EPSILON) {
+            continue;
+        }
+        
+        for (i = 0; i < _numStates; i++) {
+            A[j][i] /= sum;
         }
     }
     
@@ -865,7 +887,7 @@ ModelVec_t HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma,
     return updatedModels;
 }
 
-ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove) {
+ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove, const HmmFloat_t minValueForA) {
     if (meas.empty()) {
         return ReestimationResult_t();
     }
@@ -880,7 +902,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,
     
     const HmmDataMatrix_t loggamma = getLogGamma(alphabeta,numObs);
     
-    const HmmDataMatrix_t newA = reestimateA(logxi, loggamma, numObs);
+    const HmmDataMatrix_t newA = reestimateA(logxi, loggamma, numObs,DAMPING_FACTOR,minValueForA);
     
     
     HmmDataMatrix_t gamma = getEEXPofMatrix(loggamma);
@@ -1104,12 +1126,16 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
 
             
             for (t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
-                const int idx = t - seg.timeIndices.first;
+                const int idx = t - seg.timeIndices.first; //0, 1, 2, 3, ... N
                 
                 if (t == 0) {
                     //start, and at t == 0
                     phi[0][idx] = elnproduct(splitlogbmap[0][0], eln(_pi[s1]));
                     phi[1][idx] = elnproduct(splitlogbmap[1][0], eln(_pi[s2]));
+                    
+                    vindices[0][idx] = 0;
+                    vindices[1][idx] = 1;
+
                 }
                 else if (idx == 0) {
                     //all other starts
@@ -1122,6 +1148,9 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
 
                         phi[i][idx] = elnproduct(transitionInCost, obscost);
                     }
+                    
+                    vindices[0][idx] = 0;
+                    vindices[1][idx] = 1;
                 }
                 else {
                     //not a start
@@ -1138,6 +1167,10 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
                     const HmmFloat_t transitionInCostS1S2 = elnproduct(phi[0][idx - 1], logAIncoming[1][s1]);
                     const HmmFloat_t transitionInCostS2S2 = elnproduct(phi[1][idx - 1], logAIncoming[1][s2]);
                     
+                    //a failed experiment, ignore this
+                    //const HmmFloat_t transitionInCostS2S1 = -INFINITY;
+                    //const HmmFloat_t transitionInCostS1S2 = -INFINITY;
+
                     
                     costs[0] = elnproduct(transitionInCostS1S1, obscost1);
                     costs[1] = elnproduct(transitionInCostS2S1, obscost1);
@@ -1203,8 +1236,8 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         }
         
         //now reestimate obs model params
-        HmmPdfInterfaceSharedPtr_t r1 = _models[s1]->reestimate(gamma[0], meas2,1.0);
-        HmmPdfInterfaceSharedPtr_t r2 = _models[s2]->reestimate(gamma[1], meas2,1.0);
+        HmmPdfInterfaceSharedPtr_t r1 = _models[s1]->reestimate(gamma[0], meas2,DAMPING_FACTOR);
+        HmmPdfInterfaceSharedPtr_t r2 = _models[s2]->reestimate(gamma[1], meas2,DAMPING_FACTOR);
         
         _models[s1] = r1;
         _models[s2] = r2;
@@ -1317,7 +1350,7 @@ uint32_t HiddenMarkovModel::getNumberOfFreeParams() const {
 }
 
 
-static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool forceTraining = false,bool printstuff = true) {
+static HmmFloat_t train(HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,const HmmFloat_t minValueForA = MIN_VALUE_FOR_A, bool forceTraining = false,bool printstuff = true) {
     ReestimationResult_t res;
     const HmmFloat_t bicSecondTerm = hmm->getNumberOfFreeParams() * log(meas[0].size());
     HmmFloat_t bestScore = -INFINITY;
@@ -1343,7 +1376,7 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool fo
             quitIfBad = false;
         }
         
-        res = hmm->reestimate(meas,quitIfBad);
+        res = hmm->reestimate(meas,quitIfBad,minValueForA);
         
         if (!res.isValid()) {
             break;
@@ -1352,9 +1385,11 @@ static HmmFloat_t train (HmmSharedPtr_t hmm,const HmmDataMatrix_t & meas,bool fo
         bestScore = 2 * res.getLogLikelihood() - bicSecondTerm;
 
         if (printstuff) {
-            std::cout << bestScore << std::endl;
+            std::cout << bestScore << "," << std::flush;
         }
     }
+    
+    std::cout << std::endl;
     
     return bestScore;
 }
@@ -1377,9 +1412,9 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         HmmDataVec_t costs;
 
 
-        std::cout << "BEGIN GROWING, ITER = " << numStates << ", NUMSTATES = " << numStates << std::endl;
+        std::cout << "BEGIN GROWING, ITER = " << iter << ", NUMSTATES = " << numStates << std::endl;
      
-        train(best,meas);
+        train(best,meas,MIN_VALUE_FOR_A,false,false);
         
         vres = best->decode(meas);
         
@@ -1505,15 +1540,18 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     
     
     std::cout << "BEST BIC: " << lastBIC << std::endl;
-
     
     /*
     for (int i = 0; i < NUM_FINAL_ITERTIONS; i++) {
         res = best->reestimate(meas); //converge to something with viterbi training
         std::cout << "FINAL REESTIMATION " << res.getLogLikelihood() << std::endl;
     }
-     */
+     
     
+    ViterbiDecodeResult_t finalresult = best->decode(meas);
+    
+    std::cout << finalresult.getPath() << std::endl;
+    */
     
     *this = *best;
     

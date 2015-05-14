@@ -27,6 +27,11 @@ bool Trainer::train (HiddenMarkovModel * hmm, const HmmDataMatrix_t & meas,const
     //res = hmm->reestimate(meas);
     //cost = res.getLogLikelihood();
 
+    ViterbiDecodeResult_t finalresult = hmm->decode(meas);
+    
+    std::cout << finalresult.getPath() << std::endl;
+
+    
     std::cout << cost << std::endl;
 
     

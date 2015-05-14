@@ -84,7 +84,7 @@ public:
     
     void addModelForState(HmmPdfInterfaceSharedPtr_t);
     
-    ReestimationResult_t reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove = false);
+    ReestimationResult_t reestimate(const HmmDataMatrix_t & meas,bool dontReestimateIfScoreDidNotImprove = false, const HmmFloat_t minValueForA = 0.0);
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
@@ -112,7 +112,7 @@ private:
     
     Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const;
     HmmDataMatrix_t getLogGamma(const AlphaBetaResult_t & alphabeta,size_t numObs) const;
-    HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs) const;
+    HmmDataMatrix_t reestimateA(const Hmm3DMatrix_t & xi, const HmmDataMatrix_t & gamma,const size_t numObs,const HmmFloat_t damping,const HmmFloat_t minValueForA) const;
     ModelVec_t reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
     
     HmmDataMatrix_t getGammaFromViterbiPath(const ViterbiPath_t & path,const size_t numStates, const size_t numObs) const;

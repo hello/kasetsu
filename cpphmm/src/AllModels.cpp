@@ -8,7 +8,7 @@
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
-#define  MIN_GAMMA_STDDEV (0.1)
+#define  MIN_GAMMA_STDDEV (0.4)
 #define  MIN_GAMMA_INPUT (0.01)
 #define  MAX_GAMMA_INPUT  (1e5)
 

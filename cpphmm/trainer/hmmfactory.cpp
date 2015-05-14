@@ -80,7 +80,7 @@ static HiddenMarkovModel * getSingleStateModel() {
 }
 
 static HiddenMarkovModel * getGroupedModel() {
-    const int N = 4;
+    const int N = 6;
     
     const bool useNatLight = false;
     const bool estimateNatLight = false;
@@ -94,8 +94,19 @@ static HiddenMarkovModel * getGroupedModel() {
     HiddenMarkovModel * model = new HiddenMarkovModel(groups);
     
     for (int i = 0; i < N; i++) {
+        model->addModelForState(getDefaultModelForState(
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        getRandomPositiveFloat() * 5,
+                                                        getRandomPositiveFloat(),
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        1.0,useNatLight,estimateNatLight));
+    }
+    
+    /*
+    for (int i = 0; i < N; i++) {
         model->addModelForState(getDefaultModelForState(1.0 + i*0.0001, 1.0+ i*0.0001, 1.0+ i*0.0001, 0.5+ i*0.0001,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
     }
+     */
 
     return model;
     
@@ -353,6 +364,11 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname) {
         std::cout << "found seed model" << std::endl;
         return getGroupedModel();
     }
+    else if (modelname == "group2") {
+        std::cout << "found group model" << std::endl;
+        return getGroupedModel();
+    }
+
     
 
     return NULL;
