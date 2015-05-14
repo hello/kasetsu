@@ -2,11 +2,10 @@
 #include "hmmfactory.h"
 #include "input.h"
 #include "trainer.h"
-#include <memory>
 #include <fstream>
-
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
+#include "CompatibilityTypes.h"
 
 
 int main(int argc,const char * args[]) {
@@ -48,7 +47,7 @@ int main(int argc,const char * args[]) {
     }
     
     
-    std::unique_ptr<HiddenMarkovModel> hmm(HmmFactory::getModel(model));
+    HmmSharedPtr_t hmm(HmmFactory::getModel(model));
     
     if (hmm.get() == NULL) {
         std::cout << "could not find model " << model << std::endl;
@@ -65,7 +64,8 @@ int main(int argc,const char * args[]) {
         worked = Trainer::train(hmm.get(),meas,maxiter);
     }
     
-    std::ofstream outfile(outputfilename);
+    std::ofstream outfile;
+    outfile.open(outputfilename.c_str());
     
     if (outfile.is_open()) {
         outfile <<  hmm.get()->serializeToJson();

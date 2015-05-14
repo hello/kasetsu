@@ -276,31 +276,62 @@ TEST_F(TestHmm,TestPoissonWithManyStates) {
     
 }
 
-TEST_F(DISABLED_TestHmm, TestVSTACS) {
-    const HmmDataMatrix_t meas = getRandom2StateMeas();
+TEST_F(TestHmm, TestVSTACS) {
+    ReestimationResult_t res;
+    HmmDataVec_t means;
+    HmmDataVec_t stddevs;
+    
+    
+    means << 1.0,2.0,3.0,2.0;
+    stddevs << 0.1,0.1,0.1,0.1;
     
     HmmDataMatrix_t A;
-    A.resize(1);
-    A[0] << 1.0;
+    A.resize(4);
     
-    HiddenMarkovModel hmm(A);
+    A[0] << 0.8,0.2,0.0,0.0;
+    A[1] << 0.00,0.90,0.10,0.0;
+    A[2] << 0.0,0.0,0.8,0.2;
+    A[3] << 0.6,0.0,0.0,0.4;
     
-    {
-        CompositeModel * model1 = new CompositeModel();
-        
-        HmmDataVec_t probs1,probs2;
-        probs1 << 0.5,0.5;
-        
-        
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.0) ));
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,.09,.16)));
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs1,true)));
-        
-        
-        hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(model1));
-    }
+    const HmmDataVec_t measvec = getGammaSignal(100000,A,means,stddevs);
     
-   // hmm.enlargeWithVSTACS(meas);
+    
+    
+    
+    HmmDataMatrix_t meas;
+    meas.push_back(measvec);
+    
+    
+    /* std::ofstream fileout("foo.csv");
+     fileout << measvec;
+     fileout.close();
+     */
+    
+    
+    HmmDataMatrix_t Ainit;
+    Ainit.resize(3);
+    
+    Ainit[0] << 0.8,0.2,0.0;
+    Ainit[1] << 0.1,0.8,0.1;
+    Ainit[2] << 0.0,0.2,0.8;
+   
+    
+    GammaModel model1(0, 1, 0.1);
+    GammaModel model2(0, 2, 0.1);
+    GammaModel model3(0, 3, 0.1);
+
+    HiddenMarkovModel hmm(Ainit);
+    
+    hmm.addModelForState(model1.clone(false));
+    hmm.addModelForState(model2.clone(false));
+    hmm.addModelForState(model3.clone(false));
+    
+    
+    hmm.enlargeWithVSTACS(meas, 1);
+    
+    std::cout << hmm.serializeToJson() << std::endl;
+    int foo = 3;
+    foo++;
 
 
 }

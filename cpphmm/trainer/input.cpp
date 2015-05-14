@@ -54,7 +54,8 @@ HmmDataMatrix_t parseCsvFile(std::istream& str) {
 
 HmmDataMatrix_t parseCsvFileFromFile(const std::string & filename) {
     HmmDataMatrix_t ret;
-    std::ifstream file(filename);
+    std::ifstream file;
+    file.open(filename.c_str());
     
     if (file.is_open()) {
         ret = parseCsvFile(file);

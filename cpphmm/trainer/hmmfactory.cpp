@@ -101,8 +101,33 @@ static HiddenMarkovModel * getGroupedModel() {
     
 }
 
+static HiddenMarkovModel * getSeedModel() {
+    const float no_penalty = 1.0;
+    
+    const bool useNatLight = false;
+    const bool estimateNatLight = false;
+    
+    
+    HmmDataMatrix_t A;
+    A.resize(3);
+    
+    A[0] << 0.9,0.1,0.0;
+    A[1] << 0.1,0.8,0.1;
+    A[2] << 0.0,0.1,0.9;
+    
+    HiddenMarkovModel * model = new HiddenMarkovModel(A);
+    
+    model->addModelForState(getDefaultModelForState(8.0, 2.0, 0.1, 0.01,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(2.0, 2.0, 1.0, 0.01,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
+    model->addModelForState(getDefaultModelForState(5.0, 2.0, 0.1, 0.95,1.0, 1.0, no_penalty,useNatLight,estimateNatLight));
+    
+    
+    return model;
+    
+}
+
 static HiddenMarkovModel * getRandomModel() {
-    const int N = 4;
+    const int N = 3;
     
     const bool useNatLight = false;
     const bool estimateNatLight = false;
@@ -114,6 +139,46 @@ static HiddenMarkovModel * getRandomModel() {
     }
     
     HiddenMarkovModel * model = new HiddenMarkovModel(getRandomMatrix(N,N));
+    
+    for (int i = 0; i < N; i++) {
+        model->addModelForState(getDefaultModelForState(
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        getRandomPositiveFloat() * 5,
+                                                        getRandomPositiveFloat(),
+                                                        getRandomPositiveFloat() * 5, 1.0,
+                                                        1.0,useNatLight,estimateNatLight));
+    }
+    
+    return model;
+    
+}
+
+static HiddenMarkovModel * getRandomSparseModel() {
+    const int N = 20;
+    const float sparseThreshold = 0.1 / N;
+    
+    const bool useNatLight = false;
+    const bool estimateNatLight = false;
+    
+    
+    UIntVec_t groups;
+    for (int i = 0; i < N; i++) {
+        groups.push_back(i);
+    }
+    
+    HmmDataMatrix_t A = getRandomMatrix(N,N);
+    
+    for (int j = 0; j < N; j++) {
+        for (int i = 0; i < N; i++) {
+            if (A[j][i] < sparseThreshold) {
+                A[j][i] = 0;
+            }
+        }
+    }
+    
+    
+    
+    HiddenMarkovModel * model = new HiddenMarkovModel(A);
     
     for (int i = 0; i < N; i++) {
         model->addModelForState(getDefaultModelForState(
