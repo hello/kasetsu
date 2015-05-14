@@ -2,6 +2,7 @@
 #include "LogMath.h"
 #include <iostream>
 #include <iomanip>
+#include <string.h>
 
 
 HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) {

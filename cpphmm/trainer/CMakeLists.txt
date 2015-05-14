@@ -5,7 +5,16 @@ PROJECT (HmmTrainer)
 set(CMAKE_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+ADD_DEFINITIONS(
+-DLINUX
+)
+MESSAGE(STATUS "LINUX")
+endif()
+
+
 include_directories("../src/")
+
 
 
 #compile algs
