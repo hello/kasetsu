@@ -10,7 +10,7 @@ public:
     
     void addModel(HmmPdfInterfaceSharedPtr_t model);
     HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
-    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
 
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     

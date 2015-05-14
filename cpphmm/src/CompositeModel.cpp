@@ -38,7 +38,7 @@ HmmPdfInterfaceSharedPtr_t CompositeModel::clone(bool isPerturbed) const {
     return HmmPdfInterfaceSharedPtr_t(newModel);
 }
 
-HmmPdfInterfaceSharedPtr_t CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+HmmPdfInterfaceSharedPtr_t CompositeModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
     CompositeModel * newModel = new CompositeModel();
     
     for (ModelVec_t::const_iterator vecIterator = _models.begin();
@@ -47,7 +47,7 @@ HmmPdfInterfaceSharedPtr_t CompositeModel::reestimate(const HmmDataVec_t & gamma
         
         const HmmPdfInterface * const model = (*vecIterator).get();
     
-        newModel->addModel(model->reestimate(gammaForThisState, meas));
+        newModel->addModel(model->reestimate(gammaForThisState, meas,eta));
     
     }
     

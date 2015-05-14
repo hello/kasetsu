@@ -69,7 +69,7 @@ HmmPdfInterfaceSharedPtr_t GammaModel::clone(bool isPerturbed) const {
     return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,_mean,_stddev));
 }
 
-HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
     const HmmDataVec_t & obsvec = meas[_obsnum];
     
     
@@ -116,6 +116,12 @@ HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForT
         int foo = 3;
         foo++;
     }
+    
+    const HmmFloat_t dmean = newmean - _mean;
+    const HmmFloat_t dstddev = newstddev - _stddev;
+    
+    newmean = _mean + eta * dmean;
+    newstddev = _stddev + eta * dstddev;
     
     return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,newmean,newstddev));
 }
@@ -182,7 +188,7 @@ HmmPdfInterfaceSharedPtr_t PoissonModel::clone(bool isPerturbed) const {
     return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,_mu));
 }
 
-HmmPdfInterfaceSharedPtr_t PoissonModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+HmmPdfInterfaceSharedPtr_t PoissonModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
     const HmmDataVec_t & obsvec = meas[_obsnum];
 
     
@@ -206,6 +212,10 @@ HmmPdfInterfaceSharedPtr_t PoissonModel::reestimate(const HmmDataVec_t & gammaFo
     if (newmean < MIN_POISSON_MEAN) {
         newmean = MIN_POISSON_MEAN;
     }
+    
+    const HmmFloat_t dmean = newmean - _mu;
+    
+    newmean = eta * dmean + _mu;
     
     return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,newmean));
     
@@ -269,7 +279,7 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::clone(bool isPerturbed) const {
     return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation));
 }
 
-HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const {
+HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
     
     const HmmDataVec_t & obsvec = meas[_obsnum];
 
@@ -302,6 +312,29 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaF
     else {
         counts = _alphabetprobs;
     }
+    
+    HmmDataVec_t dcounts;
+    dcounts.resize(_alphabetprobs.size());
+    
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        dcounts[i] = counts[i] - _alphabetprobs[i];
+    }
+
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        counts[i] = dcounts[i] * eta + _alphabetprobs[i];
+    }
+    
+    HmmFloat_t sum = 0.0;
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        sum += counts[i];
+    }
+    
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        counts[i] /= sum;
+    }
+    
+    
+    
 
     return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,counts,_allowreestimation));
 

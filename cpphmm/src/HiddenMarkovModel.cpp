@@ -18,6 +18,7 @@
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.02)
 #define NUM_SPLITS_PER_STATE (5)
+#define DAMPING_FACTOR (0.1)
 
 #define NUM_BAD_COUNTS_TO_EXIT (3)
 
@@ -816,7 +817,7 @@ ViterbiDecodeResult_t HiddenMarkovModel::decode(const HmmDataMatrix_t & meas) co
     
 }
 
-ModelVec_t HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas) const {
+ModelVec_t HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
     
     ModelVec_t updatedModels;
     
@@ -830,8 +831,8 @@ ModelVec_t HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma,
         
         for (int32_t iState = 0; iState < _numStates; iState++) {
             newmodels.emplace_back(
-                                   pool.enqueue([iState,&gamma,&meas,&localModels] {
-                return std::make_pair(iState,localModels[iState]->reestimate(gamma[iState], meas));
+                                   pool.enqueue([iState,&gamma,&meas,&localModels,eta] {
+                return std::make_pair(iState,localModels[iState]->reestimate(gamma[iState], meas,eta));
             }));
         }
         
@@ -852,7 +853,7 @@ ModelVec_t HiddenMarkovModel::reestimateFromGamma(const HmmDataMatrix_t & gamma,
             
             const HmmDataVec_t & gammaForThisState = gamma[iState];
             
-            HmmPdfInterfaceSharedPtr_t newModel = _models[iState]->reestimate(gammaForThisState, meas);
+            HmmPdfInterfaceSharedPtr_t newModel = _models[iState]->reestimate(gammaForThisState, meas,eta);
             
             updatedModels.push_back(newModel);
         }
@@ -891,7 +892,7 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,
     }
     
     
-    ModelVec_t newModels = reestimateFromGamma(gamma,meas);
+    ModelVec_t newModels = reestimateFromGamma(gamma,meas,DAMPING_FACTOR);
     
     AlphaBetaResult_t alphabeta2 = alphabeta;
     
@@ -986,7 +987,7 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     
     const HmmDataMatrix_t gamma = getGammaFromViterbiPath(res.getPath(),_numStates,numObs);
     
-    ModelVec_t newModels = reestimateFromGamma(gamma,meas);
+    ModelVec_t newModels = reestimateFromGamma(gamma,meas,DAMPING_FACTOR);
     
     //otherwise.... full steam ahead
     _models.clear();
@@ -1202,8 +1203,8 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         }
         
         //now reestimate obs model params
-        HmmPdfInterfaceSharedPtr_t r1 = _models[s1]->reestimate(gamma[0], meas2);
-        HmmPdfInterfaceSharedPtr_t r2 = _models[s2]->reestimate(gamma[1], meas2);
+        HmmPdfInterfaceSharedPtr_t r1 = _models[s1]->reestimate(gamma[0], meas2,1.0);
+        HmmPdfInterfaceSharedPtr_t r2 = _models[s2]->reestimate(gamma[1], meas2,1.0);
         
         _models[s1] = r1;
         _models[s2] = r2;
@@ -1505,7 +1506,6 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     
     std::cout << "BEST BIC: " << lastBIC << std::endl;
 
-    std::cout << "retrained BIC " << train(best,meas) << std::endl;
     
     /*
     for (int i = 0; i < NUM_FINAL_ITERTIONS; i++) {

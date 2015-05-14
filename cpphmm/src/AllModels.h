@@ -10,7 +10,7 @@ public:
     ~GammaModel();
     
     HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
-    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;
@@ -29,7 +29,7 @@ public:
     ~PoissonModel();
     
     HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
-    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;
@@ -47,7 +47,7 @@ public:
     ~AlphabetModel();
     
     HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
-    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
     HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const ;
     std::string serializeToJson() const;
     uint32_t getNumberOfFreeParams() const;
