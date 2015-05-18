@@ -5,9 +5,14 @@ import requests
 import copy
 import csv
 
+num_days = 14
+start_date_string = '2015-05-06'
 
+k_endpoint = 'v1/datascience/matchedfeedback/'
 #k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'
-k_url = 'https://research-api-benjo.hello.is/v1/datascience/matchedfeedback/'
+#k_server = 'https://research-api-benjo.hello.is/'
+k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/'
+k_url = k_server + k_endpoint
 
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 #k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
@@ -27,12 +32,9 @@ def get_time_as_date(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
     return t.strftime('%Y-%m-%d')
 
-num_days = 7
-start_date_string = '2015-04-21'
 
 
-k_params = {'account_id' : 1012, 
-            'from_ts_utc' : get_datestr_as_timestamp(start_date_string), 
+k_params = {'from_ts_utc' : get_datestr_as_timestamp(start_date_string), 
             'num_days' : num_days, 
 }
 

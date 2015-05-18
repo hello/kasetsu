@@ -7,14 +7,14 @@ import csv
 import sys
 
 
-num_days = 7
-start_date_string = '2015-04-21'
+num_days = 14
+start_date_string = '2015-05-06'
 
 
 k_endpoint = 'v1/datascience/timelinelog/'
 #k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'
-k_server = 'https://research-api-benjo.hello.is/'
-#k_server = 'https://ec2-52-1-32-223.compute-1.amazonaws.com/'
+#k_server = 'https://research-api-benjo.hello.is/'
+k_server = 'https://ec2-52-1-32-223.compute-1.amazonaws.com/'
 
 k_url = k_server + k_endpoint
 
