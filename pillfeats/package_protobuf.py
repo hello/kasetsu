@@ -75,6 +75,13 @@ def to_proto(composite_hmm,aux_params, input_filename):
         m_soundcounts.stddev = d[3]['model_data']['stddev']
 
         m_natural_light_filter = sleep_hmm_pb2.DiscreteAlphabetModel()
+        
+        if len(d) == 4:
+           d.append({})
+           d[4]['model_data'] = {}
+           d[4]['model_data']['alphabet_probs'] = [1.0,1.0]
+           print 'using default light penalty probs of 1.0,1.0'
+
         vec = d[4]['model_data']['alphabet_probs']
         for v in vec:
             m_natural_light_filter.probabilities.append(v)
