@@ -114,7 +114,20 @@ static HiddenMarkovModel * getGroupedModel() {
 }
 
 static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas) {
-    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas);
+    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,false);
+    
+    HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A);
+    
+    for (int i = 0; i < modelparams.models.size(); i++) {
+        newmodel->addModelForState(modelparams.models[i]);
+    }
+    
+    return newmodel;
+    
+}
+
+static HiddenMarkovModel * getPartnerSeedModel(const HmmDataMatrix_t & meas) {
+    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,true);
     
     HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A);
     
@@ -348,6 +361,10 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
     else if (modelname == "seed") {
         std::cout << "found seed model" << std::endl;
         return getSeedModel(meas);
+    }
+    else if (modelname == "partnerseed") {
+        std::cout << "found seed model" << std::endl;
+        return getPartnerSeedModel(meas);
     }
     else if (modelname == "group") {
         std::cout << "found seed model" << std::endl;

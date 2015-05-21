@@ -12,7 +12,7 @@ typedef struct {
 
 class InitialModelGenerator {
 public:
-    static InitialModel_t getInitialModelFromData(const HmmDataMatrix_t & meas);
+    static InitialModel_t getInitialModelFromData(const HmmDataMatrix_t & meas,const bool userPartnerModel);
 };
 
 

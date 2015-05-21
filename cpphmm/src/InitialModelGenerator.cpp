@@ -38,14 +38,15 @@ static const HmmFloat_t motion_params[NUM_MOTION_MODELS] = {low_motion,med_motio
 
 static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,med_disturbance,high_disturbance};
 
+
 #define LIGHT_OBSNUM (0)
 #define MOTION_OBSNUM (1)
 #define DISTURBANCE_OBSNUM (2)
 #define SOUND_OBSNUM (3)
+#define PARTNER_MOTION_OBSNUM (5)
+#define PARTNER_DISTURBANCE_OBSNUM (6)
 
-
-
-InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatrix_t & meas) {
+static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
     //enumerate all possible models
     for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
@@ -60,7 +61,7 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
                     alphabetprobs.resize(2);
                     alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
                     alphabetprobs[1] = disturbance_params[iDisturbance];
-
+                    
                     AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true);
                     
                     GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound]);
@@ -71,14 +72,87 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
                     model.addModel(disturbance.clone(false));
                     model.addModel(sound.clone(false));
                     
-                    
                     models.push_back(model.clone(false));
                 }
             }
         }
     }
+
+    return models;
+}
+
+static ModelVec_t getPartneredInitialModel() {
+    ModelVec_t models;
+    
+    //enumerate all possible models
+    for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
+        for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
+            for (int iSound = 0; iSound < NUM_SOUND_MODELS; iSound++) {
+                for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
+                    for (int iPartnerMotion = 0; iPartnerMotion < NUM_MOTION_MODELS; iPartnerMotion++) {
+                        for (int iPartnerDisturbance = 0; iPartnerDisturbance < NUM_DISTURBANCE_MODELS; iPartnerDisturbance++) {
+                            
+                            GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight]);
+                            PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion]);
+                            
+                            HmmDataVec_t alphabetprobs;
+                            alphabetprobs.resize(2);
+                            alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
+                            alphabetprobs[1] = disturbance_params[iDisturbance];
+                            
+                            AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true);
+                            
+                            GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound]);
+                            
+                            
+                            PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion]);
+                            
+                            HmmDataVec_t partneralphabetprobs;
+                            partneralphabetprobs.resize(2);
+                            partneralphabetprobs[0] = 1.0 - disturbance_params[iPartnerDisturbance];
+                            partneralphabetprobs[1] = disturbance_params[iPartnerDisturbance];
+
+                            AlphabetModel partnerdisturbance(PARTNER_DISTURBANCE_OBSNUM,partneralphabetprobs,true);
+
+                            
+                            CompositeModel model;
+                            
+                            model.addModel(light.clone(false));
+                            model.addModel(motion.clone(false));
+                            model.addModel(disturbance.clone(false));
+                            model.addModel(sound.clone(false));
+                            model.addModel(partnermotion.clone(false));
+                            model.addModel(partnerdisturbance.clone(false));
+                            
+                            
+                            models.push_back(model.clone(false));
+
+                    
+                            
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return models;
+
+
+}
+
+InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatrix_t & meas, const bool usePartnerModel) {
     
     HmmDataMatrix_t evals;
+    
+    ModelVec_t models;
+    
+    if (usePartnerModel) {
+        models = getPartneredInitialModel();
+    }
+    else {
+        models = getSinglePersonInitialModel();
+    }
     
     //now evaluate the likelihood of each model
     for (ModelVec_t::const_iterator it = models.begin(); it != models.end(); it++) {
@@ -87,7 +161,6 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         evals.push_back(model->getLogOfPdf(meas));
     }
     
-    //now count the transitions
     
     HmmDataMatrix_t countmat = getZeroedMatrix(models.size(), models.size());
     
@@ -95,6 +168,8 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
     const uint32_t T = evals[0].size();
     UIntVec_t path;
     path.reserve(T);
+    
+    //for each time index, find best performing composite model
     for (int t = 0; t < T; t++) {
         int max = -INFINITY;
         int imax = 0;
@@ -105,13 +180,17 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
             }
         }
         
+        //save the index of the max at this time index
         path.push_back(imax);
     }
     
+    //count the transitions of the path
+    //we will use this to compute the transition matrix later
     for (int t = 1; t < T; t++) {
         countmat[path[t-1]][path[t]] += 1.0;
     }
     
+    //count the rows (i.e. number of times the path was at each model)
     UIntVec_t rowcounts;
     rowcounts.reserve(countmat.size());
     
@@ -125,10 +204,11 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         
     }
     
+    
+    //keep only models that had the path for a significant amount of time
     const uint32_t threshold = (HmmFloat_t)T * 0.05;
     UIntVec_t accepted;
     
-    //select significant states
     for (int i = 0; i < countmat.size(); i++) {
         if (rowcounts[i] > threshold) {
             accepted.push_back(i);
@@ -137,7 +217,7 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
     
     HmmDataMatrix_t A = getZeroedMatrix(accepted.size(),accepted.size());
 
-    //create new count matrix
+    //create new count matrix with the accepted models
     for (int j = 0; j < A.size(); j++) {
         for (int i = 0; i < A.size(); i++) {
             A[j][i] = countmat[accepted[j]][accepted[i]];
@@ -160,6 +240,7 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         }
     }
     
+    //return state transition matrix and accepted composite models
     InitialModel_t initmodel;
     initmodel.A = A;
     

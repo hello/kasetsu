@@ -54,10 +54,10 @@ int main(int argc,const char * args[]) {
         return 0;
     }
 
-    
+    std::cout << "There are " << meas[0].size() << " data points." << std::endl;
     bool worked = false;
     
-    if (model == "seed" || model == "group") {
+    if (model == "seed" || model == "partnerseed") {
         worked = Trainer::grow(hmm.get(),meas,maxiter);
     }
     else {
