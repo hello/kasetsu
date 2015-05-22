@@ -51,13 +51,13 @@ static HmmPdfInterfaceSharedPtr_t getDefaultModelForState(float lightGammaMean, 
     
     CompositeModel * p = new CompositeModel();
     
-    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(0,lightGammaMean,lightGammStdDev)));
-    p->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(1,movementPoissonMean)));
-    p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,disturbanceProbs,true)));
-    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(3,lightGammaMean,lightGammStdDev)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(0,lightGammaMean,lightGammStdDev,1.0)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(1,movementPoissonMean,1.0)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,disturbanceProbs,true,1.0)));
+    p->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(3,lightGammaMean,lightGammStdDev,1.0)));
     
     if (useNatLight)  {
-        p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(4,natlightProbs,estimateNatLight)));
+        p->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(4,natlightProbs,estimateNatLight,1.0)));
     }
     
     return HmmPdfInterfaceSharedPtr_t(p);
@@ -363,7 +363,7 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
         return getSeedModel(meas);
     }
     else if (modelname == "partnerseed") {
-        std::cout << "found seed model" << std::endl;
+        std::cout << "found partner seed model" << std::endl;
         return getPartnerSeedModel(meas);
     }
     else if (modelname == "group") {

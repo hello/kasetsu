@@ -46,6 +46,11 @@ static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_distur
 #define PARTNER_MOTION_OBSNUM (5)
 #define PARTNER_DISTURBANCE_OBSNUM (6)
 
+#define LIGHT_WEIGHT (1.0)
+#define MOTION_WEIGHT (1.0)
+#define DISTURBANCE_WEIGHT (1.0)
+#define SOUND_WEIGHT (0.5)
+
 static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
     //enumerate all possible models
@@ -54,17 +59,17 @@ static ModelVec_t getSinglePersonInitialModel() {
             for (int iSound = 0; iSound < NUM_SOUND_MODELS; iSound++) {
                 for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
                     
-                    GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight]);
-                    PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion]);
+                    GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
+                    PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
                     
                     HmmDataVec_t alphabetprobs;
                     alphabetprobs.resize(2);
                     alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
                     alphabetprobs[1] = disturbance_params[iDisturbance];
                     
-                    AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true);
+                    AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true,DISTURBANCE_WEIGHT);
                     
-                    GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound]);
+                    GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
                     
                     CompositeModel model;
                     model.addModel(light.clone(false));
@@ -92,27 +97,27 @@ static ModelVec_t getPartneredInitialModel() {
                     for (int iPartnerMotion = 0; iPartnerMotion < NUM_MOTION_MODELS; iPartnerMotion++) {
                         for (int iPartnerDisturbance = 0; iPartnerDisturbance < NUM_DISTURBANCE_MODELS; iPartnerDisturbance++) {
                             
-                            GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight]);
-                            PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion]);
+                            GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
+                            PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
                             
                             HmmDataVec_t alphabetprobs;
                             alphabetprobs.resize(2);
                             alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
                             alphabetprobs[1] = disturbance_params[iDisturbance];
                             
-                            AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true);
+                            AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true,DISTURBANCE_WEIGHT);
                             
-                            GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound]);
+                            GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
                             
                             
-                            PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion]);
+                            PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion],MOTION_WEIGHT);
                             
                             HmmDataVec_t partneralphabetprobs;
                             partneralphabetprobs.resize(2);
                             partneralphabetprobs[0] = 1.0 - disturbance_params[iPartnerDisturbance];
                             partneralphabetprobs[1] = disturbance_params[iPartnerDisturbance];
 
-                            AlphabetModel partnerdisturbance(PARTNER_DISTURBANCE_OBSNUM,partneralphabetprobs,true);
+                            AlphabetModel partnerdisturbance(PARTNER_DISTURBANCE_OBSNUM,partneralphabetprobs,true,DISTURBANCE_WEIGHT);
 
                             
                             CompositeModel model;

@@ -37,10 +37,11 @@ static HmmFloat_t getPerturbedValue(const HmmFloat_t x, const HmmFloat_t perturb
     
 }
 
-GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev)
+GammaModel::GammaModel(const int32_t obsnum,const float mean, const float stddev, const float weight)
 : _mean(mean)
 , _stddev(stddev)
-, _obsnum(obsnum){
+, _obsnum(obsnum)
+, _weight(weight) {
 
     //A/B = MEAN
     //A/B^2 = variance
@@ -62,11 +63,11 @@ GammaModel::~GammaModel() {
 HmmPdfInterfaceSharedPtr_t GammaModel::clone(bool isPerturbed) const {
     if (isPerturbed) {
     
-        return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,getPerturbedValue(_mean,GAMMA_PERTURBATION_MEAN,MIN_GAMMA_MEAN),getPerturbedValue(_stddev,GAMMA_PERTURBATION_STDDEV,MIN_GAMMA_STDDEV)));
+        return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,getPerturbedValue(_mean,GAMMA_PERTURBATION_MEAN,MIN_GAMMA_MEAN),getPerturbedValue(_stddev,GAMMA_PERTURBATION_STDDEV,MIN_GAMMA_STDDEV),_weight));
 
     }
     
-    return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,_mean,_stddev));
+    return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,_mean,_stddev,_weight));
 }
 
 HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
@@ -123,7 +124,7 @@ HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForT
     newmean = _mean + eta * dmean;
     newstddev = _stddev + eta * dstddev;
     
-    return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,newmean,newstddev));
+    return HmmPdfInterfaceSharedPtr_t(new GammaModel(_obsnum,newmean,newstddev,_weight));
 }
 
 HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
@@ -150,7 +151,7 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         HmmFloat_t evalValue =gsl_ran_gamma_pdf(val,A,scale);
         
         
-        ret[i] = eln(evalValue);
+        ret[i] = _weight * eln(evalValue);
     }
     
     return ret;
@@ -159,7 +160,7 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
 std::string GammaModel::serializeToJson() const {
     char buf[1024];
     memset(buf,0,sizeof(buf));
-    snprintf(buf, sizeof(buf), "{\"model_type\" : \"gamma\", \"model_data\": {\"obs_num\": %d, \"stddev\": %f, \"mean\": %f}}",_obsnum,_stddev,_mean);
+    snprintf(buf, sizeof(buf), "{\"model_type\" : \"gamma\", \"model_data\": {\"obs_num\": %d, \"stddev\": %f, \"mean\": %f,\"weight\": %f}}",_obsnum,_stddev,_mean,_weight);
     
     return std::string(buf);
 }
@@ -171,9 +172,11 @@ uint32_t GammaModel::getNumberOfFreeParams() const {
 ///////////////////////////////////
 
 
-PoissonModel::PoissonModel(const int32_t obsnum,const float mu)
+PoissonModel::PoissonModel(const int32_t obsnum,const float mu,const float weight)
 :_obsnum(obsnum)
-,_mu(mu) {
+,_mu(mu)
+, _weight(weight) {
+
 }
 
 PoissonModel::~PoissonModel() {
@@ -182,10 +185,10 @@ PoissonModel::~PoissonModel() {
 
 HmmPdfInterfaceSharedPtr_t PoissonModel::clone(bool isPerturbed) const {
     if (isPerturbed) {
-        return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,getPerturbedValue(_mu,POISSON_PERTURBATION_MEAN,MIN_POISSON_MEAN)));
+        return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,getPerturbedValue(_mu,POISSON_PERTURBATION_MEAN,MIN_POISSON_MEAN),_weight));
     }
 
-    return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,_mu));
+    return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,_mu,_weight));
 }
 
 HmmPdfInterfaceSharedPtr_t PoissonModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
@@ -217,7 +220,7 @@ HmmPdfInterfaceSharedPtr_t PoissonModel::reestimate(const HmmDataVec_t & gammaFo
     
     newmean = eta * dmean + _mu;
     
-    return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,newmean));
+    return HmmPdfInterfaceSharedPtr_t(new PoissonModel(_obsnum,newmean,_weight));
     
 }
 
@@ -233,7 +236,7 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         }
         
         const uint32_t meas = (uint32_t) vec[i];
-        ret[i] = eln(gsl_ran_poisson_pdf(meas, _mu));
+        ret[i] = _weight * eln(gsl_ran_poisson_pdf(meas, _mu));
     }
     
     return ret;
@@ -242,7 +245,7 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
 std::string PoissonModel::serializeToJson() const {
     char buf[1024];
     memset(buf,0,sizeof(buf));
-    snprintf(buf, sizeof(buf),"{\"model_type\": \"poisson\", \"model_data\": {\"obs_num\": %d, \"mean\": %f}}",_obsnum,_mu);
+    snprintf(buf, sizeof(buf),"{\"model_type\": \"poisson\", \"model_data\": {\"obs_num\": %d, \"mean\": %f,\"weight\": %f}}",_obsnum,_mu,_weight);
     return std::string(buf);
 }
 
@@ -253,10 +256,11 @@ uint32_t PoissonModel::getNumberOfFreeParams() const {
 ///////////////////////////////////
 
 
-AlphabetModel::AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs,bool allowreestimation)
+AlphabetModel::AlphabetModel(const int32_t obsnum,const HmmDataVec_t alphabetprobs,bool allowreestimation,const float weight)
 :_obsnum(obsnum)
 ,_alphabetprobs(alphabetprobs)
-,_allowreestimation(allowreestimation) {
+,_allowreestimation(allowreestimation)
+,_weight(weight){
 }
 
 AlphabetModel::~AlphabetModel() {
@@ -272,11 +276,11 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::clone(bool isPerturbed) const {
             newalphabet[i] = getPerturbedValue(_alphabetprobs[i], ALPHABET_PERTURBATION,1e-6);
         }
         
-        return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,newalphabet,_allowreestimation));
+        return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,newalphabet,_allowreestimation,_weight));
 
     }
     
-    return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation));
+    return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation,_weight));
 }
 
 HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
@@ -284,7 +288,7 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaF
     const HmmDataVec_t & obsvec = meas[_obsnum];
 
     if  (!_allowreestimation) {
-        return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation));
+        return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,_alphabetprobs,_allowreestimation,_weight));
     }
     
     HmmDataVec_t counts;
@@ -336,7 +340,7 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaF
     
     
 
-    return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,counts,_allowreestimation));
+    return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,counts,_allowreestimation,_weight));
 
 }
 
@@ -349,7 +353,7 @@ HmmDataVec_t AlphabetModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     for (int32_t i = 0; i < vec.size(); i++) {
         int32_t idx = (int32_t)vec[i];
         
-        ret[i] = eln(_alphabetprobs[idx]);
+        ret[i] = _weight * eln(_alphabetprobs[idx]);
     }
     
     return ret;
@@ -376,7 +380,7 @@ std::string AlphabetModel::serializeToJson() const {
         allowreestiamationstring = "true";
     }
     
-    snprintf(buf, sizeof(buf),"{\"model_type\": \"discrete_alphabet\", \"model_data\": {\"obs_num\": %d, \"alphabet_probs\": [%s], \"allow_reestimation\": %s}}",_obsnum,probs.str().c_str(),allowreestiamationstring.c_str());
+    snprintf(buf, sizeof(buf),"{\"model_type\": \"discrete_alphabet\", \"model_data\": {\"obs_num\": %d, \"alphabet_probs\": [%s], \"allow_reestimation\": %s,\"weight\": %f}}",_obsnum,probs.str().c_str(),allowreestiamationstring.c_str(),_weight);
     return std::string(buf);
 }
 
