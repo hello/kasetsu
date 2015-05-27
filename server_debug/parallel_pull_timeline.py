@@ -31,7 +31,7 @@ def get_time_as_string(timestamp,offset):
 
 def get_time_as_string_with_no_date(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
-    return t.strftime('%H:%M:%S')
+    return t.strftime('%H:%M')
 
 def pull_date_for_user(label):
     userid = label['account_id']
@@ -52,10 +52,10 @@ def pull_date_for_user(label):
             data = response.json()
             
             if len(data) == 0:
-                print 'no responses found on %s' % datestring
+                print 'no responses found on date %s for user %s' % (datestr,str(userid))
 
         else:
-            print 'fail with %d on %s ' % (response.status_code,datestring)
+            print 'fail with error %d on %s ' % (response.status_code,datestr)
             
 
     if data != None:
@@ -159,7 +159,13 @@ def join_and_write_results(labels,responses,filename):
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for key in mydict:
+        
         item = mydict[key]
+
+        if not item.has_key('response'):
+            continue
+
+        
         label = item['label']
         response = item['response']
         feedback = label['feedback']
