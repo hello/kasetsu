@@ -53,9 +53,12 @@ def accumulate_stats_by_account(account_dict):
     mydict['TOTALS'] = {'total' : c,'fail' : f, 'success' : c - f}
 
     return mydict
+
+
+
                 
 
-def flatten_by_account(entries):
+def flatten_by_account(entries,eventkey = None):
 
     mydict = {}
 
@@ -65,7 +68,11 @@ def flatten_by_account(entries):
         if not mydict.has_key(account_id):
             mydict[account_id] = []
 
-        for key in k_type_map:
+        event_list = k_type_map.keys()
+        if eventkey != None:
+            event_list = [eventkey]
+            
+        for key in event_list:
             if not entry.has_key(key):
                 continue
             
@@ -114,8 +121,13 @@ def get_row_as_deltas(row):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', help = 'input label file',required=True)
-
+    parser.add_argument('--event',help = 'optional event type to filter on')
+    parser.add_argument('-v','--verbose',help = 'display each event for each user',default=False,action='store_true')
+    parser.add_argument('--threshold',help = 'threshold in minutes for success',default=k_fail_threshold,type=int)
     args = parser.parse_args()
+
+
+    k_fail_threshold = args.threshold
 
     entries = []
     with open(args.input,'rb') as csvfile:
@@ -125,13 +137,20 @@ if __name__ == '__main__':
             entry = get_row_as_deltas(row)
             entries.append(entry)
 
-    byaccount = flatten_by_account(entries)
+    byaccount = flatten_by_account(entries,args.event)
     stats = accumulate_stats_by_account(byaccount)
 
-    for key in byaccount:
-        print '\n\n\n'
-        print key
-        print tabulate(byaccount[key],['date','event type','delta'],tablefmt='simple')
+    if args.verbose:
+        for key in byaccount:
+            print '\n\n\n'
+            print key
+            print tabulate(byaccount[key],['date','event type','delta'],tablefmt='simple')
+
+
+    if args.event != None:
+        print '\n\nFILTERING ON EVENT TYPE = %s' % (args.event)
+    else:
+        print '\n\nPROCESSING ALL EVENT TYPES'
 
     statsrows = []
     for key in byaccount:
@@ -139,7 +158,12 @@ if __name__ == '__main__':
         newrow.append(key)
         newrow.append(stats[key]['success'])
         newrow.append(stats[key]['total'])
-        newrow.append(float(stats[key]['success']) / float(stats[key]['total']))                     
+        total = float(stats[key]['total'])
+
+        if total <= 0:
+            total = 1
+        
+        newrow.append(float(stats[key]['success']) / total)                     
 
         statsrows.append(newrow)
 
@@ -148,7 +172,10 @@ if __name__ == '__main__':
     newrow.append(key)
     newrow.append(stats[key]['success'])
     newrow.append(stats[key]['total'])
-    newrow.append(float(stats[key]['success']) / float(stats[key]['total']))                  
+    total = float(stats[key]['total'])
+    if total <= 0:
+        total = 1
+    newrow.append(float(stats[key]['success']) / total)                  
 
     statsrows.append(newrow)
 
