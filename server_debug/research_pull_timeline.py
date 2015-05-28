@@ -8,8 +8,8 @@ import time
 import json
 
 
-k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
-#k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
+k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 
 def get_time_as_string(timestamp,offset):
@@ -45,8 +45,12 @@ def pull_date_for_user(userid):
             if not response.ok:
                 print 'fail with %d on %s ' % (response.status_code,datestring)
                 continue
-   
+
             data = response.json()
+
+            if data.has_key('code') and int(data['code']) == 204:
+                print data['message']
+                continue                  
             
             if len(data) == 0:
                 print 'no responses found on %s' % datestring
@@ -70,9 +74,8 @@ def print_results(data):
         print '\n'
                 
 if __name__ == '__main__':
-    if sys.argv[3] == 'hmm':
-        k_params['algorithm'] = 'hmm'
-        
+    k_params['algorithm'] = sys.argv[3]
+ 
     resp = pull_date_for_user(user_id)
     print_results(resp)
 

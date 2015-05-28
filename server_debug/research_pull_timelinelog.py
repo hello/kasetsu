@@ -7,16 +7,18 @@ import csv
 import sys
 
 
-num_days = 14
-start_date_string = '2015-05-06'
+num_days = 2
+start_date_string = '2015-05-16'
 
 
 k_endpoint = 'v1/datascience/timelinelog/'
+k_account_endpoint = 'v1/datascience/activeusers'
 #k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'
-#k_server = 'https://research-api-benjo.hello.is/'
-k_server = 'https://ec2-52-1-32-223.compute-1.amazonaws.com/'
+k_server = 'https://research-api-benjo.hello.is/'
+#k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/'
 
 k_url = k_server + k_endpoint
+k_account_url = k_server + k_account_endpoint
 
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 #k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
@@ -56,7 +58,6 @@ def csv_to_accounts(filename):
 
 
 def pull_data(accounts):
-    responses = []
     headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 
     logs = []
@@ -80,6 +81,24 @@ def pull_data(accounts):
         logs.extend(data)
         
     return logs
+
+def pull_account_ids():
+    headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
+
+    ids = []
+
+    params = copy.deepcopy(k_params)
+
+    response = requests.get(k_account_url,params=params,headers=headers)
+
+    if not response.ok:           
+        print 'fail with %d on account %s ' % (response.status_code,str(account_id))
+    else:
+        ids = response.json()
+
+
+    return ids
+
        
 def process_data(logs):
     for log in logs:
@@ -102,9 +121,20 @@ def logs_to_csv(logs, filename):
     print "wrote %d rows" % numrows
 
 if __name__ == '__main__':
-    input_filename = sys.argv[1]
-    accounts = csv_to_accounts(input_filename)
-    
+    if len(sys.argv) > 1:
+        input_filename = sys.argv[1]
+        accounts = csv_to_accounts(input_filename)
+    else:
+        accounts = pull_account_ids()
+        print "found %d accounts" % (len(accounts))
+        filename = "%s--%d.csv" % (start_date_string,num_days)
+        f = open(filename,'w')
+        f.write('id\n')
+        for acc in accounts:
+            f.write(str(acc) + '\n')
+        
+        f.close()
+        
     logs = pull_data(accounts)
     
     process_data(logs)

@@ -5,8 +5,8 @@ import requests
 import copy
 import csv
 
-num_days = 14
-start_date_string = '2015-05-06'
+num_days = 2
+start_date_string = '2015-05-16'
 
 k_endpoint = 'v1/datascience/matchedfeedback/'
 #k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'

@@ -7,20 +7,22 @@ import numpy as np
 import time
 import json
 
+k_uri = 'http://localhost:9997/v1/prediction/sleep_events/{}/{}'
+k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
 
-k_uri = 'https://research-api-benjo.hello.is/v1/prediction/timeline/{}/{}'
-#k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/timeline/{}/{}'
-
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
-num_days = 1
-valid_keys = ['SLEEP','OUT_OF_BED','IN_BED','WAKE_UP']
 def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
     return t.strftime('%Y-%m-%d %H:%M:%S')
 
+num_days = 1
 start_date_string = sys.argv[1]
 user_id = int(sys.argv[2])
+#num_days = 10
+#start_date_string = '2015-02-18'
+k_algorithm = 'hmm'
+k_algorithm2 = 'sleep_score'
 
+k_params = {'algorithm' : k_algorithm2}
 
 def pull_date_for_user(userid):
     responses = []
@@ -37,7 +39,7 @@ def pull_date_for_user(userid):
             mydate += datetime.timedelta(days=1)
             url = k_uri.format(userid,datestring)
             print url
-            response = requests.get(url,headers = headers)
+            response = requests.get(url,params=k_params,headers = headers)
             if not response.ok:
                 print 'fail with %d on %s ' % (response.status_code,datestring)
                 continue
@@ -53,33 +55,22 @@ def pull_date_for_user(userid):
         
     return responses
 
-def print_item(item):
-    for moredata in item:
-        segments = moredata['segments']
-        for seg in segments:
-            event_type = seg['event_type']
-            if event_type in valid_keys:
-                timestr = get_time_as_string(seg['timestamp'],seg['offset_millis'])
-                print timestr,event_type
-    print '\n'
-
 def print_results(data):
-    if len(data) == 0:
-        print 'empty timeline'
-        return
-
-    if len(data[0]) == 0:
-        print 'empty timeline'
-        return
-
-    for d in data:
-        print_item(d)
-
+    
+    for item in data:
+        for mydict in item:
+            
+            event_type = mydict['type']
+            timestr = get_time_as_string(mydict['startTimestamp'],mydict['timezoneOffset'])
                
- 
+            print timestr,event_type
+            
+        print '\n'
+                
 if __name__ == '__main__':
+    if sys.argv[3] == 'hmm':
+        k_params['algorithm'] = 'hmm'
         
     resp = pull_date_for_user(user_id)
-    #print resp
     print_results(resp)
 

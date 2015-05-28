@@ -16,6 +16,7 @@ import copy
 POOL_SIZE = 8
 #k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'https://research.hello.is/v1/prediction/sleep_events/{}/{}'
 k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 k_users = [1, 1001, 1002, 1012, 1310, 1025, 1063, 1052]
 k_algorithm = 'hmm'
@@ -48,8 +49,13 @@ def pull_date_for_user(label):
 
         response = requests.get(url,params=k_params,headers = headers)
         if response.ok:
+
            
             data = response.json()
+
+            if isinstance(data, dict) and data.has_key('code') and int(data['code']) == 204:
+                print data['message']
+                return None
             
             if len(data) == 0:
                 print 'no responses found on date %s for user %s' % (datestr,str(userid))
