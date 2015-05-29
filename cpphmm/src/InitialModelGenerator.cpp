@@ -43,41 +43,64 @@ static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_distur
 #define MOTION_OBSNUM (1)
 #define DISTURBANCE_OBSNUM (2)
 #define SOUND_OBSNUM (3)
+#define NAT_LIGHT_OBSNUM (4)
 #define PARTNER_MOTION_OBSNUM (5)
 #define PARTNER_DISTURBANCE_OBSNUM (6)
 
-#define LIGHT_WEIGHT (1.0)
+#define LIGHT_WEIGHT (0.5)
 #define MOTION_WEIGHT (1.0)
 #define DISTURBANCE_WEIGHT (1.0)
-#define SOUND_WEIGHT (0.5)
+#define SOUND_WEIGHT (0.1)
+#define NAT_LIGHT_WEIGHT (1.0)
+
+#define USE_NAT_LIGHT
 
 static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
+    size_t numNatLightModels = NUM_DISTURBANCE_MODELS;
+    
+#ifndef USE_NAT_LIGHT
+    numNatLightModels = 1;
+#endif
+    
     //enumerate all possible models
     for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
         for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
             for (int iSound = 0; iSound < NUM_SOUND_MODELS; iSound++) {
-                for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
-                    
-                    GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                    PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
-                    
-                    HmmDataVec_t alphabetprobs;
-                    alphabetprobs.resize(2);
-                    alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
-                    alphabetprobs[1] = disturbance_params[iDisturbance];
-                    
-                    AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true,DISTURBANCE_WEIGHT);
-                    
-                    GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
-                    
-                    CompositeModel model;
-                    model.addModel(light.clone(false));
-                    model.addModel(motion.clone(false));
-                    model.addModel(disturbance.clone(false));
-                    model.addModel(sound.clone(false));
-                    
-                    models.push_back(model.clone(false));
+                for (int iNatLight = 0; iNatLight < numNatLightModels; iNatLight++) {
+                    for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
+                        
+                        GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
+                        PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
+                        
+                        HmmDataVec_t disturbanceProbs;
+                        disturbanceProbs.resize(2);
+                        disturbanceProbs[0] = 1.0 - disturbance_params[iDisturbance];
+                        disturbanceProbs[1] = disturbance_params[iDisturbance];
+                        
+                        HmmDataVec_t natLightProbs;
+                        natLightProbs.resize(2);
+                        natLightProbs[0] = 1.0 - disturbance_params[iNatLight];
+                        natLightProbs[1] = disturbance_params[iNatLight];
+                        
+                        AlphabetModel disturbance(DISTURBANCE_OBSNUM,disturbanceProbs,true,DISTURBANCE_WEIGHT);
+                        
+                        AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
+
+                        GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
+                        
+                        CompositeModel model;
+                        model.addModel(light.clone(false));
+                        model.addModel(motion.clone(false));
+                        model.addModel(disturbance.clone(false));
+                        model.addModel(sound.clone(false));
+                        
+#ifdef USE_NAT_LIGHT
+                        model.addModel(natLight.clone(false));
+#endif
+                        
+                        models.push_back(model.clone(false));
+                    }
                 }
             }
         }
