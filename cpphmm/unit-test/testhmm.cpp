@@ -112,14 +112,14 @@ TEST_F(TestHmm,TestHmm) {
         probs2 << 0.5,0.5;
         
 
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.0) ));
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,.09,.16)));
-        model1->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs1,true)));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.0,1.0) ));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,.09,.16,1.0)));
+        model1->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs1,true,1.0)));
 
     
-        model2->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,3.0)));
-        model2->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,1.6,1.13)));
-        model2->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs2,true)));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,3.0,1.0)));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,1.6,1.13,1.0)));
+        model2->addModel(HmmPdfInterfaceSharedPtr_t(new AlphabetModel(2,probs2,true,1.0)));
 
         
         hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(model1));
@@ -184,7 +184,7 @@ TEST_F(TestHmm,TestGammaWithManyStates) {
     Ainit[2] << 0.30,0.20,0.30,0.20;
     Ainit[3] << 0.15,0.15,0.50,0.20;
     
-    GammaModel model(0, 0.5, 0.5);
+    GammaModel model(0, 0.5, 0.5,1.0);
     
     HiddenMarkovModel hmm(Ainit);
     
@@ -252,9 +252,9 @@ TEST_F(TestHmm,TestPoissonWithManyStates) {
     
     HiddenMarkovModel hmm(Ainit);
     
-    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.1)));
-    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,5.5)));
-    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,20.5)));
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,1.1,1.0)));
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,5.5,1.0)));
+    hmm.addModelForState(HmmPdfInterfaceSharedPtr_t(new PoissonModel(0,20.5,1.0)));
 
     
     
@@ -316,9 +316,9 @@ TEST_F(TestHmm, TestVSTACS) {
     Ainit[2] << 0.0,0.2,0.8;
    
     
-    GammaModel model1(0, 1, 0.1);
-    GammaModel model2(0, 2, 0.1);
-    GammaModel model3(0, 3, 0.1);
+    GammaModel model1(0, 1, 0.1,1.0);
+    GammaModel model2(0, 2, 0.1,1.0);
+    GammaModel model3(0, 3, 0.1,1.0);
 
     HiddenMarkovModel hmm(Ainit);
     
