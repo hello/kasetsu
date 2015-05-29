@@ -65,4 +65,26 @@ private:
     
 };
 
+////////////////////////////////////
+
+class OneDimensionalGaussianModel : public HmmPdfInterface {
+public:
+    OneDimensionalGaussianModel(const int32_t obsnum,const float mean, const float stddev, const float weight);
+    ~OneDimensionalGaussianModel();
+    
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
+    HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const ;
+    std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
+    
+    
+private:
+    const float _mean;
+    const float _stddev;
+    const int32_t _obsnum;
+    const HmmFloat_t _weight;
+    
+};
+
 #endif //_ALLMODELS_H_

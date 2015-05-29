@@ -8,9 +8,12 @@
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
-#define  MIN_GAMMA_STDDEV (0.4)
+#define  MIN_GAMMA_STDDEV (0.1)
 #define  MIN_GAMMA_INPUT (0.01)
 #define  MAX_GAMMA_INPUT  (1e5)
+#define  MIN_GAUSSIAN_STDDEV(0.1)
+#define  MAX_GAUSSIAN_INPUT  (1e5)
+
 
 #define GAMMA_PERTURBATION_MEAN (0.1)
 #define GAMMA_PERTURBATION_STDDEV (0.1)
@@ -85,8 +88,6 @@ HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForT
     HmmFloat_t denom = 0.0;
     
 
-    // THIS HAS A BUG
-    //OBSVEC SIZE IS NOT EQUAL TO GAMMA FOR THIS STATE WHEN ENLARGING USING VSTACS
     for (int32_t t = 0; t < obsvec.size(); t++) {
         dx = obsvec[t] - oldmean;
         numermean += obsvec[t]*gammaForThisState[t];
@@ -387,3 +388,124 @@ std::string AlphabetModel::serializeToJson() const {
 uint32_t AlphabetModel::getNumberOfFreeParams() const {
     return _alphabetprobs.size();
 }
+
+
+
+///////////////////////////////////
+
+
+
+
+
+OneDimensionalGaussianModel::OneDimensionalGaussianModel(const int32_t obsnum,const float mean, const float stddev, const float weight)
+: _mean(mean)
+, _stddev(stddev)
+, _obsnum(obsnum)
+, _weight(weight) {
+    
+
+}
+
+
+OneDimensionalGaussianModel::~OneDimensionalGaussianModel() {
+    
+}
+
+
+HmmPdfInterfaceSharedPtr_t OneDimensionalGaussianModel::clone(bool isPerturbed) const {
+    if (isPerturbed) {
+        
+        return HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(_obsnum,getPerturbedValue(_mean,GAMMA_PERTURBATION_MEAN,MIN_GAMMA_MEAN),getPerturbedValue(_stddev,GAMMA_PERTURBATION_STDDEV,MIN_GAMMA_STDDEV),_weight));
+        
+    }
+    
+    return HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(_obsnum,_mean,_stddev,_weight));
+}
+
+HmmPdfInterfaceSharedPtr_t OneDimensionalGaussianModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
+    const HmmDataVec_t & obsvec = meas[_obsnum];
+    
+    
+    HmmFloat_t newmean = 0.0;
+    HmmFloat_t oldmean = _mean;
+    HmmFloat_t newvariance = 0.0;
+    HmmFloat_t dx;
+    
+    HmmFloat_t numermean = 0.0;
+    HmmFloat_t numervariance = 0.0;
+    
+    HmmFloat_t denom = 0.0;
+    
+    
+    
+    for (int32_t t = 0; t < obsvec.size(); t++) {
+        dx = obsvec[t] - oldmean;
+        numermean += obsvec[t]*gammaForThisState[t];
+        numervariance += gammaForThisState[t]*dx*dx;
+        denom += gammaForThisState[t];
+    }
+    
+    if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
+        newmean = numermean / denom;
+        newvariance = numervariance / denom;
+    }
+    else {
+        newmean = 0.0;
+        newvariance = 0.0;
+    }
+    
+    HmmFloat_t newstddev = sqrt(newvariance);
+    
+    if (newstddev < MIN_GAMMA_STDDEV) {
+        newstddev = MIN_GAMMA_STDDEV;
+    }
+    
+    if (std::isnan(newmean) || std::isnan(newstddev)) {
+        int foo = 3;
+        foo++;
+    }
+    
+    const HmmFloat_t dmean = newmean - _mean;
+    const HmmFloat_t dstddev = newstddev - _stddev;
+    
+    newmean = _mean + eta * dmean;
+    newstddev = _stddev + eta * dstddev;
+    
+    return HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(_obsnum,newmean,newstddev,_weight));
+}
+
+HmmDataVec_t OneDimensionalGaussianModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
+    HmmDataVec_t ret;
+    const HmmDataVec_t & vec = x[_obsnum];
+    
+    
+    ret.resize(vec.size());
+    
+    for (int32_t i = 0; i < vec.size(); i++) {
+        HmmFloat_t val = vec[i];
+        
+        if (val > MAX_GAUSSIAN_INPUT) {
+            val = MAX_GAUSSIAN_INPUT;
+        }
+        
+        HmmFloat_t evalValue = gsl_ran_gaussian_pdf(val - _mean, _stddev);
+        
+        ret[i] = _weight * eln(evalValue);
+    }
+    
+    return ret;
+}
+
+std::string OneDimensionalGaussianModel::serializeToJson() const {
+    char buf[1024];
+    memset(buf,0,sizeof(buf));
+    snprintf(buf, sizeof(buf), "{\"model_type\" : \"gaussian\", \"model_data\": {\"obs_num\": %d, \"stddev\": %f, \"mean\": %f,\"weight\": %f}}",_obsnum,_stddev,_mean,_weight);
+    
+    return std::string(buf);
+}
+
+uint32_t OneDimensionalGaussianModel::getNumberOfFreeParams() const {
+    return 2;
+}
+
+
