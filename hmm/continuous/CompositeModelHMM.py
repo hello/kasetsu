@@ -25,14 +25,13 @@ k_min_loglik = -15.0
 def model_factory(model_type, model_data):
     
     if model_type == 'uniform':
-        print 'creating uniform model'
         return UniformModel(model_data)
         
     elif model_type == 'poisson':
         return PoissonModel(model_data)
         
-    elif model_type == 'gaussian_mixture':
-        return OneDimensionalGaussianMixture(model_data)
+    elif model_type == 'gaussian':
+        return OneDimensionalGaussian(model_data)
         
     elif model_type == 'gamma':
         return GammaDistribution(model_data)
@@ -49,6 +48,12 @@ class PoissonModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
         self.mean = data['mean']
+        
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+            
         self.dist = scipy.stats.poisson(self.mean)
     
     def eval(self, x):
@@ -81,7 +86,7 @@ class PoissonModel(object):
 
         
     def to_dict(self):
-        return {'model_type' : 'poisson', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum} }
+        return {'model_type' : 'poisson', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum,  'weight' : self.weight } }
         
 
 class GammaDistribution(object):
@@ -89,6 +94,12 @@ class GammaDistribution(object):
         self.obsnum = data['obs_num']
         self.mean  = data['mean']
         self.stddev = data['stddev']
+        
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+            
         self.dist = self.get_dist()
         
         
@@ -148,104 +159,93 @@ class GammaDistribution(object):
         
         
     def to_dict(self):
-        return {'model_type' : 'gamma', 'model_data' : {'mean' : self.mean, 'stddev' : self.stddev,   'obs_num' : self.obsnum} }
+        return {'model_type' : 'gamma', 'model_data' : {'mean' : self.mean, 'stddev' : self.stddev,   'obs_num' : self.obsnum,  'weight' : self.weight } }
 
 
     def get_status(self):
         return "gam:%.2f,%.2f" % (self.mean, self.stddev)
 
 
-class OneDimensionalGaussianMixture(object):
+
+class OneDimensionalGaussian(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
-        self.data = data
+        self.mean  = data['mean']
+        self.stddev = data['stddev']
         
-    def eval_gaussian(self, mean, variance, x):
-        dx = x - mean
-        y = numpy.exp( -(dx*dx) / (2*variance))
-        y[numpy.where(y <= 1e-5)] = 1e-5
-        y /= numpy.sqrt(2*3.14159*variance)
-        return y
-
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+            
+        self.dist = self.get_dist()
+        
+        
+    def get_dist(self):
+ 
+        return scipy.stats.norm(loc=self.mean, scale=self.stddev)
+        
+    def get_params(self):
+        return (self.dist.mean(), self.dist.std())
+        
     def eval(self, x):
-        weights = self.data['weights']
-        means = self.data['means']
-        variances = self.data['variances']
+        data = x[:, self.obsnum]
+               
+        the_eval = self.dist.pdf(data)
+
+        return the_eval
         
-        n = len(weights)
-        
-        measvec = x[:, self.obsnum]
-        
-        evals = numpy.ones(measvec.shape)
-        for i in xrange(n):
-            y = weights[i] * self.eval_gaussian(means[i], variances[i], measvec)
-            evals *= y
-        
-        return evals
         
     def reestimate(self, x, gammaForThisState):
-        '''
-        Helper method that performs the Baum-Welch 'M' step
-        for the mixture parameters - 'w', 'means', 'covars'.
-        '''       
         
-        weights = self.data['weights']
-        means = self.data['means']
-        variances = self.data['variances']
+        oldmean = self.mean
         
-        n = len(weights)
+        newmean = 0.0
         
-        newweights = copy.deepcopy(weights)
-        newmeans = copy.deepcopy(means)
-        newvariances = copy.deepcopy(variances)
-        
-        measvec = x[:, self.obsnum]
-        m = measvec.shape[0]
-        
-        total_denom = sum(gammaForThisState)
-            
-        
-        for i in xrange(n):
-            
-            mydenomsum = 0.0
-            mycovsum   = 0.0
-            mymeansum  = 0.0
-            
-            for t in xrange(m):
-                mymeansum += gammaForThisState[t] * measvec[t]
-                dx = measvec[t] - means[i]
-                mycovsum += gammaForThisState[t] * dx*dx
-                mydenomsum += gammaForThisState[t]
-                
-                
-            newweights[i] = mydenomsum / total_denom
-            newvariances[i] = mycovsum / mydenomsum
-            newmeans[i] = mymeansum / mydenomsum
+        numer_mean = 0.0
+        numer_variance = 0.0
+        denom = 0.0
+        for t in xrange(x.shape[0]):
+            myobs = x[t][self.obsnum]
+            dx = myobs - oldmean
 
-            if newvariances[i] < k_min_gaussian_variance:
-                newvariances[i] = k_min_gaussian_variance
-                
-            if newvariances[i] > k_max_gaussian_variance:
-                newvariances[i] = k_max_gaussian_variance
-
+            numer_mean += gammaForThisState[t]*myobs
+            numer_variance += gammaForThisState[t]*dx*dx
+            denom += (gammaForThisState[t])
+    
+        newmean = numer_mean/denom
+        newvariance = numer_variance / denom
+    
+        if newmean < k_min_gamma_mean:
+            newmean = k_min_gamma_mean
             
-        
-        self.means = newmeans
-        self.weights = newweights
-        self.variances = newvariances
-        
-    def get_status(self):
-        return "m=%.2f,s=%.2f,w=%f" % (self.means[0], numpy.sqrt(self.variances[0]), self.weights[0])
+        if newvariance < k_min_gamma_variance:
+            newvariance = k_min_gamma_variance
+            
+        self.mean = newmean 
+        self.stddev = numpy.sqrt(newvariance)
+        self.dist = self.get_dist()
 
+        
         
     def to_dict(self):
-        return {'model_type' : 'gaussian_mixture', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum}}
-        
+        return {'model_type' : 'gaussian', 'model_data' : {'mean' : self.mean, 'stddev' : self.stddev,   'obs_num' : self.obsnum,  'weight' : self.weight } }
+
+
+    def get_status(self):
+        return "gaus:%.2f,%.2f" % (self.mean, self.stddev)
+
+
         
 class UniformModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
         self.mean = data['mean']
+        
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
         
     def eval(self, x):
         return self.mean
@@ -259,13 +259,19 @@ class UniformModel(object):
         return "uni {:<10.2f}".format(self.mean)
 
     def to_dict(self):
-        return {'model_type' : 'uniform', 'model_data' : self.mean,  'obs_num' : self.obsnum}
+        return {'model_type' : 'uniform', 'model_data' : self.mean,  'obs_num' : self.obsnum,  'weight' : self.weight }
       
     
 class DiscreteAlphabetModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
         self.data = data['alphabet_probs']
+        
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+        
         if data.has_key('allow_reestimation'):
             self.allow_reestimation = data['allow_reestimation']
         else:
@@ -308,7 +314,7 @@ class DiscreteAlphabetModel(object):
         return "alph:" + ",".join([("%.2f" % f) for f in self.data])
 
     def to_dict(self):
-        return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum, 'allow_reestimation' : self.allow_reestimation} }
+        return {'model_type' : 'discrete_alphabet', 'model_data' : { 'alphabet_probs' : self.data,  'obs_num' : self.obsnum, 'allow_reestimation' : self.allow_reestimation,  'weight' : self.weight } }
         
         
 class CompositeModel(object):
@@ -331,7 +337,7 @@ class CompositeModel(object):
         logliks = numpy.zeros((x.shape[0],))
         
         for model in self.models:
-            logliks2 = numpy.log(model.eval(x))
+            logliks2 = model.weight * numpy.log(model.eval(x))
             logliks += logliks2 
         
         return logliks
