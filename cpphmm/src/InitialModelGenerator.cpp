@@ -21,10 +21,16 @@ static const HmmFloat_t low_disturbance = 0.05;
 static const HmmFloat_t med_disturbance = 0.5;
 static const HmmFloat_t high_disturbance = 0.95;
 
+static const HmmFloat_t minus_ratio = -1.0;
+static const HmmFloat_t plus_ratio = 1.0;
+static const HmmFloat_t even_ratio = 0.0;
+static const HmmFloat_t energy_std_dev = 1.0;
+
 #define NUM_LIGHT_MODELS (3)
 #define NUM_MOTION_MODELS (3)
 #define NUM_SOUND_MODELS (3)
 #define NUM_DISTURBANCE_MODELS (3)
+#define NUM_ENERGY_RATIO_MODELS (3)
 
 static const HmmFloat_t light_params[2][NUM_LIGHT_MODELS] = {
     {low_light,med_light,high_light},
@@ -38,6 +44,8 @@ static const HmmFloat_t motion_params[NUM_MOTION_MODELS] = {low_motion,med_motio
 
 static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,med_disturbance,high_disturbance};
 
+static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ratio,even_ratio,plus_ratio};
+
 
 #define LIGHT_OBSNUM (0)
 #define MOTION_OBSNUM (1)
@@ -46,28 +54,24 @@ static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_distur
 #define NAT_LIGHT_OBSNUM (4)
 #define PARTNER_MOTION_OBSNUM (5)
 #define PARTNER_DISTURBANCE_OBSNUM (6)
+#define ENERGY_RATIO_OBSNUM (7)
 
-#define LIGHT_WEIGHT (0.5)
+#define LIGHT_WEIGHT (1.0)
 #define MOTION_WEIGHT (1.0)
 #define DISTURBANCE_WEIGHT (1.0)
 #define SOUND_WEIGHT (0.1)
 #define NAT_LIGHT_WEIGHT (1.0)
+#define ENERGY_RATIO_WEIGHT (1.0)
 
-#define USE_NAT_LIGHT
 
 static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
-    size_t numNatLightModels = NUM_DISTURBANCE_MODELS;
-    
-#ifndef USE_NAT_LIGHT
-    numNatLightModels = 1;
-#endif
     
     //enumerate all possible models
     for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
         for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
             for (int iSound = 0; iSound < NUM_SOUND_MODELS; iSound++) {
-                for (int iNatLight = 0; iNatLight < numNatLightModels; iNatLight++) {
+                for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
                     for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
                         
                         GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
@@ -94,11 +98,8 @@ static ModelVec_t getSinglePersonInitialModel() {
                         model.addModel(motion.clone(false));
                         model.addModel(disturbance.clone(false));
                         model.addModel(sound.clone(false));
-                        
-#ifdef USE_NAT_LIGHT
                         model.addModel(natLight.clone(false));
-#endif
-                        
+        
                         models.push_back(model.clone(false));
                     }
                 }
@@ -117,46 +118,58 @@ static ModelVec_t getPartneredInitialModel() {
         for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
             for (int iSound = 0; iSound < NUM_SOUND_MODELS; iSound++) {
                 for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
-                    for (int iPartnerMotion = 0; iPartnerMotion < NUM_MOTION_MODELS; iPartnerMotion++) {
-                        for (int iPartnerDisturbance = 0; iPartnerDisturbance < NUM_DISTURBANCE_MODELS; iPartnerDisturbance++) {
-                            
-                            GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                            PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
-                            
-                            HmmDataVec_t alphabetprobs;
-                            alphabetprobs.resize(2);
-                            alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
-                            alphabetprobs[1] = disturbance_params[iDisturbance];
-                            
-                            AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true,DISTURBANCE_WEIGHT);
-                            
-                            GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
-                            
-                            
-                            PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion],MOTION_WEIGHT);
-                            
-                            HmmDataVec_t partneralphabetprobs;
-                            partneralphabetprobs.resize(2);
-                            partneralphabetprobs[0] = 1.0 - disturbance_params[iPartnerDisturbance];
-                            partneralphabetprobs[1] = disturbance_params[iPartnerDisturbance];
+                    for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
+                        for (int iPartnerMotion = 0; iPartnerMotion < NUM_MOTION_MODELS; iPartnerMotion++) {
+                            for (int iPartnerDisturbance = 0; iPartnerDisturbance < NUM_DISTURBANCE_MODELS; iPartnerDisturbance++) {
+                                for (int iEnergyRatio = 0; iEnergyRatio < NUM_ENERGY_RATIO_MODELS; iEnergyRatio++) {
+                                    
+                                    GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
+                                    PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
+                                    
+                                    HmmDataVec_t alphabetprobs;
+                                    alphabetprobs.resize(2);
+                                    alphabetprobs[0] = 1.0 - disturbance_params[iDisturbance];
+                                    alphabetprobs[1] = disturbance_params[iDisturbance];
+                                    
+                                    AlphabetModel disturbance(DISTURBANCE_OBSNUM,alphabetprobs,true,DISTURBANCE_WEIGHT);
+                                    
+                                    GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
+                                    
+                                    HmmDataVec_t natLightProbs;
+                                    natLightProbs.resize(2);
+                                    natLightProbs[0] = 1.0 - disturbance_params[iNatLight];
+                                    natLightProbs[1] = disturbance_params[iNatLight];
+                                    
+                                    
+                                    AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
+                                    
+                                    
+                                    PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion],MOTION_WEIGHT);
+                                    
+                                    HmmDataVec_t partneralphabetprobs;
+                                    partneralphabetprobs.resize(2);
+                                    partneralphabetprobs[0] = 1.0 - disturbance_params[iPartnerDisturbance];
+                                    partneralphabetprobs[1] = disturbance_params[iPartnerDisturbance];
+                                    
+                                    AlphabetModel partnerdisturbance(PARTNER_DISTURBANCE_OBSNUM,partneralphabetprobs,true,DISTURBANCE_WEIGHT);
+                                    
+                                    OneDimensionalGaussianModel energyRatio(ENERGY_RATIO_OBSNUM,energy_ratio_params[iEnergyRatio],energy_std_dev,ENERGY_RATIO_WEIGHT);
+                                    
+                                    CompositeModel model;
+                                    
+                                    model.addModel(light.clone(false));
+                                    model.addModel(motion.clone(false));
+                                    model.addModel(disturbance.clone(false));
+                                    model.addModel(sound.clone(false));
+                                    model.addModel(natLight.clone(false));
+                                    model.addModel(partnermotion.clone(false));
+                                    model.addModel(partnerdisturbance.clone(false));
+                                    model.addModel(energyRatio.clone(false));
 
-                            AlphabetModel partnerdisturbance(PARTNER_DISTURBANCE_OBSNUM,partneralphabetprobs,true,DISTURBANCE_WEIGHT);
-
-                            
-                            CompositeModel model;
-                            
-                            model.addModel(light.clone(false));
-                            model.addModel(motion.clone(false));
-                            model.addModel(disturbance.clone(false));
-                            model.addModel(sound.clone(false));
-                            model.addModel(partnermotion.clone(false));
-                            model.addModel(partnerdisturbance.clone(false));
-                            
-                            
-                            models.push_back(model.clone(false));
-
-                    
-                            
+                                    
+                                    models.push_back(model.clone(false));
+                                }
+                            }
                         }
                     }
                 }

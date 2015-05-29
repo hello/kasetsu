@@ -11,7 +11,7 @@
 #define  MIN_GAMMA_STDDEV (0.1)
 #define  MIN_GAMMA_INPUT (0.01)
 #define  MAX_GAMMA_INPUT  (1e5)
-#define  MIN_GAUSSIAN_STDDEV(0.1)
+#define  MIN_GAUSSIAN_STDDEV (0.1)
 #define  MAX_GAUSSIAN_INPUT  (1e5)
 
 
