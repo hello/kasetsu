@@ -10,11 +10,21 @@ import numpy
 
 from hmm.continuous.CompositeModelHMM import CompositeModelHMM
 
+k_use_wave_as_disturbance = True
 
 def to_proto(composite_hmm,aux_params, input_filename):
     
     on_bed_states = aux_params['on_bed_states']   
     sleep_states = aux_params['sleep_states']  
+
+    conditional_on_bed_states = []    
+    if aux_params.has_key('conditional_on_bed_states'):
+        conditional_on_bed_states = aux_params['conditional_on_bed_states']
+
+    conditional_sleep_states = []
+    if aux_params.has_key('conditional_sleep_states'):
+        conditional_sleep_states = aux_params['conditional_sleep_states']
+
     natural_light_filter_start_hour = aux_params['natural_light_filter_start_hour']
     natural_light_filter_stop_hour = aux_params['natural_light_filter_stop_hour']
     num_model_params = aux_params['num_model_params']
@@ -24,6 +34,11 @@ def to_proto(composite_hmm,aux_params, input_filename):
     pill_magnitude_disturbance_threshold_lsb = aux_params['pill_magnitude_disturbance_threshold_lsb']
     enable_interval_search = aux_params['enable_interval_search']
     meas_period = aux_params['meas_period_minutes']
+
+    use_wave_as_disturbance = k_use_wave_as_disturbance
+
+    if aux_params.has_key('use_wave_as_disturbance'):
+        use_wave_as_disturbance = aux_params['use_wave_as_disturbance']
     
     sleep_hmm = sleep_hmm_pb2.SleepHmm()
     
@@ -37,6 +52,7 @@ def to_proto(composite_hmm,aux_params, input_filename):
     sleep_hmm.natural_light_filter_stop_hour = natural_light_filter_stop_hour
     sleep_hmm.enable_interval_search = enable_interval_search
     sleep_hmm.num_minutes_in_meas_period = meas_period
+    sleep_hmm.use_wave_as_disturbance = use_wave_as_disturbance
     
     Nstates = len(composite_hmm.models)
     
@@ -62,29 +78,39 @@ def to_proto(composite_hmm,aux_params, input_filename):
         m_light.mean = d[0]['model_data']['mean']
         m_light.stddev = d[0]['model_data']['stddev']
         
+        if d[0]['model_data'].has_key('weight'):
+            m_light.weight = d[0]['model_data']['weight']
+        
         m_motion_count = sleep_hmm_pb2.PoissonModel()
         m_motion_count.mean = d[1]['model_data']['mean']
+
+        if d[1]['model_data'].has_key('weight'):
+            m_motion_count.weight = d[1]['model_data']['weight']
 
         m_disturbances = sleep_hmm_pb2.DiscreteAlphabetModel()
         vec = d[2]['model_data']['alphabet_probs']
         for v in vec:
             m_disturbances.probabilities.append(v)
+
+        if d[2]['model_data'].has_key('weight'):
+            m_disturbances.weight = d[2]['model_data']['weight']
             
         m_soundcounts = sleep_hmm_pb2.GammaModel()
         m_soundcounts.mean = d[3]['model_data']['mean']
         m_soundcounts.stddev = d[3]['model_data']['stddev']
 
+        if d[3]['model_data'].has_key('weight'):
+            m_soundcounts.weight = d[3]['model_data']['weight']
+
         m_natural_light_filter = sleep_hmm_pb2.DiscreteAlphabetModel()
         
-        if len(d) == 4:
-           d.append({})
-           d[4]['model_data'] = {}
-           d[4]['model_data']['alphabet_probs'] = [1.0,1.0]
-           print 'using default light penalty probs of 1.0,1.0'
 
         vec = d[4]['model_data']['alphabet_probs']
         for v in vec:
             m_natural_light_filter.probabilities.append(v)
+
+        if d[4]['model_data'].has_key('weight'):
+            m_natural_light_filter.weight = d[4]['model_data']['weight']
 
         m_state.light.MergeFrom(m_light)
         m_state.motion_count.MergeFrom(m_motion_count)
@@ -94,13 +120,19 @@ def to_proto(composite_hmm,aux_params, input_filename):
         
         if i in sleep_states:
             m_state.sleep_mode = sleep_hmm_pb2.SLEEP
+        elif i in conditional_sleep_states:
+            m_state.sleep_mode = sleep_hmm_pb2.CONDITIONAL_SLEEP
         else:
             m_state.sleep_mode = sleep_hmm_pb2.WAKE
 
         if i in on_bed_states:
             m_state.bed_mode = sleep_hmm_pb2.ON_BED
+        elif i in conditional_on_bed_states:
+            m_state.bed_mode = sleep_hmm_pb2.CONDITIONAL_BED
         else:
             m_state.bed_mode = sleep_hmm_pb2.OFF_BED
+            
+       
            
         '''
         if i in light_sleep_state:
