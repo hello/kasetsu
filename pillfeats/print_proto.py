@@ -42,7 +42,7 @@ if __name__ == '__main__':
         A = model.state_transition_matrix
         mat = get_vec_as_mat(A,N)
         for row in mat:
-            print row
+            print ",".join(['%05.3f' % item for item in row])
 
         statenum = 0
         for state in model.states:
