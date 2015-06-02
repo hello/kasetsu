@@ -7,8 +7,10 @@
 #include "MatrixHelpers.h"
 #include <assert.h>
 #include <string.h>
+#include "RandomHelpers.h"
 
 #define MIN_VALUE_FOR_A (1e-5)
+#define SPLIT_A_PERTURBATION_MAX (0.05)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
 #define MAX_NUM_REESTIMATIONS_PER_ITER (100)
@@ -16,11 +18,11 @@
 
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
 
-#define THRESHOLD_FOR_REMOVING_STATE (0.01)
+#define THRESHOLD_FOR_REMOVING_STATE (0.0001)
 #define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
-#define NUM_BAD_COUNTS_TO_EXIT (1)
+#define NUM_BAD_COUNTS_TO_EXIT (10)
 
 #define THREAD_POOL_SIZE (8)
 #define USE_THREADPOOL
@@ -563,7 +565,7 @@ HmmSharedPtr_t HiddenMarkovModel::deleteStates(UIntSet_t statesToDelete) const {
 }
 
 
-HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
+HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb) const {
     int i,j;
     const uint32_t splitIndices[2] = {stateToSplit,_numStates};
     const uint32_t myGroup = _groups[stateToSplit];
@@ -611,6 +613,16 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit) const {
     std::stringstream ss;
     ss << "splitA - " << stateToSplit;
     //printMat(ss.str(), splitA);
+    
+    if (perturb) {
+        for (j = 0; j < 2; j++) {
+            const int idx = splitIndices[j];
+            for (i = 0; i < _numStates + 1; i++) {
+                splitA[idx][i] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
+                splitA[i][idx] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
+            }
+        }
+    }
     
 
     //create the new split model
@@ -1305,7 +1317,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         for (uint32_t iState = 0; iState < numStates; iState++) {
             
             for (int isplit = 0; isplit < NUM_SPLITS_PER_STATE; isplit++) {
-                HmmSharedPtr_t newSplitModel = best->splitState(iState);
+                HmmSharedPtr_t newSplitModel = best->splitState(iState,true);
                 
                 hmms.push_back(newSplitModel);
                 modelidx.push_back(iState);
@@ -1430,7 +1442,7 @@ void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t 
         
         //split each state
         for (int imodel = 0; imodel < numStates; imodel++) {
-            hmms.push_back(HmmSharedPtr_t(best->splitState(imodel)));
+            hmms.push_back(HmmSharedPtr_t(best->splitState(imodel,true)));
         }
         
         //train each state

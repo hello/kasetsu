@@ -96,7 +96,7 @@ public:
 
 
     std::string serializeToJson() const;
-    HmmSharedPtr_t splitState(uint32_t state) const;
+    HmmSharedPtr_t splitState(uint32_t state,bool perturb) const;
     HmmSharedPtr_t deleteStates(UIntSet_t statesToDelete) const;
 
     uint32_t getNumberOfFreeParams() const;
