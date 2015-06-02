@@ -3,6 +3,8 @@
 #include "AllModels.h"
 #include "MatrixHelpers.h"
 
+#define MIN_INIT_STATE_FRACTION (0.03)
+
 static const HmmFloat_t low_light = 1.0;
 static const HmmFloat_t med_light = 3.0;
 static const HmmFloat_t high_light = 6.0;
@@ -11,6 +13,9 @@ static const HmmFloat_t light_stddev = 1.0;
 static const HmmFloat_t low_motion = 0.1;
 static const HmmFloat_t med_motion = 1.0;
 static const HmmFloat_t high_motion = 4.0;
+static const HmmFloat_t low_motion_stddev = 1.0;
+static const HmmFloat_t med_motion_stddev = 1.0;
+static const HmmFloat_t high_motion_stddev = 1.0;
 
 static const HmmFloat_t low_sound = 1.0;
 static const HmmFloat_t med_sound = 3.0;
@@ -40,7 +45,10 @@ static const HmmFloat_t sound_params[2][NUM_SOUND_MODELS] = {
     {low_sound,med_sound,high_sound},
     {sound_stddev,sound_stddev,sound_stddev}};
 
-static const HmmFloat_t motion_params[NUM_MOTION_MODELS] = {low_motion,med_motion,high_motion};
+
+static const HmmFloat_t motion_gamma_params[2][NUM_MOTION_MODELS] = {
+    {low_motion,med_motion,high_motion},
+    {low_motion_stddev,med_motion_stddev,high_motion_stddev}};
 
 static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,med_disturbance,high_disturbance};
 
@@ -59,7 +67,7 @@ static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ra
 #define LIGHT_WEIGHT (1.0)
 #define MOTION_WEIGHT (1.0)
 #define DISTURBANCE_WEIGHT (1.0)
-#define SOUND_WEIGHT (0.1)
+#define SOUND_WEIGHT (1.0)
 #define NAT_LIGHT_WEIGHT (1.0)
 #define ENERGY_RATIO_WEIGHT (1.0)
 
@@ -75,8 +83,8 @@ static ModelVec_t getSinglePersonInitialModel() {
                     for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
                         
                         GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                        PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
-                        
+                        GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                          motion_gamma_params[1][iMotion],MOTION_WEIGHT);
                         HmmDataVec_t disturbanceProbs;
                         disturbanceProbs.resize(2);
                         disturbanceProbs[0] = 1.0 - disturbance_params[iDisturbance];
@@ -124,7 +132,9 @@ static ModelVec_t getPartneredInitialModel() {
                                 for (int iEnergyRatio = 0; iEnergyRatio < NUM_ENERGY_RATIO_MODELS; iEnergyRatio++) {
                                     
                                     GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                                    PoissonModel motion(MOTION_OBSNUM,motion_params[iMotion],MOTION_WEIGHT);
+                                    
+                                    GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                                      motion_gamma_params[1][iMotion],MOTION_WEIGHT);
                                     
                                     HmmDataVec_t alphabetprobs;
                                     alphabetprobs.resize(2);
@@ -144,7 +154,10 @@ static ModelVec_t getPartneredInitialModel() {
                                     AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
                                     
                                     
-                                    PoissonModel partnermotion(PARTNER_MOTION_OBSNUM,motion_params[iPartnerMotion],MOTION_WEIGHT);
+                                    
+                                    GammaModel partnermotion(PARTNER_MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                                      motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+                                   
                                     
                                     HmmDataVec_t partneralphabetprobs;
                                     partneralphabetprobs.resize(2);
@@ -247,7 +260,7 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
     
     
     //keep only models that had the path for a significant amount of time
-    const uint32_t threshold = (HmmFloat_t)T * 0.05;
+    const uint32_t threshold = (HmmFloat_t)T * MIN_INIT_STATE_FRACTION;
     UIntVec_t accepted;
     
     for (int i = 0; i < countmat.size(); i++) {
