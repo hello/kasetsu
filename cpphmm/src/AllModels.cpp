@@ -13,7 +13,7 @@
 #define  MAX_GAMMA_INPUT  (1e5)
 #define  MIN_GAUSSIAN_STDDEV (0.1)
 #define  MAX_GAUSSIAN_INPUT  (1e5)
-
+#define  MIN_ALPHABET_PROB (0.01)
 
 #define GAMMA_PERTURBATION_MEAN (0.1)
 #define GAMMA_PERTURBATION_STDDEV (0.1)
@@ -308,6 +308,7 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaF
         denom += gammaForThisState[t];
     }
     
+    //if denom > 0
     if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
         for (int i = 0; i < _alphabetprobs.size(); i++) {
             counts[i] /= denom;
@@ -339,6 +340,16 @@ HmmPdfInterfaceSharedPtr_t AlphabetModel::reestimate(const HmmDataVec_t & gammaF
     }
     
     
+    //constrain
+    for (int i = 0; i < _alphabetprobs.size(); i++) {
+        if (counts[i] < MIN_ALPHABET_PROB) {
+            counts[i] = MIN_ALPHABET_PROB;
+        }
+        
+        if (counts[i] > 1.0) {
+            counts[i] = 1.0;
+        }
+    }
     
 
     return HmmPdfInterfaceSharedPtr_t(new AlphabetModel(_obsnum,counts,_allowreestimation,_weight));
