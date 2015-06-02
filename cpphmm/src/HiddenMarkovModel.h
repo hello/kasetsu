@@ -3,6 +3,7 @@
 
 #include "HmmPdfInterface.h"
 #include "ReestimationResult.h"
+#include "SaveStateInterface.h"
 #include <cmath>
 /*  
       does forwards backwards calcs, computes gamma, xi, etc.
@@ -75,8 +76,7 @@ typedef SHARED_PTR<HiddenMarkovModel> HmmSharedPtr_t;
 class HiddenMarkovModel {
 public:
     HiddenMarkovModel(const HiddenMarkovModel & copyme);
-    HiddenMarkovModel(const HmmDataMatrix_t & A,const UIntVec_t & groupsByStateNumber = UIntVec_t());
-    HiddenMarkovModel(const UIntVec_t & groupsByStateNumber);
+    HiddenMarkovModel(const HmmDataMatrix_t & A,SaveStateInterface * stateSaver = NULL);
     
     ~HiddenMarkovModel();
     HiddenMarkovModel & operator = (const HiddenMarkovModel & hmm);
@@ -125,8 +125,7 @@ private:
     HmmDataMatrix_t _A;
     HmmDataVec_t _pi;
     
-    UIntVec_t _groups;
-
+    SaveStateInterface * _stateSaver;
 
     
 };

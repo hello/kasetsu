@@ -84,63 +84,16 @@ HiddenMarkovModel::HiddenMarkovModel(const HiddenMarkovModel & hmm) {
    
 }
 
-HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A,const UIntVec_t & groupsByStateNumber)
+HiddenMarkovModel::HiddenMarkovModel(const HmmDataMatrix_t & A, SaveStateInterface * stateSaver)
 :_A(A)
-,_groups(groupsByStateNumber){
+,_stateSaver(stateSaver) {
+    
     _numStates = A.size();
     _pi = getUniformVec(_numStates);
 
-    if (_groups.empty()) {
-        _groups.push_back(0);
-    }
 }
 
-//for creating seed models
-HiddenMarkovModel::HiddenMarkovModel(const UIntVec_t & groupsByStateNumber)
-:_groups(groupsByStateNumber) {
 
-    _numStates = groupsByStateNumber.size();
-    
-    _pi = getUniformVec(_numStates);
-    
-    //initialize sparsely connected A
-    _A = getZeroedMatrix(_numStates, _numStates);
-    
-//   / HmmFloat_t edgeAlpha = 1.0 / 2.0;
-    HmmFloat_t alpha = 1.0 / 3.0;
-    
-    if(_numStates == 1) {
-        alpha = 1.0;
-    }
-    else if (_numStates == 2) {
-        alpha = 0.5;
-    }
-    
-    for (int i = 0; i < _numStates; i++) {
-        for (int j = 0; j < _numStates; j++) {
-            int diff = i - j;
-            
-            
-            if (diff <= 1 && diff >= 0) {
-                if (j == 0 || j == _numStates - 1) {
-                    _A[j][i] = alpha;
-
-                }
-                else {
-                    _A[j][i] = alpha;
-                }
-            }
-            
-            
-        }
-    }
-    
-    //circular connection
-    _A[_numStates - 1][0] = alpha;
-    //_A[0][_numStates - 1] = alpha;
-    
-    printMat("A", _A);
-}
 
 
 HiddenMarkovModel::~HiddenMarkovModel() {
@@ -159,7 +112,7 @@ HiddenMarkovModel & HiddenMarkovModel::operator = (const HiddenMarkovModel & hmm
     _A = hmm._A;
     _numStates = hmm._numStates;
     _pi = hmm._pi;
-    _groups = hmm._groups;
+    _stateSaver = hmm._stateSaver;
     
     return *this;
 }
@@ -180,7 +133,7 @@ std::string HiddenMarkovModel::serializeToJson() const {
     std::string pi = makeKeyValue("pi",vecToJsonArray(_pi));
     
     std::stringstream ss;
-    ss <<  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [4, 5, 6, 7, 8, 9, 10], \"users\": \"\", \"num_model_params\":" << getNumberOfFreeParams() << ", \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [6, 7, 8], \"enable_interval_search\": true, \"model_name\": \"default\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
+    ss <<  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [], \"users\": \"\", \"num_model_params\":" << getNumberOfFreeParams() << ", \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [], \"enable_interval_search\": true, \"model_name\": \"foobars\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
     
     return makeObj(makeKeyValue("default",makeObj(A + "," + models + "," + pi + "," + ss.str())));
 }
@@ -547,7 +500,7 @@ HmmSharedPtr_t HiddenMarkovModel::deleteStates(UIntSet_t statesToDelete) const {
         row++;
     }
     
-    HiddenMarkovModel * newModel = new HiddenMarkovModel(A);
+    HiddenMarkovModel * newModel = new HiddenMarkovModel(A,_stateSaver);
     
     
     
@@ -568,7 +521,6 @@ HmmSharedPtr_t HiddenMarkovModel::deleteStates(UIntSet_t statesToDelete) const {
 HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb) const {
     int i,j;
     const uint32_t splitIndices[2] = {stateToSplit,_numStates};
-    const uint32_t myGroup = _groups[stateToSplit];
     
     //enlarge A by 1 row and 1 column
     HmmDataMatrix_t splitA = _A; //copy
@@ -626,10 +578,8 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
     
 
     //create the new split model
-    UIntVec_t newgroups = _groups;
-    newgroups.push_back(myGroup);
     
-    HiddenMarkovModel * splitModel = new HiddenMarkovModel(splitA,newgroups);
+    HiddenMarkovModel * splitModel = new HiddenMarkovModel(splitA,_stateSaver);
     
     HmmPdfInterfaceSharedPtr_t modelToSplit;
     
@@ -1403,6 +1353,10 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
 
         
         numStates++;
+        
+        if (_stateSaver) {
+            _stateSaver->saveState(best->serializeToJson());
+        }
     }
     
     
@@ -1461,7 +1415,7 @@ void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t 
             
             best = hmms[bestIdx];
             
-            std::cout << "picked model " << bestIdx + 1 << " in group " << best->_groups[numStates - 1] << std::endl;
+            std::cout << "picked model " << bestIdx + 1 << std::endl;
             std::cout << "BEST SCORE: " <<  scores[bestIdx] << std::endl;
 
         }
