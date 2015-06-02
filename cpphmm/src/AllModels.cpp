@@ -2,6 +2,7 @@
 #include "AllModels.h"
 #include <gsl/gsl_randist.h>
 #include "LogMath.h"
+#include "RandomHelpers.h"
 #include <sstream>
 #include <random>
 #include <string.h>
@@ -20,11 +21,7 @@
 #define POISSON_PERTURBATION_MEAN (0.1)
 #define ALPHABET_PERTURBATION  (0.05)
 
-//between -1 and 1
-static HmmFloat_t getRandomFloat() {
-    const float r = 2.0 * static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX) - 1.0;
-    return r;
-}
+
 
 static HmmFloat_t getPerturbedValue(const HmmFloat_t x, const HmmFloat_t perturbationMaxAmplitude, const HmmFloat_t minVal = -INFINITY) {
     HmmFloat_t y = 0.0;
