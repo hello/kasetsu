@@ -243,7 +243,20 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         }
         
         const uint32_t meas = (uint32_t) vec[i];
-        ret[i] = _weight * eln(gsl_ran_poisson_pdf(meas, _mu));
+        
+        HmmFloat_t eval = gsl_ran_poisson_pdf(meas, _mu);
+        
+        if (eval < EPSILON) {
+            eval = EPSILON;
+        }
+        
+        ret[i] = _weight * eln(eval);
+        
+        if (ret[i] == -INFINITY) {
+            int foo = 3;
+            foo++;
+        }
+
     }
     
     return ret;
@@ -326,13 +339,26 @@ HmmDataVec_t ChiSquareModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
             continue;
         }
         
-        HmmFloat_t val = vec[i];
+        HmmFloat_t meas = vec[i];
         
-        if (val < MIN_CHISQ_INPUT) {
-            val = MIN_CHISQ_INPUT;
+        if (meas < MIN_CHISQ_INPUT) {
+            meas = MIN_CHISQ_INPUT;
         }
         
-        ret[i] = _weight * eln(gsl_ran_chisq_pdf(val, _mu));
+        
+        HmmFloat_t eval = gsl_ran_chisq_pdf(meas, _mu);
+        
+        if (eval < EPSILON) {
+            eval = EPSILON;
+        }
+        
+        ret[i] = _weight * eln(eval);
+
+                
+        if (ret[i] == -INFINITY) {
+            int foo = 3;
+            foo++;
+        }
     }
     
     return ret;
