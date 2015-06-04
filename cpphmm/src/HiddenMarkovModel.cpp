@@ -9,8 +9,10 @@
 #include <string.h>
 #include "RandomHelpers.h"
 
-#define MIN_VALUE_FOR_A (1e-5)
-#define SPLIT_A_PERTURBATION_MAX (0.05)
+#define MIN_VALUE_FOR_A (1e-3)
+#define MAX_VALUE_FOR_A (1.0 - MIN_VALUE_FOR_A)
+
+#define SPLIT_A_PERTURBATION_MAX (0.01)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
 #define MAX_NUM_REESTIMATIONS_PER_ITER (100)
@@ -18,11 +20,11 @@
 
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
 
-#define THRESHOLD_FOR_REMOVING_STATE (0.0001)
+#define THRESHOLD_FOR_REMOVING_STATE (0.005)
 #define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
-#define NUM_BAD_COUNTS_TO_EXIT (10)
+#define NUM_BAD_COUNTS_TO_EXIT (1)
 
 #define THREAD_POOL_SIZE (8)
 #define USE_THREADPOOL
@@ -437,6 +439,22 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, cons
         }
     }
     
+    for (j = 0; j < _numStates; j++) {
+        for (i = 0; i < _numStates; i++) {
+            
+            if (A[j][i] > EPSILON) {
+                if (A[j][i] <= MIN_VALUE_FOR_A) {
+                    A[j][i] = MIN_VALUE_FOR_A;
+                }
+                
+                if (A[j][i] > MAX_VALUE_FOR_A) {
+                    A[j][i] = MAX_VALUE_FOR_A;
+                }
+            }
+            
+        }
+    }
+    
     return A;
     
 }
@@ -807,6 +825,10 @@ HmmDataMatrix_t HiddenMarkovModel::reestimateAFromViterbiPath(const ViterbiPath_
             if (originalA[j][i] > EPSILON) {
                 if (A[j][i] <= MIN_VALUE_FOR_A) {
                     A[j][i] = MIN_VALUE_FOR_A;
+                }
+                
+                if (A[j][i] > MAX_VALUE_FOR_A) {
+                    A[j][i] = MAX_VALUE_FOR_A;
                 }
             }
             
@@ -1244,7 +1266,7 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         
         for (uint32_t iState = 0; iState < origNumberStates; iState++) {
             for (int i = 0; i < origNumberStates; i++) {
-                if (best->_A[iState][i] > 0.995) {
+                if (best->_A[iState][i] > 0.9999) {
                     statesToDelete.insert(iState);
                 }
             }
@@ -1254,7 +1276,8 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             }
         }
         
-        if (!statesToDelete.empty()) {
+        if (!statesToDelete.empty() && statesToDelete.size() < origNumberStates) {
+            std::cout << fractionInEachState << std::endl;
             std::cout << "deleting states " << statesToDelete << std::endl;
             best = best->deleteStates(statesToDelete);
             numStates -= statesToDelete.size();
