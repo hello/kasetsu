@@ -83,8 +83,11 @@ static ModelVec_t getSinglePersonInitialModel() {
                     for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
                         
                         GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                        GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
-                                          motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+                        /*GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                          motion_gamma_params[1][iMotion],MOTION_WEIGHT);*/
+                        
+                        PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
+                        
                         HmmDataVec_t disturbanceProbs;
                         disturbanceProbs.resize(2);
                         disturbanceProbs[0] = 1.0 - disturbance_params[iDisturbance];
@@ -133,8 +136,10 @@ static ModelVec_t getPartneredInitialModel() {
                                     
                                     GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
                                     
-                                    GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
-                                                      motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+                                    /*GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                                      motion_gamma_params[1][iMotion],MOTION_WEIGHT);*/
+                                    PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
+
                                     
                                     HmmDataVec_t alphabetprobs;
                                     alphabetprobs.resize(2);
