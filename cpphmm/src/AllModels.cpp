@@ -156,6 +156,10 @@ HmmDataVec_t GammaModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         
         HmmFloat_t evalValue =gsl_ran_gamma_pdf(val,A,scale);
         
+        if (evalValue < EPSILON) {
+            evalValue = EPSILON;
+        }
+
         
         ret[i] = _weight * eln(evalValue);
     }
@@ -621,6 +625,10 @@ HmmDataVec_t OneDimensionalGaussianModel::getLogOfPdf(const HmmDataMatrix_t & x)
         }
         
         HmmFloat_t evalValue = gsl_ran_gaussian_pdf(val - _mean, _stddev);
+        
+        if (evalValue < EPSILON) {
+            evalValue = EPSILON;
+        }
         
         ret[i] = _weight * eln(evalValue);
     }
