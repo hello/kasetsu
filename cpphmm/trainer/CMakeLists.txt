@@ -28,5 +28,5 @@ add_executable(trainer
                hmmfactory.cpp
                input.cpp)
 
-target_link_libraries(trainer cpphmm json)
+target_link_libraries(trainer cpphmm jsoncpp_lib_static)
 
