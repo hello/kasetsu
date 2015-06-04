@@ -7,6 +7,25 @@
 #include <time.h>       /* time */
 #include "CompatibilityTypes.h"
 
+class FileStateSaver : public SaveStateInterface {
+public:
+    FileStateSaver(const std::string & filename) : _filename(filename){
+        
+    }
+    
+    void saveState (const std::string & data) {
+        std::ofstream outfile;
+        outfile.open(_filename.c_str());
+        
+        if (outfile.is_open()) {
+            outfile <<  data;
+            outfile.close();
+        }
+    }
+    
+private:
+    std::string _filename;
+};
 
 int main(int argc,const char * args[]) {
 
@@ -46,8 +65,10 @@ int main(int argc,const char * args[]) {
         return 0;
     }
     
+    FileStateSaver saver(outputfilename);
+
     
-    HmmSharedPtr_t hmm(HmmFactory::getModel(model,meas));
+    HmmSharedPtr_t hmm(HmmFactory::getModel(model,meas,&saver));
     
     if (hmm.get() == NULL) {
         std::cout << "could not find model " << model << std::endl;
@@ -56,6 +77,7 @@ int main(int argc,const char * args[]) {
 
     std::cout << "There are " << meas[0].size() << " data points." << std::endl;
     bool worked = false;
+    
     
     if (model == "seed" || model == "partnerseed") {
         worked = Trainer::grow(hmm.get(),meas,maxiter);

@@ -4,6 +4,27 @@
 #include "AllModels.h"
 #include <iostream>
 #include "InitialModelGenerator.h"
+#include "json/json.h"
+
+static HmmSharedPtr_t loadFile(const std::string jsonText) {
+    Json::Value top;
+    Json::Reader reader;
+    if (!reader.parse(jsonText, top)) {
+        return HmmSharedPtr_t(NULL);
+    }
+    
+    
+    
+    Json::Value::Members members = top.getMemberNames();
+    
+    for (Json::Value::Members::const_iterator it = members.begin(); it != members.end(); it++) {
+        
+    }
+    
+    return HmmSharedPtr_t(NULL);
+
+}
+
 
 static HmmFloat_t getRandomPositiveFloat() {
     const float r = 1.0 * static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX);
@@ -80,43 +101,11 @@ static HiddenMarkovModel * getSingleStateModel() {
 
 }
 
-static HiddenMarkovModel * getGroupedModel() {
-    const int N = 6;
-    
-    const bool useNatLight = false;
-    const bool estimateNatLight = false;
-    
-    
-    UIntVec_t groups;
-    for (int i = 0; i < N; i++) {
-        groups.push_back(i);
-    }
-    
-    HiddenMarkovModel * model = new HiddenMarkovModel(groups);
-    
-    for (int i = 0; i < N; i++) {
-        model->addModelForState(getDefaultModelForState(
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        getRandomPositiveFloat() * 5,
-                                                        getRandomPositiveFloat(),
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        1.0,useNatLight,estimateNatLight));
-    }
-    
-    /*
-    for (int i = 0; i < N; i++) {
-        model->addModelForState(getDefaultModelForState(1.0 + i*0.0001, 1.0+ i*0.0001, 1.0+ i*0.0001, 0.5+ i*0.0001,1.0, 1.0, 1.0,useNatLight,estimateNatLight));
-    }
-     */
 
-    return model;
-    
-}
-
-static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas) {
+static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateInterface * stateSaver) {
     InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,false);
     
-    HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A);
+    HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A,stateSaver);
     
     for (int i = 0; i < modelparams.models.size(); i++) {
         newmodel->addModelForState(modelparams.models[i]);
@@ -151,7 +140,7 @@ static HiddenMarkovModel * getRandomModel() {
         groups.push_back(i);
     }
     
-    HiddenMarkovModel * model = new HiddenMarkovModel(getRandomMatrix(N,N));
+    HiddenMarkovModel * model = new HiddenMarkovModel(getRandomMatrix(N,N),NULL);
     
     for (int i = 0; i < N; i++) {
         model->addModelForState(getDefaultModelForState(
@@ -349,7 +338,7 @@ static HiddenMarkovModel * getTestModel() {
 }
 
 
-HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const HmmDataMatrix_t & meas) {
+HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const HmmDataMatrix_t & meas,SaveStateInterface * stateSaver) {
     if (modelname == "default") {
         std::cout << "found default model" << std::endl;
         return getDefaultModel();
@@ -360,21 +349,13 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
     }
     else if (modelname == "seed") {
         std::cout << "found seed model" << std::endl;
-        return getSeedModel(meas);
+        return getSeedModel(meas,stateSaver);
     }
     else if (modelname == "partnerseed") {
         std::cout << "found partner seed model" << std::endl;
         return getPartnerSeedModel(meas);
     }
-    else if (modelname == "group") {
-        std::cout << "found seed model" << std::endl;
-        return getGroupedModel();
-    }
-    else if (modelname == "group2") {
-        std::cout << "found group model" << std::endl;
-        return getGroupedModel();
-    }
-
+  
     
 
     return NULL;

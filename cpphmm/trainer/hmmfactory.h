@@ -7,7 +7,7 @@
 
 class HmmFactory {
 public:
-    static HiddenMarkovModel * getModel(const std::string & modelname,const HmmDataMatrix_t & meas);
+    static HiddenMarkovModel * getModel(const std::string & modelname,const HmmDataMatrix_t & meas, SaveStateInterface * stateSaver);
 };
 #endif //_HMMFACTORY_H_
 
