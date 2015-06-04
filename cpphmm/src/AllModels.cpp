@@ -9,7 +9,9 @@
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
-#define  MIN_GAMMA_STDDEV (0.1)
+#define  MIN_GAMMA_STDDEV (0.5)
+#define  MAX_GAMMA_STDDEV (5.0)
+
 #define  MIN_GAMMA_INPUT (0.01)
 #define  MAX_GAMMA_INPUT  (1e5)
 #define  MIN_GAUSSIAN_STDDEV (0.1)
@@ -20,6 +22,8 @@
 #define GAMMA_PERTURBATION_STDDEV (0.1)
 #define POISSON_PERTURBATION_MEAN (0.1)
 #define ALPHABET_PERTURBATION  (0.05)
+
+#define  MIN_CHISQ_INPUT (0.01)
 
 
 
@@ -109,6 +113,10 @@ HmmPdfInterfaceSharedPtr_t GammaModel::reestimate(const HmmDataVec_t & gammaForT
     
     if (newstddev < MIN_GAMMA_STDDEV) {
         newstddev = MIN_GAMMA_STDDEV;
+    }
+    
+    if (newstddev > MAX_GAMMA_STDDEV) {
+        newstddev = MAX_GAMMA_STDDEV;
     }
     
     if (std::isnan(newmean) || std::isnan(newstddev)) {
@@ -230,6 +238,7 @@ HmmDataVec_t PoissonModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
     
     for (int32_t i = 0; i < vec.size(); i++) {
         if (vec[i] < 0) {
+            ret[i] = -INFINITY;
             continue;
         }
         
@@ -248,6 +257,95 @@ std::string PoissonModel::serializeToJson() const {
 }
 
 uint32_t PoissonModel::getNumberOfFreeParams() const {
+    return 1;
+}
+
+///////////////////////////////////
+
+ChiSquareModel::ChiSquareModel(const int32_t obsnum,const float mu,const float weight)
+:_obsnum(obsnum)
+,_mu(mu)
+, _weight(weight) {
+    
+}
+
+ChiSquareModel::~ChiSquareModel() {
+    
+}
+
+HmmPdfInterfaceSharedPtr_t ChiSquareModel::clone(bool isPerturbed) const {
+    if (isPerturbed) {
+        return HmmPdfInterfaceSharedPtr_t(new ChiSquareModel(_obsnum,getPerturbedValue(_mu,POISSON_PERTURBATION_MEAN,MIN_POISSON_MEAN),_weight));
+    }
+    
+    return HmmPdfInterfaceSharedPtr_t(new ChiSquareModel(_obsnum,_mu,_weight));
+}
+
+HmmPdfInterfaceSharedPtr_t ChiSquareModel::reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
+    const HmmDataVec_t & obsvec = meas[_obsnum];
+    
+    
+    HmmFloat_t newmean = 0.0;
+    
+    HmmFloat_t numer = 0.0;
+    HmmFloat_t denom = 0.0;
+    
+    for (int32_t t = 0; t < obsvec.size(); t++) {
+        numer += obsvec[t]*gammaForThisState[t];
+        denom += gammaForThisState[t];
+    }
+    
+    if (denom > std::numeric_limits<HmmFloat_t>::epsilon()) {
+        newmean = numer / denom;
+    }
+    else {
+        newmean = 0.0;
+    }
+    
+    if (newmean < MIN_POISSON_MEAN) {
+        newmean = MIN_POISSON_MEAN;
+    }
+    
+    const HmmFloat_t dmean = newmean - _mu;
+    
+    newmean = eta * dmean + _mu;
+    
+    return HmmPdfInterfaceSharedPtr_t(new ChiSquareModel(_obsnum,newmean,_weight));
+    
+}
+
+HmmDataVec_t ChiSquareModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
+    HmmDataVec_t ret;
+    const HmmDataVec_t & vec = x[_obsnum];
+    
+    ret.resize(vec.size());
+    
+    for (int32_t i = 0; i < vec.size(); i++) {
+        if (vec[i] < 0) {
+            ret[i] = -INFINITY;
+            continue;
+        }
+        
+        HmmFloat_t val = vec[i];
+        
+        if (val < MIN_CHISQ_INPUT) {
+            val = MIN_CHISQ_INPUT;
+        }
+        
+        ret[i] = _weight * eln(gsl_ran_chisq_pdf(val, _mu));
+    }
+    
+    return ret;
+}
+
+std::string ChiSquareModel::serializeToJson() const {
+    char buf[1024];
+    memset(buf,0,sizeof(buf));
+    snprintf(buf, sizeof(buf),"{\"model_type\": \"chisquare\", \"model_data\": {\"obs_num\": %d, \"mean\": %f,\"weight\": %f}}",_obsnum,_mu,_weight);
+    return std::string(buf);
+}
+
+uint32_t ChiSquareModel::getNumberOfFreeParams() const {
     return 1;
 }
 

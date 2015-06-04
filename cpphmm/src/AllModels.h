@@ -44,6 +44,25 @@ private:
 };
 
 ////////////////////////////////////
+class ChiSquareModel : public HmmPdfInterface {
+public:
+    ChiSquareModel(const int32_t obsnum,const float mu,const float weight);
+    ~ChiSquareModel();
+    
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
+    HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const;
+    std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
+    
+private:
+    const int32_t _obsnum;
+    const float _mu;
+    const HmmFloat_t _weight;
+    
+};
+////////////////////////////////////
+
 
 class AlphabetModel : public HmmPdfInterface {
 public:
