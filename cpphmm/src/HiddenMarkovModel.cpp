@@ -12,7 +12,7 @@
 #define MIN_VALUE_FOR_A (1e-3)
 #define MAX_VALUE_FOR_A (1.0 - MIN_VALUE_FOR_A)
 
-#define SPLIT_A_PERTURBATION_MAX (0.01)
+#define SPLIT_A_PERTURBATION_MAX (0.02)
 
 #define NUM_REESTIMATIONS_FOR_INTIAL_GUESS_PER_ITER (0)
 #define MAX_NUM_REESTIMATIONS_PER_ITER (100)
@@ -20,11 +20,11 @@
 
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
 
-#define THRESHOLD_FOR_REMOVING_STATE (0.005)
+#define THRESHOLD_FOR_REMOVING_STATE (0.0001)
 #define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
-#define NUM_BAD_COUNTS_TO_EXIT (1)
+#define NUM_BAD_COUNTS_TO_EXIT (10)
 
 #define THREAD_POOL_SIZE (8)
 #define USE_THREADPOOL
@@ -1264,20 +1264,36 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         const uint32_t origNumberStates = numStates;
         UIntSet_t statesToDelete;
         
+        bool isDegenerate = false;
+        //handle degenerate case where only 1 state is on the viterbi path (usually due to bad initialization)
+        for (uint32_t iState = 0; iState < origNumberStates; iState++) {
+            if (fractionInEachState[iState] > 0.9999) {
+                isDegenerate = true;
+                break;
+            }
+        }
+        
+        if (isDegenerate) {
+            std::cout << "FAILING BECAUSE MODEL IS DEGENERATE (ONLY DECODES TO ONE STATE)" <<std::endl;
+            break;
+        }
+        
         for (uint32_t iState = 0; iState < origNumberStates; iState++) {
             for (int i = 0; i < origNumberStates; i++) {
-                if (best->_A[iState][i] > 0.9999) {
+                if (best->_A[iState][i] > 1.0 - origNumberStates*MIN_VALUE_FOR_A) {
                     statesToDelete.insert(iState);
                 }
             }
+            
+            
             
             if (fractionInEachState[iState] < THRESHOLD_FOR_REMOVING_STATE) {
                 statesToDelete.insert(iState);
             }
         }
         
+        
         if (!statesToDelete.empty() && statesToDelete.size() < origNumberStates) {
-            std::cout << fractionInEachState << std::endl;
             std::cout << "deleting states " << statesToDelete << std::endl;
             best = best->deleteStates(statesToDelete);
             numStates -= statesToDelete.size();

@@ -3,19 +3,19 @@
 #include "AllModels.h"
 #include "MatrixHelpers.h"
 
-#define MIN_INIT_STATE_FRACTION (0.03)
+#define MIN_INIT_STATE_FRACTION (0.01)
 
-static const HmmFloat_t low_light = 1.0;
+static const HmmFloat_t low_light = 0.1;
 static const HmmFloat_t med_light = 3.0;
 static const HmmFloat_t high_light = 6.0;
 static const HmmFloat_t light_stddev = 1.0;
 
 static const HmmFloat_t low_motion = 0.1;
-static const HmmFloat_t med_motion = 1.0;
-static const HmmFloat_t high_motion = 4.0;
-static const HmmFloat_t low_motion_stddev = 1.0;
-static const HmmFloat_t med_motion_stddev = 1.0;
-static const HmmFloat_t high_motion_stddev = 1.0;
+static const HmmFloat_t med_motion = 8.0;
+static const HmmFloat_t high_motion = 20.0;
+static const HmmFloat_t low_motion_stddev = 5.0;
+static const HmmFloat_t med_motion_stddev = 5.0;
+static const HmmFloat_t high_motion_stddev = 5.0;
 
 static const HmmFloat_t low_sound = 1.0;
 static const HmmFloat_t med_sound = 3.0;
@@ -66,11 +66,56 @@ static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ra
 
 #define LIGHT_WEIGHT (1.0)
 #define MOTION_WEIGHT (1.0)
-#define DISTURBANCE_WEIGHT (1.0)
-#define SOUND_WEIGHT (1.0)
+#define DISTURBANCE_WEIGHT (0.1)
+#define SOUND_WEIGHT (0.1)
 #define NAT_LIGHT_WEIGHT (1.0)
 #define ENERGY_RATIO_WEIGHT (1.0)
 
+static ModelVec_t getSinglePersonModelWithMotionOnly() {
+    ModelVec_t models;
+    
+    //enumerate all possible models
+   // for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
+        
+        for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
+            
+         //   ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
+          //  OneDimensionalGaussianModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+           // GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+
+            PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
+            
+            
+            CompositeModel model;
+           // model.addModel(light.clone(false));
+            model.addModel(motion.clone(false));
+            
+            models.push_back(model.clone(false));
+            
+        }
+ //   }
+    
+    return models;
+}
+
+static ModelVec_t getSinglePersonModelWithMotionOnlySeed() {
+    ModelVec_t models;
+    
+    
+    ChiSquareModel light(LIGHT_OBSNUM,light_params[0][1],LIGHT_WEIGHT);
+    
+    PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][1],MOTION_WEIGHT);
+    
+
+    CompositeModel model;
+    model.addModel(light.clone(false));
+    model.addModel(motion.clone(false));
+    
+    models.push_back(model.clone(false));
+    
+ 
+    return models;
+}
 
 static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
@@ -82,10 +127,9 @@ static ModelVec_t getSinglePersonInitialModel() {
                 for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
                     for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
                         
-                        GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
-                        /*GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
-                                          motion_gamma_params[1][iMotion],MOTION_WEIGHT);*/
-                        
+                        //GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
+                        ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
+
                         PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
                         
                         HmmDataVec_t disturbanceProbs;
@@ -102,14 +146,15 @@ static ModelVec_t getSinglePersonInitialModel() {
                         
                         AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
 
-                        GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
-                        
+                        //GammaModel sound(SOUND_OBSNUM,sound_params[0][iSound],sound_params[1][iSound],SOUND_WEIGHT);
+                        ChiSquareModel sound(SOUND_OBSNUM,sound_params[0][iSound],SOUND_WEIGHT);
+
                         CompositeModel model;
                         model.addModel(light.clone(false));
                         model.addModel(motion.clone(false));
                         model.addModel(disturbance.clone(false));
                         model.addModel(sound.clone(false));
-                        model.addModel(natLight.clone(false));
+                        //model.addModel(natLight.clone(false));
         
                         models.push_back(model.clone(false));
                     }
@@ -210,7 +255,12 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         models = getPartneredInitialModel();
     }
     else {
-        models = getSinglePersonInitialModel();
+        (void)getSinglePersonInitialModel;
+        (void)getSinglePersonModelWithMotionOnlySeed;
+        (void)getSinglePersonModelWithMotionOnly;
+        
+        //models = getSinglePersonInitialModel();
+        models = getSinglePersonModelWithMotionOnly();
     }
     
     //now evaluate the likelihood of each model
@@ -299,12 +349,16 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         }
     }
     
+    printMat("A", A);
+    
     //return state transition matrix and accepted composite models
     InitialModel_t initmodel;
     initmodel.A = A;
     
     for (int i = 0; i < accepted.size(); i++) {
-        initmodel.models.push_back(models[accepted[i]]);
+        const HmmPdfInterfaceSharedPtr_t p = models[accepted[i]];
+        std::cout << p->serializeToJson() << std::endl;
+        initmodel.models.push_back(p);
     }
     
     
