@@ -26,10 +26,10 @@ static const HmmFloat_t low_disturbance = 0.05;
 static const HmmFloat_t med_disturbance = 0.5;
 static const HmmFloat_t high_disturbance = 0.95;
 
-static const HmmFloat_t minus_ratio = -1.0;
-static const HmmFloat_t plus_ratio = 1.0;
-static const HmmFloat_t even_ratio = 0.0;
-static const HmmFloat_t energy_std_dev = 1.0;
+//static const HmmFloat_t minus_ratio = -1.0;
+//static const HmmFloat_t plus_ratio = 1.0;
+//static const HmmFloat_t even_ratio = 0.0;
+//static const HmmFloat_t energy_std_dev = 1.0;
 
 #define NUM_LIGHT_MODELS (3)
 #define NUM_MOTION_MODELS (3)
@@ -52,7 +52,7 @@ static const HmmFloat_t motion_gamma_params[2][NUM_MOTION_MODELS] = {
 
 static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,med_disturbance,high_disturbance};
 
-static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ratio,even_ratio,plus_ratio};
+//static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ratio,even_ratio,plus_ratio};
 
 
 #define LIGHT_OBSNUM (0)
@@ -71,49 +71,57 @@ static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ra
 #define NAT_LIGHT_WEIGHT (1.0)
 #define ENERGY_RATIO_WEIGHT (1.0)
 
-static ModelVec_t getSinglePersonModelWithMotionOnly() {
+static ModelVec_t getSinglePersonMotionInitialModel() {
     ModelVec_t models;
     
     //enumerate all possible models
-   // for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
+    
+    for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
         
-        for (int iMotion = 0; iMotion < NUM_MOTION_MODELS; iMotion++) {
-            
-         //   ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
-          //  OneDimensionalGaussianModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
-           // GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+        //  OneDimensionalGaussianModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+        // GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],motion_gamma_params[1][iMotion],MOTION_WEIGHT);
+        
+        PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
+        
+        
+        CompositeModel model;
+        model.addModel(motion.clone(false));
+        
+        models.push_back(model.clone(false));
+        
+    }
 
-            PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
-            
-            
-            CompositeModel model;
-           // model.addModel(light.clone(false));
-            model.addModel(motion.clone(false));
-            
-            models.push_back(model.clone(false));
-            
-        }
- //   }
     
     return models;
 }
 
-static ModelVec_t getSinglePersonModelWithMotionOnlySeed() {
+static ModelVec_t getSinglePersonLightInitialModel() {
     ModelVec_t models;
     
-    
-    ChiSquareModel light(LIGHT_OBSNUM,light_params[0][1],LIGHT_WEIGHT);
-    
-    PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][1],MOTION_WEIGHT);
-    
+    //enumerate all possible models
+    for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
+        
+        for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
+            
+            ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
+            
+            HmmDataVec_t natLightProbs;
+            natLightProbs.resize(2);
+            natLightProbs[0] = 1.0 - disturbance_params[iNatLight];
+            natLightProbs[1] = disturbance_params[iNatLight];
 
-    CompositeModel model;
-    model.addModel(light.clone(false));
-    model.addModel(motion.clone(false));
+            AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
+
+            
+            CompositeModel model;
+            model.addModel(light.clone(false));
+            model.addModel(natLight.clone(false));
+
+            models.push_back(model.clone(false));
+            
+        }
+    }
     
-    models.push_back(model.clone(false));
-    
- 
     return models;
 }
 
@@ -166,6 +174,7 @@ static ModelVec_t getSinglePersonInitialModel() {
     return models;
 }
 
+/*
 static ModelVec_t getPartneredInitialModel() {
     ModelVec_t models;
     
@@ -181,8 +190,8 @@ static ModelVec_t getPartneredInitialModel() {
                                     
                                     GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
                                     
-                                    /*GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
-                                                      motion_gamma_params[1][iMotion],MOTION_WEIGHT);*/
+                                    //GammaModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],
+                                    //                  motion_gamma_params[1][iMotion],MOTION_WEIGHT);
                                     PoissonModel motion(MOTION_OBSNUM,motion_gamma_params[0][iMotion],MOTION_WEIGHT);
 
                                     
@@ -244,24 +253,34 @@ static ModelVec_t getPartneredInitialModel() {
 
 
 }
+ */
 
-InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatrix_t & meas, const bool usePartnerModel) {
-    
+InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatrix_t & meas, EInitModel_t model) {
+    (void)getSinglePersonInitialModel; //so we don't get a warning
     HmmDataMatrix_t evals;
     
     ModelVec_t models;
     
-    if (usePartnerModel) {
-        models = getPartneredInitialModel();
+    switch (model ) {
+        case motion:
+        {
+            models = getSinglePersonMotionInitialModel();
+            break;
+        }
+            
+        case light:
+        {
+            models = getSinglePersonLightInitialModel();
+            break;
+        }
+            
+        default:
+        {
+            std::cout << "NO INITIAL MODEL FOUND" << std::endl;
+            break;
+        }
     }
-    else {
-        (void)getSinglePersonInitialModel;
-        (void)getSinglePersonModelWithMotionOnlySeed;
-        (void)getSinglePersonModelWithMotionOnly;
-        
-        //models = getSinglePersonInitialModel();
-        models = getSinglePersonModelWithMotionOnly();
-    }
+    
     
     //now evaluate the likelihood of each model
     for (ModelVec_t::const_iterator it = models.begin(); it != models.end(); it++) {

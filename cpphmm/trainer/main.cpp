@@ -79,7 +79,7 @@ int main(int argc,const char * args[]) {
     bool worked = false;
     
     
-    if (model == "seed" || model == "partnerseed") {
+    if (model == "seed" || model == "partnerseed" || model == "light" || model == "motion") {
         worked = Trainer::grow(hmm.get(),meas,maxiter);
     }
     else {

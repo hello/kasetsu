@@ -4,6 +4,12 @@
 
 #include "HmmTypes.h"
 #include "HmmPdfInterface.h"
+
+typedef enum {
+    motion,
+    light
+} EInitModel_t;
+
 typedef struct {
     HmmDataMatrix_t A;
     ModelVec_t models;
@@ -12,7 +18,7 @@ typedef struct {
 
 class InitialModelGenerator {
 public:
-    static InitialModel_t getInitialModelFromData(const HmmDataMatrix_t & meas,const bool userPartnerModel);
+    static InitialModel_t getInitialModelFromData(const HmmDataMatrix_t & meas,EInitModel_t modelType);
 };
 
 

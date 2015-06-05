@@ -102,8 +102,8 @@ static HiddenMarkovModel * getSingleStateModel() {
 }
 
 
-static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateInterface * stateSaver) {
-    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,false);
+static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateInterface * stateSaver,EInitModel_t model) {
+    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,model);
     
     HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A,stateSaver);
     
@@ -115,18 +115,7 @@ static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateIn
     
 }
 
-static HiddenMarkovModel * getPartnerSeedModel(const HmmDataMatrix_t & meas) {
-    InitialModel_t modelparams = InitialModelGenerator::getInitialModelFromData(meas,true);
-    
-    HiddenMarkovModel * newmodel = new HiddenMarkovModel(modelparams.A);
-    
-    for (int i = 0; i < modelparams.models.size(); i++) {
-        newmodel->addModelForState(modelparams.models[i]);
-    }
-    
-    return newmodel;
-    
-}
+
 
 static HiddenMarkovModel * getRandomModel() {
     const int N = 3;
@@ -347,14 +336,15 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
         std::cout << "found test model" << std::endl;
         return getTestModel();
     }
-    else if (modelname == "seed") {
+    else if (modelname == "motion") {
         std::cout << "found seed model" << std::endl;
-        return getSeedModel(meas,stateSaver);
+        return getSeedModel(meas,stateSaver,motion);
     }
-    else if (modelname == "partnerseed") {
-        std::cout << "found partner seed model" << std::endl;
-        return getPartnerSeedModel(meas);
+    else if (modelname == "light") {
+        std::cout << "found seed model" << std::endl;
+        return getSeedModel(meas,stateSaver,light);
     }
+    
   
     
 
