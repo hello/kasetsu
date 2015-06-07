@@ -18,11 +18,13 @@
 #define MAX_NUM_REESTIMATIONS_PER_ITER (100)
 #define MIN_NUM_REESTIMATIONS (1)
 
-#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (10)
+#define NUM_SPLIT_STATE_VITERBI_ITERATIONS (20)
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.0001)
-#define NUM_SPLITS_PER_STATE (10)
+#define NUM_SPLITS_PER_STATE (20)
 #define DAMPING_FACTOR (0.1)
+
+#define MIN_VALUE_FOR_SELF_TERM (0.01)
 
 #define NUM_BAD_COUNTS_TO_EXIT (10)
 
@@ -135,7 +137,7 @@ std::string HiddenMarkovModel::serializeToJson() const {
     std::string pi = makeKeyValue("pi",vecToJsonArray(_pi));
     
     std::stringstream ss;
-    ss <<  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [], \"users\": \"\", \"num_model_params\":" << getNumberOfFreeParams() << ", \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [], \"enable_interval_search\": true, \"model_name\": \"foobars\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 15}";
+    ss <<  "\"params\": {\"natural_light_filter_start_hour\": 16, \"on_bed_states\": [], \"users\": \"\", \"num_model_params\":" << getNumberOfFreeParams() << ", \"natural_light_filter_stop_hour\": 4, \"pill_magnitude_disturbance_threshold_lsb\": 15000, \"sleep_states\": [], \"enable_interval_search\": true, \"model_name\": \"foobars\", \"audio_disturbance_threshold_db\": 70.0 , \"meas_period_minutes\" : 5}";
     
     return makeObj(makeKeyValue("default",makeObj(A + "," + models + "," + pi + "," + ss.str())));
 }
@@ -589,7 +591,24 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
             const int idx = splitIndices[j];
             for (i = 0; i < _numStates + 1; i++) {
                 splitA[idx][i] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
+                
+                if (splitA[idx][i] < MIN_VALUE_FOR_A) {
+                    splitA[idx][i] = MIN_VALUE_FOR_A;
+                }
+                
+                if (splitA[idx][i] > MAX_VALUE_FOR_A) {
+                    splitA[idx][i] = MAX_VALUE_FOR_A;
+                }
+                
                 splitA[i][idx] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
+                
+                if (splitA[i][idx]  < MIN_VALUE_FOR_A) {
+                    splitA[i][idx]  = MIN_VALUE_FOR_A;
+                }
+                
+                if (splitA[i][idx]  > MAX_VALUE_FOR_A) {
+                    splitA[i][idx]  = MAX_VALUE_FOR_A;
+                }
             }
         }
     }
@@ -957,7 +976,7 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
         for (StateSegmentVec_t::const_iterator it = segs.begin(); it != segs.end(); it++) {
             const StateSegment_t & seg = *it;
             const uint32_t seglength = seg.timeIndices.second - seg.timeIndices.first + 1;
-            
+            //std::cout << seglength << ",";
             totalLength += seglength;
             
             HmmDataMatrix_t phi = getZeroedMatrix(2, seglength);
@@ -1045,6 +1064,9 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             segmentsWithPath.push_back(std::make_pair(seg,path));
             
         }
+        
+        //std::cout << std::endl;
+
         
         //reestimate obs, incoming, and outgoing
         //first, assemble the measurements and gammas into one glorious whole
@@ -1139,6 +1161,11 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             }
             
             if (sum < EPSILON) {
+                //no counts in the split state, so this was just a waste of time
+                if (j == s2) {
+                    return false;
+                }
+                
                 continue;
             }
             
@@ -1153,12 +1180,23 @@ bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,con
             }
         }
         
-        
-        _A = counts;
-        
+        for (j = 0; j < _numStates; j++) {
+            for (i = 0; i < _numStates; i++) {
+                _A[j][i] += (counts[j][i] - _A[j][i]) * DAMPING_FACTOR;
+            }
+        }
+    }
+    
+    /*
+    if (_A[s2][s2] < MIN_SELF_TERM_FOR_SPLIT_STATE) {
+        worked = false;
+    }
+    else {
     }
     
     
+    std::cout << "state " << s2 << " self-term: " << _A[s2][s2] << ", outgoing: " << _A[s2] << std::endl;
+*/
     /*
     std::cout << this->serializeToJson() << std::endl;
     std::cout << std::endl;
@@ -1279,10 +1317,16 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         }
         
         for (uint32_t iState = 0; iState < origNumberStates; iState++) {
+            //did state get too concentrated?
             for (int i = 0; i < origNumberStates; i++) {
                 if (best->_A[iState][i] > 1.0 - origNumberStates*MIN_VALUE_FOR_A) {
                     statesToDelete.insert(iState);
                 }
+            }
+            
+            //is self term too small?
+            if (best->_A[iState][iState] < MIN_VALUE_FOR_SELF_TERM) {
+                statesToDelete.insert(iState);
             }
             
             
@@ -1362,6 +1406,11 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         }
 #endif
         //std::cout << costs << std::endl;
+        
+        if (costs.empty()) {
+            std::cout << "NO VIABLE SPLITS FOUND, EXITING." << std::endl;
+            break;
+        }
         
         const uint32_t bestidx = getArgMaxInVec(costs);
         
