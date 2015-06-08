@@ -2,7 +2,7 @@
 import os.path
 import json
 from numpy import *
-from pylab import *
+from matplotlib.pyplot import *
 import sklearn.mixture
 import sys
 from time import strftime
@@ -15,23 +15,28 @@ import serverdata
 import os.path
 import initial_models
 import matplotlib.dates as mdates
-    
-k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043    , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,1310  , 1609 ,  1629 ,  1648]
-k_user_list2 = [1086, 1050, 1049]
-k_user_list.extend(k_user_list2)
+import matplotlib as mpl
+
+# Set the default color cycle
+mpl.rcParams['axes.color_cycle'] = ['b', 'g', 'r','c','m','y','k','grey']
+
+#k_user_list = [1 ,  1001 ,  1002 ,  1005 ,  1012 ,  1013 ,  1025  , 1038 ,  1043    , 1052 ,  1053 ,  1060  , 1061 ,  1062 ,  1063 ,  1067 ,  1070 ,  1071 ,  1072 ,1310  , 1609 ,  1629 ,  1648]
+#k_user_list2 = [1086, 1050, 1049]
+#k_user_list.extend(k_user_list2)
+k_user_list = [1086]
 save_filename = 'savedata3.json'
 
 k_min_count_pill_data = 0
 k_min_num_days_of_sense_data = 0
-k_min_date = '2015-03-01'
-k_num_days_of_data = 20
-
+k_min_date = '2015-04-26'
+k_num_days_of_data = 1
+k_num_days_displayed_from_single_date = 3
 
 k_min_sleep_duration_hours = 1.5
 
 k_natural_light_filter_start_time = 16 #hour in 24 hours
 k_natural_light_filter_stop_time = 4 #hour in 24 hours
-k_sound_disturbance_threshold = 65.0
+k_sound_disturbance_threshold = 90.0
 k_energy_disturbance_threshold = 15000
 k_enable_interval_search = True
 
@@ -83,7 +88,7 @@ def pull_data(params, user, date):
         
         if date != None:
             min_date = date
-            num_days = 1
+            num_days = k_num_days_displayed_from_single_date
             
         a = serverdata.BinnedDataGetter(user_list,params)
         data = a.get_all_binned_data(min_date,num_days)
@@ -97,76 +102,65 @@ def pull_data(params, user, date):
 
     return data
 
-mode_on_bed = 'a'
-mode_off_bed = 'b'
-mode_sleeping = 'c'
-mode_not_sleeping = 'd'
 
-def get_sleep_times(t, path, params):
-    events = []
+def decode_probs(path,condprobs):
+    forward_probs = []
+    backward_probs = []
+    min_prob = 1e-2
+    p = 0.05 #prior
+
+    #forward
+    for t in range(len(path)):
+        state = path[t]
+        p_state_given_sleep = condprobs[state]
+        p_not_state_given_sleep = 1.0 - p_state_given_sleep
+
+        joints = [p_state_given_sleep * p, p_not_state_given_sleep * (1.0 - p)]
+        p_data = joints[0] + joints[1]
+        p = joints[0] / p_data
+ 
+
+        if p < min_prob:
+            p = min_prob
+
+        if p > 1.0 - min_prob:
+            p = 1.0 - min_prob
+
+        forward_probs.append(p)
+        backward_probs.append(0.0)
     
-    on_bed_states = params['on_bed_states']   
-    sleep_states = params['sleep_states']  
-    
-    sleep_times = [0, 0]
-    bed_times = [0, 0]
-    
-    bed_mode = mode_off_bed
-    sleep_mode = mode_not_sleeping
-    
-    for idx in xrange(len(path)):
-        state = path[idx]
+    p = 0.05 #prior
+
+    for t in range(len(path) - 1,-1,-1):
+        state = path[t]
+        p_state_given_sleep = condprobs[state]
+        p_not_state_given_sleep = 1.0 - p_state_given_sleep
+
+        joints = [p_state_given_sleep * p, p_not_state_given_sleep * (1.0 - p)]
+        p_data = joints[0] + joints[1]
+        p = joints[0] / p_data
+
+        if p < min_prob:
+            p = min_prob
+
+        if p > 1.0 - min_prob:
+            p = 1.0 - min_prob
+
+        backward_probs[t] = p
+
+
+    probs = []
+    for t in range(len(path)):
+        #NOT joint of not sleeping forwards and not sleeping backwards
+        union_of_sleep = 1.0 - (1.0 - forward_probs[t]) * (1.0 - backward_probs[t])
+        #NOT joint of sleeping forwards and sleeping backwards
+        #union_of_not_sleep = 1.0 - (forward_probs[t] * backward_probs[t])
+        #ptotal = union_of_sleep + union_of_not_sleep
+        #probs.append(union_of_sleep / ptotal)
+        probs.append(union_of_sleep)
         
-            
-        #track how long in the light sleep state
-        if state not in sleep_states:
-            new_sleep_mode = mode_not_sleeping
-            
-        if state in sleep_states:
-            new_sleep_mode = mode_sleeping;
-
-            
-        #####################
-        #off bed? zero out light sleep counter
-        if state not in on_bed_states:
-            new_bed_mode = mode_off_bed
-
-        if state in on_bed_states:
-            new_bed_mode = mode_on_bed
+    return forward_probs,backward_probs,probs
         
-        #################################            
-        #did you just start sleeping?
-        if new_sleep_mode == mode_sleeping and sleep_mode == mode_not_sleeping:
-            sleep_times[0] = t[idx]
-            
-        #did you just stop sleeping?
-        if new_sleep_mode == mode_not_sleeping and sleep_mode == mode_sleeping:
-            sleep_times[1] = t[idx]
-            
-        #did you just get on the bed?
-        if new_bed_mode == mode_on_bed and bed_mode == mode_off_bed:
-            bed_times[0] = t[idx]
-            
-            
-        #did you just get off the bed?
-        if new_bed_mode == mode_off_bed and bed_mode == mode_on_bed:
-            bed_times[1] = t[idx]
-            
-            event = [bed_times[0] ,  sleep_times[0] ,  sleep_times[1] , bed_times[1]]
-
-            if bed_times[0] <= sleep_times[0] < sleep_times[1] <= bed_times[1]:
-                events.append(copy.deepcopy(event))
-            else:
-                print 'bad event!', event
-                
-        bed_mode = new_bed_mode
-        sleep_mode = new_sleep_mode
-            
-        
-    return events
-        
-
-
 
 if __name__ == '__main__':
     
@@ -182,7 +176,7 @@ if __name__ == '__main__':
     parser.add_argument('--initmodel', default='default', help='which initial model to choose')
     parser.add_argument('--date', help = 'optional target date, use in conjuction with a user')
     args = parser.parse_args()
-    set_printoptions(precision=3, suppress=True, threshold=np.nan)
+    set_printoptions(precision=3, suppress=True, threshold=nan)
     
     #get initial model
     if args.initmodel == 'apnea':
@@ -202,6 +196,17 @@ if __name__ == '__main__':
     params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
     params['users'] = '-1'
     params['enable_interval_search'] = k_enable_interval_search
+
+
+    #if a model was specified, load it
+    if args.model != None:
+        f = open(args.model, 'r')
+        hmm_dict = json.load(f)
+        hmm.from_dict(hmm_dict['default'])
+        params = hmm_dict['default']['params']
+    else:
+        print 'using init model %s' % args.initmodel 
+
 
     print 'USING MEASUREMENT PERIOD OF %d MINUTES' % params['meas_period_minutes']
 
@@ -245,43 +250,13 @@ if __name__ == '__main__':
     print keys
 
     indiv_user_sensor_data = {}
-    sensor_data_names = ['log light', 'counts', 'disturbances', 'log soundcounts', 'art. light', 'snd mag', 'energy']
+    sensor_data_names = ['log light', 'mot.', 'disturbances', 'log soundcounts', 'art. light', 'part. mot.', 'part. dist.']
     #go through each user (the key == user number) and get their sensor data
     #append into one big sequence
     for key in data:
         
         if key in forbidden_keys:
             continue 
-        
-        '''
-        t, l, c, sc, energy, waves, soundmags = data_windows.data_to_windows(data[key], k_period_in_seconds)
-
-        tod = (t % 86400) / 3600.0
-        non_natural_light = logical_or( (tod > k_natural_light_filter_start_time), (tod < k_natural_light_filter_stop_time)).astype(int)
-
-        sc[where(sc < 0)] = 0.0
-        sc = log(sc + 1.0) / log(2)
-      
-        waves[where(soundmags > k_sound_disturbance_threshold)] += 1
-        waves[where(energy > k_energy_disturbance_threshold)] += 1
-        soundmags -= 40.0
-        soundmags[where(soundmags < 0)] = 0;
-        soundmags /= 10.0
-
-        waves[where(waves > 0)] = 1.0;
-        l[where(l < 0)] = 0.0
-        l = (log2(k_raw_light_to_lux*l * k_lux_multipler + 1.0)) + 0.1
-        energy[where(energy < 0)] = 0.0
-        energy /= 2000
-
-        
-        
-        myseg = []
-        for i in xrange(len(t)):
-            vec = [l[i], c[i],waves[i], sc[i],non_natural_light[i], soundmags[i], energy[i]]
-            flat_seg.append(vec)
-            myseg.append(vec)
-        '''
         
         binnedata = data[key]['data']
         t = data[key]['times']
@@ -299,14 +274,6 @@ if __name__ == '__main__':
     flat_seg = array(flat_seg)
     print flat_seg.shape
     
-    #if a model was specified, load it
-    if args.model != None:
-        f = open(args.model, 'r')
-        hmm_dict = json.load(f)
-        hmm.from_dict(hmm_dict['default'])
-        params = hmm_dict['default']['params']
-    else:
-        print 'using init model %s' % args.initmodel 
 
     
     #if we are training, then go do it
@@ -360,9 +327,17 @@ if __name__ == '__main__':
            
         
         path, reliability = myhmm.decode(seg)
+
+        print params.keys()
+        sleep_probs_forward = None
+        sleep_probs_backward = None
+        if params.has_key('p_state_given_sleep'):
+            sleep_probs_forward,sleep_probs_backward,smoothed_probs = decode_probs(path,params['p_state_given_sleep'])
+
+        
+        
         bic = myhmm.get_bic(seg, path, params['num_model_params'])
         aic = myhmm.get_aic(seg, path, params['num_model_params'])
-
         print "BIC is %f, AIC is %f" % (bic, aic)
         #model_cost = myhmm.forwardbackward(seg)
         #model_cost /= len(seg) / myhmm.d
@@ -371,34 +346,16 @@ if __name__ == '__main__':
         #limit = 3.0 * mean(path_cost)
         #score = sum(path_cost > limit)
         
-        events = get_sleep_times(t, path, params)   
 
-        sleep_time_strings = []
-        good_events = []
-        for e in events:
-            if len(e) >= 4:
-                sleep_duration = (e[2] - e[1]) / 3600.0
-                
-                if sleep_duration > k_min_sleep_duration_hours:
-                
-                    sleep_time_strings.append(  [get_unix_time_as_string(e[0]), 
-                                         get_unix_time_as_string(e[1]), 
-                                         get_unix_time_as_string(e[2]), 
-                                         get_unix_time_as_string(e[3]), 
-                                         sleep_duration] )
-                                         
-                    good_events.append(e)
-                    
-        
-        events = good_events
-        
-        for s in sleep_time_strings:
-            print s
+        nplots = 2
 
+        if sleep_probs_forward != None:
+            nplots = 3
+            
         if outfile == None:
             t2 = array([get_unix_time_as_datetime(tt) for tt in t])
             figure(1)
-            ax = subplot(2, 1, 1)
+            ax = subplot(nplots, 1, 1)
 
             N = seg.shape[1]
             for i in xrange(N):
@@ -411,7 +368,7 @@ if __name__ == '__main__':
             title("userid=%s,bic=%f,aic=%f" % (str(key), bic, aic))
             grid('on')
             
-            ax2 = subplot(2, 1, 2, sharex=ax)
+            ax2 = subplot(nplots, 1, 2, sharex=ax)
             ax2.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
             ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M:')
             questionable_indices = where(reliability < k_reliability_threshold)
@@ -421,6 +378,15 @@ if __name__ == '__main__':
             legend(['path', 'possible bad decisions'])
             #plot(t2, path_cost, 'ro')
             grid('on')
+
+            if sleep_probs_forward != None:
+                 ax3 = subplot(nplots,1,3,sharex=ax)
+                 ax3.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
+                 #plot(t2,sleep_probs_forward,t2,sleep_probs_backward,t2,smoothed_probs)
+                 plot(t2,smoothed_probs,'k-')
+                 grid('on')
+                 legend('sleep prob')
+
             
             show()
     
