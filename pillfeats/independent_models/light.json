@@ -1,0 +1,34 @@
+{"default" : {"A" : [[0.984182,0.00480391,0.00576153,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.00404519],[0.001,0.986536,0.001,0.001,0.001,0.00223792,0.00600568,0.001,0.00364551,0.00100112,0.001],[0.00198528,0.001,0.986645,0.00854779,0.001,0.00133015,0.001,0.001,0.001,0.00100138,0.00190512],[0.001,0.0018544,0.001,0.961329,0.001,0.00291601,0.001,0.0349524,0.001,0.001,0.00335025],[0.001,0.001,0.00202397,0.001,0.956996,0.001,0.00120763,0.001,0.00289623,0.0359804,0.00102549],[0.001,0.001,0.00302318,0.00157993,0.878545,0.0595623,0.00209376,0.001,0.001,0.001,0.0606483],[0.001,0.001,0.00182522,0.001,0.00982566,0.00129936,0.978119,0.001,0.00150773,0.00755699,0.001],[0.001,0.0269222,0.001,0.001,0.00192151,0.00278542,0.001,0.967597,0.001,0.001,0.001],[0.001,0.001,0.00484857,0.001,0.00282641,0.001,0.00100011,0.001,0.974466,0.0158398,0.00211293],[0.001,0.00100162,0.00103385,0.0130812,0.00102615,0.001,0.00106701,0.001,0.00316439,0.980964,0.001],[0.00160373,0.00301432,0.001,0.00224141,0.001,0.0897733,0.001,0.00170154,0.00335623,0.00305468,0.911855]],"models" : [[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 0.231818,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.990995,0.01], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 6.962312,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.990998,0.01], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 0.579999,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.990986], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 0.727199,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.990973,0.01], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 2.933413,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.991006], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 4.282473,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.991008], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 7.927576,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.990987], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 2.525951,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.991006,0.01], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 5.098949,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.990996], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 0.870493,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.990993], "allow_reestimation": true,"weight": 1.000000}}
+]
+,[{"model_type": "chisquare", "model_data": {"obs_num": 0, "mean": 0.035214,"weight": 1.000000}}
+,{"model_type": "discrete_alphabet", "model_data": {"obs_num": 4, "alphabet_probs": [0.01,0.991008], "allow_reestimation": true,"weight": 1.000000}}
+]
+],"pi" : [0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091,0.0909091],"params": {"natural_light_filter_start_hour": 16, "on_bed_states": [], "users": "", "num_model_params":33, "natural_light_filter_stop_hour": 4, "pill_magnitude_disturbance_threshold_lsb": 15000, "sleep_states": [], "enable_interval_search": true, "model_name": "foobars", "audio_disturbance_threshold_db": 70.0 , "meas_period_minutes" : 5}}}
