@@ -21,7 +21,7 @@
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (20)
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.0001)
-#define NUM_SPLITS_PER_STATE (20)
+#define NUM_SPLITS_PER_STATE (10)
 #define DAMPING_FACTOR (0.1)
 
 #define MIN_VALUE_FOR_SELF_TERM (0.01)
@@ -1346,6 +1346,28 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
             vres = best->decode(meas);
         }
         
+        
+#ifdef QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
+        if (vres.getBIC() < lastBIC || vres.getBIC() == -INFINITY) {
+            badcount++;
+            std::cout << "no improvement..." << std::endl;
+            if (badcount > NUM_BAD_COUNTS_TO_EXIT) {
+                std::cout << "EXITING, NO IMPROVEMENT SEEN" << std::endl;
+                break;
+            }
+        }
+        else {
+            badcount = 0;
+        }
+#endif
+        
+        lastBIC = vres.getBIC();
+        
+        if (_stateSaver) {
+            _stateSaver->saveState(best->serializeToJson());
+        }
+        
+        
         //splits
         for (uint32_t iState = 0; iState < numStates; iState++) {
             
@@ -1416,36 +1438,17 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
         
         
         
-#ifdef QUIT_ENLARGING_IF_NO_IMRPOVEMENT_SEEN
-        if (costs[bestidx] < lastBIC || costs[bestidx] == -INFINITY) {
-            badcount++;
-            if (badcount > NUM_BAD_COUNTS_TO_EXIT) {
-                std::cout << "EXITING, NO IMPROVEMENT SEEN" << std::endl;
-                break;
-            }
-        }
-        else {
-            badcount = 0;
-        }
-#endif
-        
         std::cout << "picked split of state " <<  modelidx[bestidx] << " BIC was " << costs[bestidx] << std::endl;
         
         best = hmms[bestidx];
         
         hmms.clear();
-
-        
-        lastBIC = costs[bestidx];
-        
-
         
         numStates++;
         
-        if (_stateSaver) {
-            _stateSaver->saveState(best->serializeToJson());
-        }
     }
+    
+    
     
     
     std::cout << "BEST BIC: " << lastBIC << std::endl;
