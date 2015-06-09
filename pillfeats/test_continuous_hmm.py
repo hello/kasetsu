@@ -331,7 +331,7 @@ if __name__ == '__main__':
         print params.keys()
         sleep_probs_forward = None
         sleep_probs_backward = None
-        if params.has_key('p_state_given_sleep'):
+        if params.has_key('p_state_given_sleep') and len(params['p_state_given_sleep']) > 0:
             sleep_probs_forward,sleep_probs_backward,smoothed_probs = decode_probs(path,params['p_state_given_sleep'])
 
         
