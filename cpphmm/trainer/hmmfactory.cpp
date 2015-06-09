@@ -272,8 +272,12 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
         return getSeedModel(meas,stateSaver,all);
     }
     else if (modelname == "sound") {
-        std::cout << "found the all initial seed model" << std::endl;
+        std::cout << "found the sound initial seed model" << std::endl;
         return getSeedModel(meas,stateSaver,sound);
+    }
+    else if (modelname == "disturbance") {
+        std::cout << "found the disturbance initial seed model" << std::endl;
+        return getSeedModel(meas,stateSaver,disturbance);
     }
     
   

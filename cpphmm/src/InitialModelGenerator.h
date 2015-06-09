@@ -9,7 +9,8 @@ typedef enum {
     all,
     motion,
     light,
-    sound
+    sound,
+    disturbance
 } EInitModel_t;
 
 typedef struct {

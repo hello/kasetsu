@@ -22,9 +22,8 @@ static const HmmFloat_t med_sound = 3.0;
 static const HmmFloat_t high_sound = 6.0;
 static const HmmFloat_t sound_stddev = 1.0;
 
-static const HmmFloat_t low_disturbance = 0.05;
-static const HmmFloat_t med_disturbance = 0.5;
-static const HmmFloat_t high_disturbance = 0.95;
+static const HmmFloat_t low_disturbance = 0.20;
+static const HmmFloat_t high_disturbance = 0.80;
 
 //static const HmmFloat_t minus_ratio = -1.0;
 //static const HmmFloat_t plus_ratio = 1.0;
@@ -34,7 +33,7 @@ static const HmmFloat_t high_disturbance = 0.95;
 #define NUM_LIGHT_MODELS (3)
 #define NUM_MOTION_MODELS (3)
 #define NUM_SOUND_MODELS (3)
-#define NUM_DISTURBANCE_MODELS (3)
+#define NUM_DISTURBANCE_MODELS (2)
 #define NUM_ENERGY_RATIO_MODELS (3)
 
 static const HmmFloat_t light_params[2][NUM_LIGHT_MODELS] = {
@@ -50,7 +49,7 @@ static const HmmFloat_t motion_gamma_params[2][NUM_MOTION_MODELS] = {
     {low_motion,med_motion,high_motion},
     {low_motion_stddev,med_motion_stddev,high_motion_stddev}};
 
-static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,med_disturbance,high_disturbance};
+static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_disturbance,high_disturbance};
 
 //static const HmmFloat_t energy_ratio_params[NUM_ENERGY_RATIO_MODELS] = {minus_ratio,even_ratio,plus_ratio};
 
@@ -91,6 +90,33 @@ static ModelVec_t getSinglePersonMotionInitialModel() {
         
     }
 
+    
+    return models;
+}
+
+static ModelVec_t getSinglePersonDisturbanceInitialModel() {
+    ModelVec_t models;
+    
+    //enumerate all possible models
+    
+    for (int iDisturbance = 0; iDisturbance < NUM_DISTURBANCE_MODELS; iDisturbance++) {
+        
+        
+        HmmDataVec_t disturbanceProbs;
+        disturbanceProbs.resize(2);
+        disturbanceProbs[0] = 1.0 - disturbance_params[iDisturbance];
+        disturbanceProbs[1] = disturbance_params[iDisturbance];
+        
+        AlphabetModel disturbance(DISTURBANCE_OBSNUM,disturbanceProbs,true,DISTURBANCE_WEIGHT);
+
+        
+        CompositeModel model;
+        model.addModel(disturbance.clone(false));
+        
+        models.push_back(model.clone(false));
+        
+        
+    }
     
     return models;
 }
@@ -303,6 +329,12 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
             break;
         }
             
+        case disturbance:
+        {
+            models = getSinglePersonDisturbanceInitialModel();
+            break;
+        }
+            
         default:
         {
             std::cout << "NO INITIAL MODEL FOUND" << std::endl;
@@ -363,12 +395,24 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
     
     
     //keep only models that had the path for a significant amount of time
-    const uint32_t threshold = (HmmFloat_t)T * MIN_INIT_STATE_FRACTION;
+    uint32_t threshold = (HmmFloat_t)T * MIN_INIT_STATE_FRACTION;
     UIntVec_t accepted;
+    UIntSet_t acceptedSet;
     
-    for (int i = 0; i < countmat.size(); i++) {
-        if (rowcounts[i] > threshold) {
-            accepted.push_back(i);
+    while (accepted.size() < 2) {
+    
+        for (int i = 0; i < countmat.size(); i++) {
+            //if not already found and above threshold
+            if (rowcounts[i] > threshold && acceptedSet.find(i) == acceptedSet.end()) {
+                accepted.push_back(i);
+                acceptedSet.insert(i);
+            }
+        }
+        
+        threshold /= 2;
+        
+        if (threshold == 0) {
+            break;
         }
     }
     
