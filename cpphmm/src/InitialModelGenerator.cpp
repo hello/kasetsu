@@ -125,6 +125,22 @@ static ModelVec_t getSinglePersonLightInitialModel() {
     return models;
 }
 
+static ModelVec_t getSinglePersonSoundInitialModel() {
+    ModelVec_t models;
+    
+    //enumerate all possible models
+    for (int iSoundCount = 0; iSoundCount < NUM_SOUND_MODELS; iSoundCount++) {
+        ChiSquareModel sound(SOUND_OBSNUM,sound_params[0][iSoundCount],SOUND_WEIGHT);
+        
+        CompositeModel model;
+        model.addModel(sound.clone(false));
+        
+        models.push_back(model.clone(false));
+    }
+    
+    return models;
+}
+
 static ModelVec_t getSinglePersonInitialModel() {
     ModelVec_t models;
     
@@ -281,7 +297,11 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
             break;
         }
             
-            
+        case sound:
+        {
+            models = getSinglePersonSoundInitialModel();
+            break;
+        }
             
         default:
         {
