@@ -265,6 +265,7 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         case all:
         {
             models = getSinglePersonInitialModel();
+            break;
         }
             
             

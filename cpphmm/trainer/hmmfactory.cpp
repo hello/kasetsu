@@ -87,21 +87,7 @@ static HmmPdfInterfaceSharedPtr_t getDefaultModelForState(float lightGammaMean, 
 
 }
 
-static HiddenMarkovModel * getSingleStateModel() {
-    const int num_states = 1;
 
-    HmmDataMatrix_t A;
-    
-    A.resize(num_states);
-    A[0] << 1.0;
-
-    HiddenMarkovModel * model = new HiddenMarkovModel(A);
-
-    model->addModelForState(getDefaultModelForState(1.0, 1.0, 1.0, 0.5,1.0, 1.0, 1.0,false,false));
-    
-    return model;
-
-}
 
 
 static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateInterface * stateSaver,EInitModel_t model) {
@@ -119,72 +105,7 @@ static HiddenMarkovModel * getSeedModel(const HmmDataMatrix_t & meas,SaveStateIn
 
 
 
-static HiddenMarkovModel * getRandomModel() {
-    const int N = 3;
-    
-    const bool useNatLight = false;
-    const bool estimateNatLight = false;
-    
-    
-    UIntVec_t groups;
-    for (int i = 0; i < N; i++) {
-        groups.push_back(i);
-    }
-    
-    HiddenMarkovModel * model = new HiddenMarkovModel(getRandomMatrix(N,N),NULL);
-    
-    for (int i = 0; i < N; i++) {
-        model->addModelForState(getDefaultModelForState(
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        getRandomPositiveFloat() * 5,
-                                                        getRandomPositiveFloat(),
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        1.0,useNatLight,estimateNatLight));
-    }
-    
-    return model;
-    
-}
 
-static HiddenMarkovModel * getRandomSparseModel() {
-    const int N = 20;
-    const float sparseThreshold = 0.1 / N;
-    
-    const bool useNatLight = false;
-    const bool estimateNatLight = false;
-    
-    
-    UIntVec_t groups;
-    for (int i = 0; i < N; i++) {
-        groups.push_back(i);
-    }
-    
-    HmmDataMatrix_t A = getRandomMatrix(N,N);
-    
-    for (int j = 0; j < N; j++) {
-        for (int i = 0; i < N; i++) {
-            if (A[j][i] < sparseThreshold) {
-                A[j][i] = 0;
-            }
-        }
-    }
-    
-    
-    
-    HiddenMarkovModel * model = new HiddenMarkovModel(A);
-    
-    for (int i = 0; i < N; i++) {
-        model->addModelForState(getDefaultModelForState(
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        getRandomPositiveFloat() * 5,
-                                                        getRandomPositiveFloat(),
-                                                        getRandomPositiveFloat() * 5, 1.0,
-                                                        1.0,useNatLight,estimateNatLight));
-    }
-    
-    return model;
-    
-}
 
 static HiddenMarkovModel * getDefaultModel() {
     const int num_states = 12;
