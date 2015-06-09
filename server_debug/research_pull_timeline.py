@@ -6,11 +6,11 @@ import requests
 import numpy as np
 import time
 import json
-
+import os
 
 #k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
+k_magic_auth = os.environ['RESEARCH_TOKEN']
 
 def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
@@ -48,7 +48,7 @@ def pull_date_for_user(userid):
 
             data = response.json()
 
-            if data.has_key('code') and int(data['code']) == 204:
+            if isinstance(data,dict) and data.has_key('code') and int(data['code']) == 204:
                 print data['message']
                 continue                  
             

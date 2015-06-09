@@ -6,13 +6,14 @@ import requests
 import numpy as np
 import time
 import json
-
+import os
 
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/timeline/{}/{}'
 #k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/timeline/{}/{}'
+k_magic_auth = os.environ['RESEARCH_TOKEN']
 
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
-num_days = 1
+
+num_days = 7
 valid_keys = ['SLEEP','OUT_OF_BED','IN_BED','WAKE_UP']
 def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)

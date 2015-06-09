@@ -11,13 +11,15 @@ import threading
 import csv
 import argparse
 import copy
-
+import os
 
 POOL_SIZE = 8
-#k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
-k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
 #k_uri = 'https://research.hello.is/v1/prediction/sleep_events/{}/{}'
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
+
+k_magic_auth=os.environ['RESEARCH_TOKEN']
+
 k_users = [1, 1001, 1002, 1012, 1310, 1025, 1063, 1052]
 k_algorithm = 'hmm'
 k_params = {}
