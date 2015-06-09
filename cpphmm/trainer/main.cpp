@@ -7,6 +7,9 @@
 #include <time.h>       /* time */
 #include "CompatibilityTypes.h"
 
+
+static const char * k_growth_model_list[] = {"seed","partnerseed","light","motion","all"};
+
 class FileStateSaver : public SaveStateInterface {
 public:
     FileStateSaver(const std::string & filename) : _filename(filename){
@@ -78,13 +81,21 @@ int main(int argc,const char * args[]) {
     std::cout << "There are " << meas[0].size() << " data points." << std::endl;
     bool worked = false;
     
+    static const uint32_t modelListSize = sizeof(k_growth_model_list) / sizeof(const char *);
+    bool foundModel = false;
     
-    if (model == "seed" || model == "partnerseed" || model == "light" || model == "motion") {
-        worked = Trainer::grow(hmm.get(),meas,maxiter);
+    for (uint32_t istr = 0; istr < modelListSize; istr++) {
+        if (model == k_growth_model_list[istr]) {
+            worked = Trainer::grow(hmm.get(),meas,maxiter);
+            foundModel = true;
+            break;
+        }
     }
-    else {
+    
+    if (!foundModel) {
         worked = Trainer::train(hmm.get(),meas,maxiter);
     }
+    
     
     std::ofstream outfile;
     outfile.open(outputfilename.c_str());
