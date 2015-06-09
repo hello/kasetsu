@@ -99,27 +99,27 @@ static ModelVec_t getSinglePersonLightInitialModel() {
     ModelVec_t models;
     
     //enumerate all possible models
-   // for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
+    for (int iNatLight = 0; iNatLight < NUM_DISTURBANCE_MODELS; iNatLight++) {
         
         for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
             
             ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
             
-           // HmmDataVec_t natLightProbs;
-           // natLightProbs.resize(2);
-           // natLightProbs[0] = 1.0 - disturbance_params[iNatLight];
-           // natLightProbs[1] = disturbance_params[iNatLight];
+            HmmDataVec_t natLightProbs;
+            natLightProbs.resize(2);
+            natLightProbs[0] = 1.0 - disturbance_params[iNatLight];
+            natLightProbs[1] = disturbance_params[iNatLight];
 
-            //AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
+            AlphabetModel natLight(NAT_LIGHT_OBSNUM,natLightProbs,true,NAT_LIGHT_WEIGHT);
 
             
             CompositeModel model;
             model.addModel(light.clone(false));
-           // model.addModel(natLight.clone(false));
+            model.addModel(natLight.clone(false));
 
             models.push_back(model.clone(false));
             
-    //    }
+        }
     }
     
     return models;
@@ -262,6 +262,12 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
     ModelVec_t models;
     
     switch (model ) {
+        case all:
+        {
+            models = getSinglePersonInitialModel();
+        }
+            
+            
         case motion:
         {
             models = getSinglePersonMotionInitialModel();
@@ -273,6 +279,8 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
             models = getSinglePersonLightInitialModel();
             break;
         }
+            
+            
             
         default:
         {

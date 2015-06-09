@@ -6,6 +6,7 @@
 #include "InitialModelGenerator.h"
 #include "json/json.h"
 
+/*
 static HmmSharedPtr_t loadFile(const std::string jsonText) {
     Json::Value top;
     Json::Reader reader;
@@ -24,6 +25,7 @@ static HmmSharedPtr_t loadFile(const std::string jsonText) {
     return HmmSharedPtr_t(NULL);
 
 }
+ */
 
 
 static HmmFloat_t getRandomPositiveFloat() {
@@ -337,12 +339,16 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
         return getTestModel();
     }
     else if (modelname == "motion") {
-        std::cout << "found seed model" << std::endl;
+        std::cout << "found the motion seed model" << std::endl;
         return getSeedModel(meas,stateSaver,motion);
     }
     else if (modelname == "light") {
-        std::cout << "found seed model" << std::endl;
+        std::cout << "found the light seed model" << std::endl;
         return getSeedModel(meas,stateSaver,light);
+    }
+    else if (modelname == "all") {
+        std::cout << "found the all initial seed model" << std::endl;
+        return getSeedModel(meas,stateSaver,all);
     }
     
   

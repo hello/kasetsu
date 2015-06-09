@@ -6,6 +6,7 @@
 #include "HmmPdfInterface.h"
 
 typedef enum {
+    all,
     motion,
     light
 } EInitModel_t;
