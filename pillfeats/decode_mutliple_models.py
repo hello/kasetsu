@@ -163,6 +163,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m1",  "--model1", help="model file (usually a .json)",required=True)
     parser.add_argument("-m2",  "--model2", help="model file (usually a .json)")
+    parser.add_argument("-m3",  "--model3", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user", help="particular user to train on / evaluate, otherwise we do all users in database",required=True)
     parser.add_argument('--date', help = 'target date',required=True)
     parser.add_argument('-n','--numdays', help = 'target date',type=int,default = 1)
@@ -199,6 +200,15 @@ if __name__ == '__main__':
 
     if args.model2 != None:
         f = open(args.model2, 'r')
+        hmm_dict = json.load(f)
+        f.close()
+        hmm = CompositeModelHMM()
+        hmm.from_dict(hmm_dict['default'])
+        hmms.append(hmm)
+        params_list.append(hmm_dict['default']['params'])
+
+    if args.model3 != None:
+        f = open(args.model3, 'r')
         hmm_dict = json.load(f)
         f.close()
         hmm = CompositeModelHMM()
@@ -266,16 +276,19 @@ if __name__ == '__main__':
         for imodel in range(len(hmms)):
             params = params_list[imodel]
             hmm = hmms[imodel]
-                       
+
+            
+            print 'MODEL %d' % (imodel)
+            print hmm.A
+            print hmm.get_status()
+ 
             path, reliability = hmm.decode(seg)
             paths.append(path)
             cprobs = params['p_state_given_sleep']
             cnds = [cprobs[s] for s in path]
             prob_mappings.append(cnds)
 
-            print 'MODEL %d' % (imodel)
-            print hmm.A
-            print hmm.get_status()
+           
 
 
         smoothed_probs,sleep_segments = decode_probs(paths,prob_mappings)
