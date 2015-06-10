@@ -37,7 +37,7 @@ k_reliability_threshold = 0.6
 k_enter_sleep_threshold = 0.80
 k_leave_sleep_threshold = k_enter_sleep_threshold - 0.05
 k_min_prob = 5e-2
-
+k_max_gap = 12 * 1.5
     
 
 def get_unix_time_as_datetime(unix_time):
@@ -45,6 +45,45 @@ def get_unix_time_as_datetime(unix_time):
     
 def get_unix_time_as_string(unix_time): 
     return get_unix_time_as_datetime(unix_time).isoformat(' ')   
+
+
+def join_segments(sleep_segments):
+    segs = []
+    N = len(sleep_segments)
+    t = 0
+
+    if N == 0:
+        return []
+
+    seg1 = sleep_segments[0]
+    last_joined = False
+
+    while True:
+        
+        if t + 1 < N:
+            seg2 = sleep_segments[t + 1]
+            diff = seg2[0] - seg1[1]
+
+            if diff < k_max_gap:
+                seg1[1] = seg2[1]
+                last_joined = True
+            else:
+                segs.append(copy.deepcopy(seg1))
+                last_joined = False
+                seg1 = seg2
+
+        else:
+
+            if not last_joined:
+                segs.append(copy.deepcopy(seg1))
+
+            break
+        
+        t += 1
+
+    return segs
+
+                        
 
 def pull_data(params, user, date,num_days): 
  
@@ -293,6 +332,8 @@ if __name__ == '__main__':
 
         smoothed_probs,sleep_segments = decode_probs(paths,prob_mappings)
 
+        joined_segments = join_segments(sleep_segments)
+        
         nplots = 3
 
         t2 = array([get_unix_time_as_datetime(tt) for tt in t])
@@ -332,7 +373,7 @@ if __name__ == '__main__':
         grid('on')
         legend('sleep prob')
 
-        for seg in sleep_segments:
+        for seg in joined_segments:
             start_time = t2[seg[0]]
             end_time = t2[seg[1]]
 
