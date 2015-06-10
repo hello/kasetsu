@@ -34,7 +34,9 @@ k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
 
 k_reliability_threshold = 0.6
-
+k_enter_sleep_threshold = 0.80
+k_leave_sleep_threshold = k_enter_sleep_threshold - 0.05
+k_min_prob = 5e-2
 
     
 
@@ -70,10 +72,29 @@ def two_state_bayes(prior,conditional):
     newprob = joints[0] / prob_of_data
     return newprob
 
+def get_sleep_wake_from_probs(probs):
+    sleep = False
+    N = len(probs)
+    segments = []
+    for t in xrange(N):
+        p = probs[t]
+
+        if p > k_enter_sleep_threshold and not sleep:
+            sleep = True
+            segments.append([])
+            segments[-1].append(t)
+
+        if p < k_leave_sleep_threshold and sleep:
+            sleep = False
+            segments[-1].append(t)
+
+    return segments
+
+        
+
 def decode_probs(paths,condprobs):
     forward_probs = []
     backward_probs = []
-    min_prob = 1e-2
 
     T = len(paths[0])
     num_models = len(paths)
@@ -91,11 +112,11 @@ def decode_probs(paths,condprobs):
             newp = two_state_bayes(p,cond[t])
         
  
-            if newp < min_prob:
-                newp = min_prob
+            if newp < k_min_prob:
+                newp = k_min_prob
 
-            if newp > 1.0 - min_prob:
-                newp = 1.0 - min_prob
+            if newp > 1.0 - k_min_prob:
+                newp = 1.0 - k_min_prob
 
             p = newp
 
@@ -111,11 +132,11 @@ def decode_probs(paths,condprobs):
             
             newp = two_state_bayes(p,cond[t])
         
-            if newp < min_prob:
-                newp = min_prob
+            if newp < k_min_prob:
+                newp = k_min_prob
 
-            if newp > 1.0 - min_prob:
-                newp = 1.0 - min_prob
+            if newp > 1.0 - k_min_prob:
+                newp = 1.0 - k_min_prob
 
             p = newp
 
@@ -131,8 +152,10 @@ def decode_probs(paths,condprobs):
         #ptotal = union_of_sleep + union_of_not_sleep
         #probs.append(union_of_sleep / ptotal)
         probs.append(union_of_sleep)
-        
-    return forward_probs,backward_probs,probs
+
+    segments = get_sleep_wake_from_probs(probs)
+    
+    return probs,segments
         
 
 if __name__ == '__main__':
@@ -255,7 +278,7 @@ if __name__ == '__main__':
             print hmm.get_status()
 
 
-        sleep_probs_forward,sleep_probs_backward,smoothed_probs = decode_probs(paths,prob_mappings)
+        smoothed_probs,sleep_segments = decode_probs(paths,prob_mappings)
 
         nplots = 3
 
@@ -295,6 +318,13 @@ if __name__ == '__main__':
         plot(t2,smoothed_probs,'k-')
         grid('on')
         legend('sleep prob')
+
+        for seg in sleep_segments:
+            start_time = t2[seg[0]]
+            end_time = t2[seg[1]]
+
+            print start_time,end_time
+
 
         show()
 
