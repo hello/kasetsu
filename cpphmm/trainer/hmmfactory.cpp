@@ -178,6 +178,54 @@ static HiddenMarkovModel * getDefaultModel() {
     return model;
 }
 
+static HiddenMarkovModel * getPartnerSeparationModel() {
+    const int num_states = 4;
+    
+    HmmDataMatrix_t A;
+    
+    A.resize(num_states);
+    
+    A[0] << 0.85,0.05,0.05,0.05;
+    A[1] << 0.05,0.85,0.05,0.00;
+    A[2] << 0.05,0.05,0.85,0.05;
+    A[3] << 0.05,0.00,0.10,0.85;
+    
+    const float middleMean = 0.0;
+    const float lowMean = -5.0;
+    const float highMean = 5.0;
+    
+    const float lowStdDev = 5.0;
+    const float highStdDev = 25.0;
+    
+    //const int32_t obsnum,const float mean, const float stddev, const float weight
+    CompositeModel c0;
+    c0.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,middleMean,lowStdDev,1.0)));
+    
+    CompositeModel c1;
+    c1.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,highStdDev,highStdDev,1.0)));
+
+
+    CompositeModel c2;
+    c2.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,lowMean,highStdDev,1.0)));
+
+    
+    CompositeModel c3;
+    c3.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,middleMean,highStdDev,1.0)));
+
+                
+    HiddenMarkovModel * hmm = new HiddenMarkovModel(A);
+    
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c0.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c1.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c2.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c3.clone(false)));
+    
+    return hmm;
+
+
+}
+
+
 static HiddenMarkovModel * getTestModel() {
     const int num_states = 11;
     bool estimateNatLight = false;
@@ -278,6 +326,15 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
     else if (modelname == "disturbance") {
         std::cout << "found the disturbance initial seed model" << std::endl;
         return getSeedModel(meas,stateSaver,disturbance);
+    }
+    else if (modelname == "partner") {
+        std::cout << "found the partner model" << std::endl;
+        return getPartnerSeparationModel();
+    }
+    else if (modelname == "partnerseed") {
+        std::cout << "found the partner seed model" << std::endl;
+        return getSeedModel(meas,stateSaver,partnerdiff);
+
     }
     
   

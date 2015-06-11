@@ -70,6 +70,29 @@ static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_distur
 #define NAT_LIGHT_WEIGHT (1.0)
 #define ENERGY_RATIO_WEIGHT (1.0)
 
+static ModelVec_t getPartnerDiffModel() {
+    ModelVec_t models;
+
+    OneDimensionalGaussianModel gaussian1(0,0.0,10.0,1.0);
+    OneDimensionalGaussianModel gaussian2(0,20.0,10.0,1.0);
+    OneDimensionalGaussianModel gaussian3(0,-20.0,10.0,1.0);
+    
+    CompositeModel model1;
+    CompositeModel model2;
+    CompositeModel model3;
+    
+    model1.addModel(HmmPdfInterfaceSharedPtr_t(gaussian1.clone(false)));
+    model2.addModel(HmmPdfInterfaceSharedPtr_t(gaussian2.clone(false)));
+    model3.addModel(HmmPdfInterfaceSharedPtr_t(gaussian3.clone(false)));
+    
+    models.push_back(model1.clone(false));
+    models.push_back(model2.clone(false));
+    models.push_back(model3.clone(false));
+
+
+    return models;
+}
+
 static ModelVec_t getSinglePersonMotionInitialModel() {
     ModelVec_t models;
     
@@ -332,6 +355,12 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         case disturbance:
         {
             models = getSinglePersonDisturbanceInitialModel();
+            break;
+        }
+        
+        case partnerdiff:
+        {
+            models = getPartnerDiffModel();
             break;
         }
             

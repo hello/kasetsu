@@ -8,7 +8,7 @@
 #include "CompatibilityTypes.h"
 
 
-static const char * k_growth_model_list[] = {"seed","partnerseed","light","motion","all","sound","disturbance"};
+static const char * k_growth_model_list[] = {"seed","partnerseed","light","motion","all","sound","disturbance","partnerseed"};
 
 class FileStateSaver : public SaveStateInterface {
 public:
