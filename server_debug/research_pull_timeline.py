@@ -24,7 +24,7 @@ user_id = int(sys.argv[2])
 k_algorithm = 'hmm'
 k_algorithm2 = 'sleep_score'
 
-k_params = {'algorithm' : k_algorithm2}
+k_params = {'partner_filter' : False, 'algorithm' : k_algorithm2}
 
 def pull_date_for_user(userid):
     responses = []
@@ -64,14 +64,21 @@ def pull_date_for_user(userid):
 def print_results(data):
     
     for item in data:
-        for mydict in item:
-            
+        alg_events = item['alg_events']
+        feedback_events = item['feedback_events']
+        
+        for mydict in alg_events:
             event_type = mydict['type']
             timestr = get_time_as_string(mydict['startTimestamp'],mydict['timezoneOffset'])
-               
-            print timestr,event_type
-            
+            print ' PRED: ',timestr,event_type
+        
         print '\n'
+
+        for mydict in feedback_events:
+            event_type = mydict['type']
+            timestr = get_time_as_string(mydict['startTimestamp'],mydict['timezoneOffset'])
+            print 'LABEL:', timestr,event_type
+
                 
 if __name__ == '__main__':
     k_params['algorithm'] = sys.argv[3]
