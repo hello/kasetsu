@@ -11,7 +11,7 @@ import scipy.stats
 import copy
 import numpy.random
 
-
+k_min_chisquare_input = 0.01
 k_min_poisson_mean = 0.01
 k_min_gaussian_variance = 0.01
 k_max_gaussian_variance = 100
@@ -29,7 +29,8 @@ def model_factory(model_type, model_data):
         
     elif model_type == 'poisson':
         return PoissonModel(model_data)
-        
+    elif model_type == 'chisquare':
+        return ChiSquareModel(model_data)
     elif model_type == 'gaussian':
         return OneDimensionalGaussian(model_data)
         
@@ -88,7 +89,51 @@ class PoissonModel(object):
     def to_dict(self):
         return {'model_type' : 'poisson', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum,  'weight' : self.weight } }
         
+class ChiSquareModel(object):
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.mean = data['mean']
+        
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+            
+        self.dist = scipy.stats.chi2(self.mean)
+    
+    def eval(self, x):
+        xc = numpy.array(copy.deepcopy(x[:, self.obsnum]))
+        xc[numpy.where(xc < k_min_chisquare_input)] = k_min_chisquare_input;
+        the_eval = self.dist.pdf(xc)
+        return the_eval
+        
+    def reestimate(self, x, gammaForThisState):
+        
+        newmean = 0.0
+        
+        numer = 0.0
+        denom = 0.0
+        for t in xrange(x.shape[0]):
+            myobs = x[t][self.obsnum]
+            
+            numer += (gammaForThisState[t]*myobs)
+            denom += (gammaForThisState[t])
+    
+        newmeans = numer/denom
+    
+        if newmeans < k_min_poisson_mean:
+            newmeans = k_min_poisson_mean;
+                
+        self.mean = newmeans
+        self.dist = scipy.stats.poisson(self.mean)
+        
+    def get_status(self):
+        return "chi:%.2f" % (self.mean)
 
+        
+    def to_dict(self):
+        return {'model_type' : 'chisquare', 'model_data' : {'mean' : self.mean,  'obs_num' : self.obsnum,  'weight' : self.weight } }
+    
 class GammaDistribution(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']

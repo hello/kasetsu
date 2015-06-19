@@ -16,7 +16,7 @@ def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
     return t.strftime('%Y-%m-%d %H:%M:%S')
 
-num_days = 1
+num_days = 3
 start_date_string = sys.argv[1]
 user_id = int(sys.argv[2])
 #num_days = 10
@@ -24,7 +24,7 @@ user_id = int(sys.argv[2])
 k_algorithm = 'hmm'
 k_algorithm2 = 'sleep_score'
 
-k_params = {'partner_filter' : False, 'algorithm' : k_algorithm2}
+k_params = {'partner_filter' : True, 'algorithm' : k_algorithm2}
 
 def pull_date_for_user(userid):
     responses = []

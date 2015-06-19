@@ -5,40 +5,25 @@ import pylab
 from numpy import *
 from tabulate import tabulate
 
-filename = 'experiment_001_results_raw.csv'
+filename = 'feedback.csv'
 logfile = 'logs.csv'
 min_num_samples = 10
-success_threshold = 20 #minutes
+success_threshold = 35 #minutes
 realbad_threshold = 60 #minutes
 
-normalize_by_frequency_of_user = True
 
 alg_name_map = {'hmm' : 'HMM', 'wupang' : 'REGULAR'}
 
 keys_of_interest = ['IN_BED',  'SLEEP', 'WAKE_UP', 'OUT_OF_BED']
-alg_fractions = {'HMM' : 0.203, 'REGULAR' : 0.797}
     
 
-def get_fraction_from_key(key):
-    for alg in alg_fractions:
-        if alg in key:
-            return alg_fractions[alg]
-            
-    return None
 
 def get_stats(key, data, counts_by_account):
     
-    frac = get_fraction_from_key(key)
-    
-    if frac == None:
-        return None
         
     rows = data[key]
 
-
-    #get fail count, normalized by account id
     count = 0
-    normalized_fail_count = 0.0
     x = []
     for row in rows:
         delta = float(row['delta'])
@@ -47,12 +32,7 @@ def get_stats(key, data, counts_by_account):
         
         cts = counts_by_account[account_id]
         
-        normalizer = 1.0;
-        if normalize_by_frequency_of_user:
-            normalizer = 1.0 / cts
         
-        if (abs(delta) > success_threshold):
-            normalized_fail_count += normalizer * 1.0 / frac
         
     x = array(x)
     
@@ -85,32 +65,32 @@ def get_stats(key, data, counts_by_account):
     mydict['num_fail'] = numfail
     mydict['success_confidence'] = 2 / sqrt(fisher_information_success) #2 sigma
     mydict['realbad_confidence'] = 2 / sqrt(fisher_information_realbad) #2 sigma
-    mydict['num_normalized_fail'] = normalized_fail_count
-    mydict['frac'] = frac
     
     return mydict
 
 
 def dict_entry_to_list(key, entry):
-    return [key, entry['frac'], entry['num_fail'],  entry['median'], entry['num_samples']]
+    return [key,entry['num_fail'],  entry['median'], entry['num_samples']]
 
 def get_valid_accounts():
-    accounts = []
+    accounts = {}
+    count = 0
     with open(logfile, 'rb') as csvfile:
         reader = csv.DictReader(csvfile)
         
         for row in reader:
+            count += 1
             acc = row['account_id']
             
-            accounts.append(int(acc))
+            accounts[int(acc)] = 1
             
-    return accounts
+    return accounts.keys(),count
 
 if __name__ == '__main__':
     counts_by_account = {}
     data_by_alg = {}
     
-    accounts = get_valid_accounts()
+    accounts,totallogcount = get_valid_accounts()
     bad_accounts = {}
     with open(filename, 'rb') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -156,8 +136,6 @@ if __name__ == '__main__':
     print valid_accounts
     '''
         
-    print bad_accounts.keys()
-
     results = {}
     for key in data_by_alg.keys():
         stats = get_stats(key, data_by_alg, counts_by_account)
@@ -175,13 +153,21 @@ if __name__ == '__main__':
     keys.sort()
     
     mylist = []
-    headers = ['alg and type','fraction of test','num fails','median error', 'num feedbacks received']
+    headers = ['alg and type','num fails','median error', 'num feedbacks received']
     for key in keys:
         mylist.append(dict_entry_to_list(key, results[key]))
     
-    print ('\n\n\n\n\n\n\n')
+   
+    arr = array(mylist)[:,1:].astype('float')
+    totals = ['totals'] 
+    totals.extend(sum(arr,axis=0).tolist())
+    totals[2] = 'N/A'
+    mylist.append(totals) 
+
+    print ('\n\n\n\n')
     print ('fail > %d min, positive error = early prediction' % (success_threshold))
     print('\n')
     print tabulate(mylist, headers=headers)
+    print 'max possible feedbacks was %d from %d accounts' % (4 * totallogcount,len(accounts))
     print ('\n\n\n\n\n\n\n')
     

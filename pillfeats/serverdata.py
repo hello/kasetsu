@@ -4,6 +4,7 @@ import requests
 import datetime
 import calendar
 import numpy
+import os
 
 
 #k_server = 'https://research-api-benjo.hello.is'
@@ -12,8 +13,7 @@ k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
 k_minute_data_url = k_server + '/v1/datascience/device_sensors_motion/'
 k_binned_url = k_server + '/v1/datascience/binneddata/'
 
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
-#k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
+k_magic_auth=os.environ['RESEARCH_TOKEN']
 k_headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 
 
@@ -30,11 +30,11 @@ class BinnedDataGetter(object):
         self.account_id_list = account_id_list
         self.aux_params = aux_params
         
-    def get_all_binned_data(self, from_date_str, num_days):
+    def get_all_binned_data(self, from_date_str, num_days,skip_unpartnered_users = False):
         t0 = get_datestr_as_timestamp(from_date_str)
         mydict = {}
         for account_id in self.account_id_list:
-            ret_data = self.get_data_for_user(t0, account_id, num_days)
+            ret_data = self.get_data_for_user(t0, account_id, num_days,skip_unpartnered_users)
             
             if ret_data is not None:
                 mydict[account_id] = ret_data
@@ -42,7 +42,7 @@ class BinnedDataGetter(object):
         return mydict
                 
         
-    def get_data_for_user(self, from_time, account_id, num_days):
+    def get_data_for_user(self, from_time, account_id, num_days,skip_unpartnered):
 
         ts = "%d" % from_time
         params = {  'from_ts' : ts,  
@@ -52,21 +52,26 @@ class BinnedDataGetter(object):
                     'sound_threshold_db' : self.aux_params['audio_disturbance_threshold_db'], 
                     'nat_light_start_hour' : self.aux_params['natural_light_filter_start_hour'], 
                     'nat_light_stop_hour' : self.aux_params['natural_light_filter_stop_hour'],
-                    'meas_period' : self.aux_params['meas_period_minutes']
-                    }
+                    'meas_period' : self.aux_params['meas_period_minutes'],
+                    'skip_unpartnered' : skip_unpartnered   
+                 }
         
        
         
         d = None
         response = requests.get(k_binned_url,params=params,headers=k_headers)
         
-        if not response.ok:
+        if not response.ok or response.status_code != requests.codes.ok:
             print 'fail with %d ' % (response.status_code)
             print 'content',response.content
         else:
-            print 'got data for user ',  account_id
             d = response.json()
-            
+
+            if d.has_key('code') and int(d['code']) == 204:
+                print d['message']
+                return None
+                  
+            print 'got data for user ',  account_id
             xvec = numpy.array(d['data']).transpose()
             tvec = numpy.array(d['ts_utc'])
             offset = d['timezone_offset_millis']
@@ -171,7 +176,7 @@ if __name__ == '__main__':
     if 1:
         aux_params = {}
         aux_params['pill_magnitude_disturbance_threshold_lsb'] = 12000
-        aux_params['audio_disturbance_threshold_db'] = 65.0
+        aux_params['audio_disturbance_threshold_db'] = 80.0
         aux_params['natural_light_filter_start_hour'] = 16.0
         aux_params['natural_light_filter_stop_hour'] = 4.0
         

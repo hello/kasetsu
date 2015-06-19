@@ -2,7 +2,7 @@
 from hmm.continuous.CompositeModelHMM import CompositeModelHMM
 import numpy as np
 
-k_meas_period_in_minutes = 15
+k_meas_period_in_minutes = 5
 
 def make_poisson(mean, obsnum):
     return {'model_type' : 'poisson' ,  'model_data' : {'obs_num' : obsnum, 'mean' : mean}}

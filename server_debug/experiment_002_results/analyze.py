@@ -8,7 +8,7 @@ from tabulate import tabulate
 filename = 'feedback.csv'
 logfile = 'logs.csv'
 min_num_samples = 10
-success_threshold = 20 #minutes
+success_threshold = 35 #minutes
 realbad_threshold = 60 #minutes
 
 

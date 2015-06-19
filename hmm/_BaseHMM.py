@@ -263,7 +263,7 @@ class _BaseHMM(object):
             endingcosts[i] = numpy.sum(self.evaluate_path_cost(observations, path, numobs))
             
         lowest_cost_path_idx = numpy.argmin(endingcosts)
-        
+        lowest_cost_path_idx = 0
         print 'picked ending state ', lowest_cost_path_idx, endingcosts
         
          #let's just say you wind up in state zero at the end? 
@@ -273,7 +273,7 @@ class _BaseHMM(object):
         for t in xrange(numobs - 2, -1, -1):
             path[t] = viterbi_indices[path[t+1]][t]
                 
-    
+
         return path, reliability
      
     def _calcxi(self,observations,alpha=None,beta=None):

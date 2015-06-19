@@ -3,12 +3,13 @@
 import serverdata
 import numpy as np
 import datetime
-from pylab import *
 import matplotlib.dates as mdates
 import scipy.signal
 import argparse
+from matplotlib.pyplot import *
 
 k_num_minutes_smoothed = 5
+light_offset = 0.0
     
 def fill_zeros_if_none(data):
     for i in xrange(len(data)):
@@ -52,6 +53,8 @@ def plot_data(mydict):
         soundmag = np.array(data[4]) / 10.0
         wave = np.array(data[6])
         light = np.array(data[2])
+        light = light - light_offset
+        light[np.where(light < 0.0)] = 0.0
         light = np.log2(4.0 * light + 1.0)
         ax = subplot(1,1,1)
         ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')

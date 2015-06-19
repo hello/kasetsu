@@ -27,8 +27,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m",  "--model", help="model file (usually a .json)",required=True)
     parser.add_argument("-i",  "--input", help="input data, csv",required=True)
-    parser.add_argument("--n", help="num data points",type=int,default=1000)
-
+    parser.add_argument("-n","--n", help="num data points",type=int,default=1000)
+    parser.add_argument("--start",help="index to start at",type=int,default=0)
     args = parser.parse_args()
 
     
@@ -42,10 +42,13 @@ if __name__ == '__main__':
 
     if args.n == 0:
         args.n = x.shape[0]
-    
-    x2 = x[0:args.n,:]
+
+    i1 = args.start
+    i2 = args.start + args.n
+    x2 = x[i1:i2,:]
     path,probs = hmm.decode(x2)
     #print hmm.B_map
     t = np.array(range(len(path)))
     plot(t,path,'k.-',t,x2/10.0,'b')
+    grid('on')
     show()

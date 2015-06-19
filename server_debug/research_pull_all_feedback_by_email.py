@@ -3,7 +3,6 @@ import requests
 import sys
 import datetime
 k_url = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/datascience/feedback/{}'
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
 
 def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)

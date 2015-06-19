@@ -186,27 +186,28 @@ static HiddenMarkovModel * getPartnerSeparationModel() {
     A.resize(num_states);
     
     A[0] << 0.85,0.05,0.05,0.05;
-    A[1] << 0.05,0.85,0.05,0.00;
+    A[1] << 0.05,0.85,0.05,0.05;
     A[2] << 0.05,0.05,0.85,0.05;
-    A[3] << 0.05,0.00,0.10,0.85;
+    A[3] << 0.05,0.05,0.05,0.85;
     
     const float middleMean = 0.0;
-    const float lowMean = -5.0;
-    const float highMean = 5.0;
+    const float lowMean = -2.0;
+    const float highMean = 2.0;
     
-    const float lowStdDev = 5.0;
-    const float highStdDev = 25.0;
-    
+    const float lowStdDev = 1.0;
+    const float medStdDev = 2.0;
+    const float highStdDev = 4.0;
+
     //const int32_t obsnum,const float mean, const float stddev, const float weight
     CompositeModel c0;
     c0.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,middleMean,lowStdDev,1.0)));
     
     CompositeModel c1;
-    c1.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,highStdDev,highStdDev,1.0)));
+    c1.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,highMean,medStdDev,1.0)));
 
 
     CompositeModel c2;
-    c2.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,lowMean,highStdDev,1.0)));
+    c2.addModel(HmmPdfInterfaceSharedPtr_t(new OneDimensionalGaussianModel(0,lowMean,medStdDev,1.0)));
 
     
     CompositeModel c3;

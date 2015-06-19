@@ -28,7 +28,7 @@ mpl.rcParams['axes.color_cycle'] = ['b', 'g', 'r','c','m','y','k','grey']
 k_natural_light_filter_start_time = 16 #hour in 24 hours
 k_natural_light_filter_stop_time = 4 #hour in 24 hours
 k_sound_disturbance_threshold = 90.0
-k_energy_disturbance_threshold = 15000
+k_energy_disturbance_threshold = 18000
 k_enable_interval_search = True
 k_raw_light_to_lux = 1.0
 k_lux_multipler = 4.0
@@ -56,12 +56,21 @@ def join_segments(sleep_segments):
         return []
 
     seg1 = sleep_segments[0]
+
+    if len(seg1) == 1:
+        return []
+
+    
     last_joined = False
 
     while True:
-        
+
         if t + 1 < N:
             seg2 = sleep_segments[t + 1]
+
+        if len(seg2) == 1:
+            break
+            
             diff = seg2[0] - seg1[1]
 
             if diff < k_max_gap:
@@ -186,30 +195,49 @@ def decode_probs(paths,condprobs):
     for t in range(len(path)):
         #NOT joint of not sleeping forwards and not sleeping backwards
         union_of_sleep = 1.0 - (1.0 - forward_probs[t]) * (1.0 - backward_probs[t])
-        #NOT joint of sleeping forwards and sleeping backwards
-        #union_of_not_sleep = 1.0 - (forward_probs[t] * backward_probs[t])
-        #ptotal = union_of_sleep + union_of_not_sleep
-        #probs.append(union_of_sleep / ptotal)
+#        union_of_sleep = forward_probs[t] * backward_probs[t]
+        
+ 
         probs.append(union_of_sleep)
 
     segments = get_sleep_wake_from_probs(probs)
     
-    return probs,segments
+    return probs,segments,forward_probs,backward_probs
+
+def get_data(filename,num_days,startidx):
+    x = np.loadtxt(filename,delimiter=',')
+    if len(x.shape) == 1:
+        x = x.reshape((x.shape[0],1))
         
+    i1 = startidx*24*12
+    i2 = i1 + num_days*24*12
+    x = x[i1:i2,:]
+    
+    return {-1 : {'data' : x ,'times' : np.array(range(x.shape[0]))}}
+
 
 if __name__ == '__main__':
-    
+    set_printoptions(precision=3, suppress=True, threshold=nan)
     parser = argparse.ArgumentParser()
     parser.add_argument("-m1",  "--model1", help="model file (usually a .json)",required=True)
     parser.add_argument("-m2",  "--model2", help="model file (usually a .json)")
     parser.add_argument("-m3",  "--model3", help="model file (usually a .json)")
-    parser.add_argument("-u",  "--user", help="particular user to train on / evaluate, otherwise we do all users in database",required=True)
-    parser.add_argument('--date', help = 'target date',required=True)
+    parser.add_argument("-u",  "--user", help="particular user to train on / evaluate, otherwise we do all users in database")
+    parser.add_argument('--date', help = 'target date')
     parser.add_argument('-n','--numdays', help = 'target date',type=int,default = 1)
-
-
+    parser.add_argument('-p','--probname',help = 'name of target conditional probabilities',default='p_state_given_sleep')
+    parser.add_argument('-i','--input',help = 'input file name, if we are not getting from server')
+    parser.add_argument('--start',help='start index when decoding file',type=int,default=0)
     args = parser.parse_args()
     set_printoptions(precision=3, suppress=True, threshold=nan)
+
+    if args.input == None and (args.date == None or args.user == None):
+        print 'you must specify input file or date/user combination'
+        sys.exit(0)
+
+    if args.input != None and (args.date != None or args.user != None):
+        print 'you must specify input file OR date/user combination, but not both'
+        sys.exit(0)
 
     params = {}
 
@@ -219,7 +247,7 @@ if __name__ == '__main__':
     params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
     params['users'] = '-1'
     params['enable_interval_search'] = k_enable_interval_search
-
+    
 
     hmms = []
 
@@ -258,7 +286,11 @@ if __name__ == '__main__':
     print 'USING MEASUREMENT PERIOD OF %d MINUTES' % params['meas_period_minutes']
 
     #get the data
-    data = pull_data(params, args.user, args.date,args.numdays)
+    if args.input != None:
+        data = get_data(args.input,args.numdays,args.start)
+        args.user = -1
+    else:
+        data = pull_data(params, args.user, args.date,args.numdays)
    
     all_times = []
     flat_seg = []
@@ -320,18 +352,18 @@ if __name__ == '__main__':
             print 'MODEL %d' % (imodel)
             print hmm.A
             print hmm.get_status()
- 
+            #print seg.transpose().tolist()
             path, reliability = hmm.decode(seg)
             paths.append(path)
-            cprobs = params['p_state_given_sleep']
+            cprobs = params[args.probname]
             cnds = [cprobs[s] for s in path]
             prob_mappings.append(cnds)
 
            
 
 
-        smoothed_probs,sleep_segments = decode_probs(paths,prob_mappings)
-
+        smoothed_probs,sleep_segments,forward_probs,backward_probs = decode_probs(paths,prob_mappings)
+        #print np.array(smoothed_probs).tolist()
         joined_segments = join_segments(sleep_segments)
         
         nplots = 3
@@ -362,18 +394,31 @@ if __name__ == '__main__':
         else:
             plot(t2, path, '.-')
 
-        legend(['path', 'possible bad decisions'])
+        legend(['motion','light'])
         #plot(t2, path_cost, 'ro')
         grid('on')
 
         ax3 = subplot(nplots,1,3,sharex=ax)
         ax3.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
-        #plot(t2,sleep_probs_forward,t2,sleep_probs_backward,t2,smoothed_probs)
+#        plot(t2,forward_probs,t2,backward_probs,t2,smoothed_probs,'k')
+#        legend(['forward','backward','smoothed'])
         plot(t2,smoothed_probs,'k-')
-        grid('on')
         legend('sleep prob')
 
+        grid('on')
+
         for seg in joined_segments:
+            if len(seg) < 2:
+                continue
+            
+            if seg[0] < 0 or seg[0] >= len(t2):
+                print 'seg[0] is outside of bounds'
+                continue
+
+            if seg[1] < 0 or seg[1] >= len(t2):
+                print 'seg[1] is outside of bounds'
+                continue
+            
             start_time = t2[seg[0]]
             end_time = t2[seg[1]]
 
