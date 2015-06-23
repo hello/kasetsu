@@ -345,12 +345,14 @@ HmmDataVec_t ChiSquareModel::getLogOfPdf(const HmmDataMatrix_t & x) const {
         
         HmmFloat_t meas = vec[i];
         
+        meas /= sqrt(2.0 *_mu);
+        
         if (meas < MIN_CHISQ_INPUT) {
             meas = MIN_CHISQ_INPUT;
         }
         
         
-        HmmFloat_t eval = gsl_ran_chisq_pdf(meas, _mu);
+        HmmFloat_t eval = gsl_ran_chisq_pdf(meas, 1);
         
         if (eval < EPSILON) {
             eval = EPSILON;

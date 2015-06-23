@@ -152,7 +152,7 @@ static ModelVec_t getSinglePersonLightInitialModel() {
         
         for (int iLight = 0; iLight < NUM_LIGHT_MODELS; iLight++) {
             
-            ChiSquareModel light(LIGHT_OBSNUM,light_params[0][iLight],LIGHT_WEIGHT);
+            GammaModel light(LIGHT_OBSNUM,light_params[0][iLight],light_params[1][iLight],LIGHT_WEIGHT);
             
             HmmDataVec_t natLightProbs;
             natLightProbs.resize(2);
