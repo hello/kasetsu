@@ -7,8 +7,8 @@ import numpy
 import os
 
 
-#k_server = 'https://research-api-benjo.hello.is'
-k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
+k_server = 'https://research-api-benjo.hello.is'
+#k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
 
 k_minute_data_url = k_server + '/v1/datascience/device_sensors_motion/'
 k_binned_url = k_server + '/v1/datascience/binneddata/'

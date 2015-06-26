@@ -222,6 +222,7 @@ if __name__ == '__main__':
     parser.add_argument("-m1",  "--model1", help="model file (usually a .json)",required=True)
     parser.add_argument("-m2",  "--model2", help="model file (usually a .json)")
     parser.add_argument("-m3",  "--model3", help="model file (usually a .json)")
+    parser.add_argument("-m4",  "--model4", help="model file (usually a .json)")
     parser.add_argument("-u",  "--user", help="particular user to train on / evaluate, otherwise we do all users in database")
     parser.add_argument('--date', help = 'target date')
     parser.add_argument('-n','--numdays', help = 'target date',type=int,default = 1)
@@ -276,6 +277,15 @@ if __name__ == '__main__':
 
     if args.model3 != None:
         f = open(args.model3, 'r')
+        hmm_dict = json.load(f)
+        f.close()
+        hmm = CompositeModelHMM()
+        hmm.from_dict(hmm_dict['default'])
+        hmms.append(hmm)
+        params_list.append(hmm_dict['default']['params'])
+
+    if args.model4 != None:
+        f = open(args.model4, 'r')
         hmm_dict = json.load(f)
         f.close()
         hmm = CompositeModelHMM()
@@ -343,7 +353,7 @@ if __name__ == '__main__':
         
         #get sensor data for user
         t, seg = indiv_user_sensor_data[key]
-
+        #np.savetxt('foobars.csv',seg.transpose(),delimiter=",")
         for imodel in range(len(hmms)):
             params = params_list[imodel]
             hmm = hmms[imodel]
@@ -354,6 +364,8 @@ if __name__ == '__main__':
             print hmm.get_status()
             #print seg.transpose().tolist()
             path, reliability = hmm.decode(seg)
+            print 'data' ,seg[:,1].transpose().tolist()
+            print path
             paths.append(path)
             cprobs = params[args.probname]
             cnds = [cprobs[s] for s in path]
@@ -361,10 +373,10 @@ if __name__ == '__main__':
 
            
 
-
+        #np.savetxt('paths.csv',np.array(paths),delimiter=",")
         smoothed_probs,sleep_segments,forward_probs,backward_probs = decode_probs(paths,prob_mappings)
-        #print np.array(smoothed_probs).tolist()
-        joined_segments = join_segments(sleep_segments)
+        print np.array(smoothed_probs).tolist()
+        #joined_segments = join_segments(sleep_segments)
         
         nplots = 3
 
@@ -406,7 +418,7 @@ if __name__ == '__main__':
         legend('sleep prob')
 
         grid('on')
-
+        '''
         for seg in joined_segments:
             if len(seg) < 2:
                 continue
@@ -423,7 +435,7 @@ if __name__ == '__main__':
             end_time = t2[seg[1]]
 
             print start_time,end_time
-
+        '''
 
         show()
 

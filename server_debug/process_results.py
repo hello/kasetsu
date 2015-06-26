@@ -29,7 +29,7 @@ def get_delta_time_from_HH_MM(timestr):
 
     return datetime.timedelta(hours=hour,minutes=minute)
 
-def accumulate_stats_by_account(account_dict):
+def accumulate_stats_by_account(account_dict,normalize):
     mydict = {}
 
     c = 0
@@ -45,6 +45,11 @@ def accumulate_stats_by_account(account_dict):
                 failcount += 1
 
 
+        
+        if normalize:
+            failcount /= float(totalcount)
+            totalcount = 1.0
+
         f += failcount
         c += totalcount
         
@@ -58,7 +63,7 @@ def accumulate_stats_by_account(account_dict):
 
                 
 
-def flatten_by_account(entries,eventkey = None):
+def flatten_by_account(entries,eventkey = None,normalize=False):
 
     mydict = {}
 
@@ -124,6 +129,7 @@ if __name__ == '__main__':
     parser.add_argument('--event',help = 'optional event type to filter on')
     parser.add_argument('-v','--verbose',help = 'display each event for each user',default=False,action='store_true')
     parser.add_argument('--threshold',help = 'threshold in minutes for success',default=k_fail_threshold,type=int)
+    parser.add_argument('--normalize',help = 'normalize by 1 / # contributions from an individual',default=False,action='store_true')
     args = parser.parse_args()
 
 
@@ -138,7 +144,7 @@ if __name__ == '__main__':
             entries.append(entry)
 
     byaccount = flatten_by_account(entries,args.event)
-    stats = accumulate_stats_by_account(byaccount)
+    stats = accumulate_stats_by_account(byaccount,args.normalize)
 
     if args.verbose:
         for key in byaccount:

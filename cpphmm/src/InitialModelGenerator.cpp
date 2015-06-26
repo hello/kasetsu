@@ -179,7 +179,7 @@ static ModelVec_t getSinglePersonSoundInitialModel() {
     
     //enumerate all possible models
     for (int iSoundCount = 0; iSoundCount < NUM_SOUND_MODELS; iSoundCount++) {
-        ChiSquareModel sound(SOUND_OBSNUM,sound_params[0][iSoundCount],SOUND_WEIGHT);
+        GammaModel sound(SOUND_OBSNUM,sound_params[0][iSoundCount],sound_params[1][iSoundCount],SOUND_WEIGHT);
         
         CompositeModel model;
         model.addModel(sound.clone(false));
