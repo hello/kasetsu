@@ -223,7 +223,7 @@ class _BaseHMM(object):
                 
                 for i in xrange(self.n): #i means the incoming from ith hidden state
                     #compute incoming costs
-                    cost[i] = -numpy.log(self.A[i][j] + 1e-15) + obscost 
+                    cost[i] = -numpy.log(self.A[i][j] + 1e-32) + obscost 
                 
                 for i in xrange(self.n): 
                     cost[i] = cost[i] + phi[i][t-1]
@@ -263,7 +263,6 @@ class _BaseHMM(object):
             endingcosts[i] = numpy.sum(self.evaluate_path_cost(observations, path, numobs))
             
         lowest_cost_path_idx = numpy.argmin(endingcosts)
-        lowest_cost_path_idx = 0
         print 'picked ending state ', lowest_cost_path_idx, endingcosts
         
          #let's just say you wind up in state zero at the end? 

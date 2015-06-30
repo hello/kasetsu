@@ -33,10 +33,10 @@ def model_factory(model_type, model_data):
         return ChiSquareModel(model_data)
     elif model_type == 'gaussian':
         return OneDimensionalGaussian(model_data)
-        
+    elif model_type == 'beta':
+        return BetaModel(model_data)
     elif model_type == 'gamma':
         return GammaDistribution(model_data)
-        
     elif model_type == 'discrete_alphabet':
         return DiscreteAlphabetModel(model_data)
     else:
@@ -44,7 +44,32 @@ def model_factory(model_type, model_data):
         
     return None
 
+class BetaModel(object):
+    def __init__(self, data):
+        self.obsnum = data['obs_num']
+        self.alpha = data['alpha']
+        self.beta = data['beta']
 
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+            
+        self.dist = scipy.stats.beta(self.alpha,self.beta)
+
+    def eval(self, x):
+        data = x[:, self.obsnum]
+        the_eval = self.dist.pdf(data)
+        return the_eval
+
+    def get_status(self):
+        return "beta:%.2f,%.2f" % (self.alpha,self.beta)
+
+        
+    def to_dict(self):
+        return {'model_type' : 'beta', 'model_data' : {'beta' : self.beta, 'alpha' : self.alpha,  'obs_num' : self.obsnum,  'weight' : self.weight } }
+    
+        
 class PoissonModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
@@ -107,25 +132,7 @@ class ChiSquareModel(object):
         the_eval = self.dist.pdf(xc)
         return the_eval
         
-    def reestimate(self, x, gammaForThisState):
-        
-        newmean = 0.0
-        
-        numer = 0.0
-        denom = 0.0
-        for t in xrange(x.shape[0]):
-            myobs = x[t][self.obsnum]
-            
-            numer += (gammaForThisState[t]*myobs)
-            denom += (gammaForThisState[t])
-    
-        newmeans = numer/denom
-    
-        if newmeans < k_min_poisson_mean:
-            newmeans = k_min_poisson_mean;
-                
-        self.mean = newmeans
-        self.dist = scipy.stats.poisson(self.mean)
+ 
         
     def get_status(self):
         return "chi:%.2f" % (self.mean)
