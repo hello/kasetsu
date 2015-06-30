@@ -38,7 +38,17 @@ k_enter_sleep_threshold = 0.80
 k_leave_sleep_threshold = k_enter_sleep_threshold - 0.05
 k_min_prob = 5e-2
 k_max_gap = 12 * 1.5
-    
+
+
+A_not_sleep = 1 - 1.0 / (12.0 * 4.5)
+A_sleep = 1 - 1.0 / (12.0 * 7.0)
+
+segmenter_model = { 'pi': [1.0,0.0,0.0],
+                    'A' : [[A_not_sleep,1.0 - A_not_sleep,0.0],[0.0,A_sleep,1.0-A_sleep],[0.0,0.0,A_not_sleep]],
+                    'models' : [
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 1.0,  'obs_num' : 0,  'weight' : 1.0 } }],
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 1.0, 'alpha' : 20.0,  'obs_num' : 0,  'weight' : 1.0 } }],
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 1.0,  'obs_num' : 0,  'weight' : 1.0 } }]]}
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -216,6 +226,8 @@ def get_data(filename,num_days,startidx):
     return {-1 : {'data' : x ,'times' : np.array(range(x.shape[0]))}}
 
 
+
+
 if __name__ == '__main__':
     set_printoptions(precision=3, suppress=True, threshold=nan)
     parser = argparse.ArgumentParser()
@@ -309,7 +321,9 @@ if __name__ == '__main__':
     hmm_dict = {}
     timestring = strftime("HMM_%Y-%m-%d_%H:%M:%S")
 
-
+    segmenter = CompositeModelHMM()
+    segmenter.from_dict(segmenter_model)
+    
     #if user is specified, deal with that
     print args.user
     if not data.has_key(args.user):
@@ -359,13 +373,13 @@ if __name__ == '__main__':
             hmm = hmms[imodel]
 
             
-            print 'MODEL %d' % (imodel)
-            print hmm.A
-            print hmm.get_status()
+            #print 'MODEL %d' % (imodel)
+            #print hmm.A
+            #print hmm.get_status()
             #print seg.transpose().tolist()
             path, reliability = hmm.decode(seg)
-            print 'data' ,seg[:,1].transpose().tolist()
-            print path
+            #print 'data' ,seg[:,1].transpose().tolist()
+            #print path
             paths.append(path)
             cprobs = params[args.probname]
             cnds = [cprobs[s] for s in path]
@@ -375,7 +389,11 @@ if __name__ == '__main__':
 
         #np.savetxt('paths.csv',np.array(paths),delimiter=",")
         smoothed_probs,sleep_segments,forward_probs,backward_probs = decode_probs(paths,prob_mappings)
-        print np.array(smoothed_probs).tolist()
+
+        probmeas = np.array(smoothed_probs).reshape((len(smoothed_probs),1))
+        segment_path,other_stuff = segmenter.decode(probmeas)
+        
+#        print np.array(smoothed_probs).tolist()
         #joined_segments = join_segments(sleep_segments)
         
         nplots = 3
@@ -415,6 +433,7 @@ if __name__ == '__main__':
 #        plot(t2,forward_probs,t2,backward_probs,t2,smoothed_probs,'k')
 #        legend(['forward','backward','smoothed'])
         plot(t2,smoothed_probs,'k-')
+        plot(t2,segment_path / 3.0,'mo')
         legend('sleep prob')
 
         grid('on')
