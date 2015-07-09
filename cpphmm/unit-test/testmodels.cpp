@@ -115,7 +115,36 @@ TEST_F(TestModels, TestGaussian) {
     
 }
 
-
+TEST_F(TestModels, TestMultivariateGaussian) {
+    HmmDataMatrix_t P;
+    P.resize(2);
+    
+    P[0] << 1.56762006,  0.09054419;
+    P[1] << 0.09054419,  1.09772478;
+    
+    HmmDataVec_t mu;
+    mu << 0.1,0.2;
+    
+    UIntVec_t obsnums;
+    obsnums << 0,1;
+    
+    MultivariateGaussian mvg(obsnums,mu,P,1.0);
+    
+    HmmDataMatrix_t obs;
+    obs.resize(2);
+    obs[0] << 0.1,1.0,2.0;
+    obs[1] << 0.2,-0.1,0.5;
+    
+    HmmDataVec_t ref;
+    ref << -2.1068884129062497,-2.4219432836910, -3.2748820631329;
+    
+    HmmDataVec_t evals = mvg.getLogOfPdf(obs);
+    
+    for (int i = 0; i < 2; i++) {
+        ASSERT_FLOAT_EQ(ref[i], evals[i]);
+    }
+    
+}
 
 
 

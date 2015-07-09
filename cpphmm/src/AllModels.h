@@ -106,4 +106,25 @@ private:
     
 };
 
+
+class MultivariateGaussian : public HmmPdfInterface {
+public:
+    MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov, const float weight);
+    ~MultivariateGaussian();
+    
+    HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
+    HmmPdfInterfaceSharedPtr_t reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const;
+    HmmDataVec_t getLogOfPdf(const HmmDataMatrix_t & x) const ;
+    std::string serializeToJson() const;
+    uint32_t getNumberOfFreeParams() const;
+    
+    
+private:
+    const HmmDataVec_t _mean;
+    const HmmDataMatrix_t _covariance;
+    const UIntVec_t _obsnums;
+    const HmmFloat_t _weight;
+    
+};
+
 #endif //_ALLMODELS_H_

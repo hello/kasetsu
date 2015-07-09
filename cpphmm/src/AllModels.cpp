@@ -1,15 +1,18 @@
 
 #include "AllModels.h"
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_linalg.h>
 #include "LogMath.h"
 #include "RandomHelpers.h"
+#include "MatrixHelpers.h"
 #include <sstream>
 #include <random>
 #include <string.h>
+#include <assert.h>
 
 #define  MIN_POISSON_MEAN (0.01)
 #define  MIN_GAMMA_MEAN (0.01)
-#define  MIN_GAMMA_STDDEV (0.5)
+#define  MIN_GAMMA_STDDEV (0.1)
 #define  MAX_GAMMA_STDDEV (100.0)
 
 #define  MIN_GAMMA_INPUT (0.01)
@@ -648,6 +651,188 @@ std::string OneDimensionalGaussianModel::serializeToJson() const {
 
 uint32_t OneDimensionalGaussianModel::getNumberOfFreeParams() const {
     return 2;
+}
+
+
+MultivariateGaussian::MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov, const float weight)
+:_mean(mean)
+,_covariance(cov)
+,_obsnums(obsnums)
+,_weight(weight)
+{
+   
+
+}
+
+MultivariateGaussian::~MultivariateGaussian() {
+    
+}
+
+HmmPdfInterfaceSharedPtr_t MultivariateGaussian::clone(bool isPerturbed) const {
+    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_weight));
+}
+
+HmmPdfInterfaceSharedPtr_t MultivariateGaussian::reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
+    const size_t n = _obsnums.size();
+    const size_t covSize = n*(n+1) / 2;
+
+    const size_t dataLen = meas[0].size();
+    int32_t iState;
+    int32_t t;
+    int32_t idx;
+    
+    HmmFloat_t denom = 0.0;
+    HmmFloat_t numers[n];
+    memset(numers,0,sizeof(numers));
+    
+    for (t = 0; t < dataLen; t++) {
+        for (iState = 0; iState < n; iState++) {
+            uint32_t obsnum = _obsnums[iState];
+            numers[iState] += gammaForThisState[t] * meas[obsnum][t];
+        }
+        
+        denom += gammaForThisState[t];
+    }
+    
+    if (denom <= std::numeric_limits<HmmFloat_t>::epsilon()) {
+        //fail
+        return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_weight));
+    }
+    
+    HmmDataVec_t means = getZeroedVec(n);
+    
+    for (iState = 0; iState < n; iState++) {
+        means[iState] = numers[iState] / denom;
+    }
+    
+    //covariance
+    HmmFloat_t covs[covSize];
+    memset(covs,0,sizeof(covs));
+    HmmFloat_t r[n];
+
+    for (t = 0; t < dataLen; t++) {
+        for (iState = 0; iState < n; iState++) {
+            const uint32_t obsnum = _obsnums[iState];
+            r[iState] =  meas[obsnum][t] - means[iState];
+        }
+        
+        idx = 0;
+        for (int32_t j = 0; j < n; j++) {
+            for (int32_t i = j; i < n; i++) {
+                covs[idx++] += gammaForThisState[t] * r[j] * r[i];
+            }
+        }
+        
+    }
+    
+    for (int32_t iCov = 0; iCov < covSize; iCov++) {
+        covs[iCov] /= denom;
+    }
+    
+    HmmDataMatrix_t newCov = getZeroedMatrix(n, n);
+    
+    idx = 0;
+    for (int32_t j = 0; j < n; j++) {
+        for (int32_t i = j; i < n; i++) {
+            newCov[j][i] = covs[idx];
+            newCov[j][i] = covs[idx];
+            idx++;
+        }
+    }
+    
+    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,means,newCov,_weight) );
+    
+}
+
+HmmDataVec_t MultivariateGaussian::getLogOfPdf(const HmmDataMatrix_t & x) const  {
+    const size_t n = _obsnums.size();
+    const size_t dataLen = x[0].size();
+    static const HmmFloat_t log2pi = log (2 * M_PI);
+    int32_t iState;
+    assert(_covariance.size() == n);
+    
+
+    gsl_matrix * cov = gsl_matrix_alloc(n,n);
+    gsl_matrix * Linv = gsl_matrix_alloc(n,n);
+    gsl_vector * v = gsl_vector_alloc(n);
+    gsl_vector * b = gsl_vector_alloc(n);
+    
+    HmmDataVec_t res;
+    res.resize(dataLen);
+    
+    //get constant term
+    //copy covariance over
+    for (int32_t j = 0; j < n; j++) {
+        for (int32_t i = 0; i < n; i++) {
+            gsl_matrix_set(cov,i,j,_covariance[j][i]);
+        }
+    }
+    
+    
+    //add log of diagonals together
+    //exploiting trick that square root of determinant of symmetric matrix
+    //is the multiplication of the diagonals of its cholesky decomposition
+    HmmFloat_t logConstantTerm = -((HmmFloat_t)n) / 2.0 * log2pi;
+    
+    assert(GSL_EDOM != gsl_linalg_cholesky_decomp(cov));
+    gsl_matrix_memcpy(Linv,cov);
+
+    for (iState = 0; iState < n; iState++) {
+        logConstantTerm -= log(gsl_matrix_get(Linv,iState,iState));
+    }
+    
+    
+
+    for (int32_t t = 0; t < dataLen; t++) {
+        //copy over measurement vector
+        for (iState = 0; iState < n; iState++) {
+            HmmFloat_t r = x[_obsnums[iState]][t] - _mean[iState];
+            gsl_vector_set(b,iState,r);
+        }
+        
+        
+        // b = x - mean
+        //
+        // Q =   b' * P^-1 * b
+        //
+        //    P = L*L'
+        //
+        //    P^-1 = L'^-1 * L^-1
+        //
+        //    v = L^-1 * b
+        //
+        //  Q = v'*v
+
+        gsl_linalg_cholesky_solve(Linv,b,v);
+        
+        HmmFloat_t expValue = 0.0;
+        for (iState = 0; iState < n; iState++) {
+            expValue -= 0.5 * gsl_vector_get(v,iState) * gsl_vector_get(b,iState);
+        }
+        
+        res[t] = expValue + logConstantTerm;
+        
+    }
+    
+    gsl_matrix_free(cov);
+    gsl_matrix_free(Linv);
+    gsl_vector_free(v);
+    gsl_vector_free(b);
+
+    return res;
+}
+
+std::string MultivariateGaussian::serializeToJson() const {
+   // char buf[1024];
+   // memset(buf,0,sizeof(buf));
+   // snprintf(buf, sizeof(buf),"{\"model_type\": \"multigauss\", \"model_data\": {\"obs_nums\": %d, \"mean\": %f,\"weight\": %f}}",_obsnum,_mu,_weight);
+   // return std::string(buf);
+    return "";
+
+}
+
+uint32_t MultivariateGaussian::getNumberOfFreeParams() const {
+    return _covariance.size()* (_covariance.size() + 1) / 2 + _mean.size();
 }
 
 
