@@ -5,6 +5,8 @@ import random
 import copy
 import numpy
 
+rows_by_id_filename = 'rows2.csv'
+
 def bootstrap(x,frac,num_times):
     n = len(x)
     nf = int(frac * n)
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     rows = get_data(sys.argv[1])
    
     rows2 = reduce_data_by_user(rows)
-    f = open('rows2.csv','w')
+    f = open(rows_by_id_filename,'w')
     writer = csv.DictWriter(f,['account_id','model','state','label'])
     writer.writeheader()
     for row in rows2:
@@ -140,6 +142,7 @@ if __name__ == '__main__':
     f.close()
 
     d,raw = process_labels(rows2)
+
     print 'motion'
     print [d['motion'][key][0] for key in d['motion']]
 
