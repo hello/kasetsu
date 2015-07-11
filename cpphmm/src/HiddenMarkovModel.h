@@ -93,6 +93,7 @@ public:
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
     StateSegmentVec_t getStateInfo(const ViterbiPath_t & path, const uint32_t nstate) const;
+    void printStateTransitionMatrix() const;
 
 
     std::string serializeToJson() const;

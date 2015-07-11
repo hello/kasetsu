@@ -109,7 +109,7 @@ private:
 
 class MultivariateGaussian : public HmmPdfInterface {
 public:
-    MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov, const float weight);
+    MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov, const float minstddev, const float weight);
     ~MultivariateGaussian();
     
     HmmPdfInterfaceSharedPtr_t clone(bool isPerturbed) const;
@@ -124,6 +124,7 @@ private:
     const HmmDataMatrix_t _covariance;
     const UIntVec_t _obsnums;
     const HmmFloat_t _weight;
+    const HmmFloat_t _minstddev;
     
 };
 

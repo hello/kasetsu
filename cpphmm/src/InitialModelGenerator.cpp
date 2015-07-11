@@ -57,18 +57,16 @@ static const HmmFloat_t disturbance_params[NUM_DISTURBANCE_MODELS] = {low_distur
 #define LIGHT_OBSNUM (0)
 #define MOTION_OBSNUM (1)
 #define DISTURBANCE_OBSNUM (2)
-#define SOUND_OBSNUM (3)
-#define NAT_LIGHT_OBSNUM (4)
+#define NAT_LIGHT_OBSNUM (3)
+#define SOUND_OBSNUM (4)
 #define PARTNER_MOTION_OBSNUM (5)
-#define PARTNER_DISTURBANCE_OBSNUM (6)
-#define ENERGY_RATIO_OBSNUM (7)
+
 
 #define LIGHT_WEIGHT (1.0)
 #define MOTION_WEIGHT (1.0)
 #define DISTURBANCE_WEIGHT (1.0)
 #define SOUND_WEIGHT (1.0)
 #define NAT_LIGHT_WEIGHT (1.0)
-#define ENERGY_RATIO_WEIGHT (1.0)
 
 static ModelVec_t getPartnerDiffModel() {
     ModelVec_t models;
@@ -89,6 +87,44 @@ static ModelVec_t getPartnerDiffModel() {
     models.push_back(model2.clone(false));
     models.push_back(model3.clone(false));
 
+
+    return models;
+}
+
+static HmmDataMatrix_t getCovarianceMatirx(HmmFloat_t std1, HmmFloat_t std2, HmmFloat_t correlation) {
+    HmmDataMatrix_t mat = getZeroedMatrix(2, 2);
+    
+    mat[0][0] = std1*std1;
+    mat[1][0] = std1*std2 * correlation;
+    mat[0][1] = mat[1][0];
+    mat[1][1] = std2*std2;
+    
+    return mat;
+}
+
+static ModelVec_t getPartnerCorrelatedModel() {
+    const HmmFloat_t minstddev = 1.0;
+    UIntVec_t obsnums;
+    obsnums << 1,5;
+
+    HmmDataVec_t mean1;
+    mean1 << 0.0,0.0;
+
+    HmmDataVec_t mean2;
+    mean2 << 4.0,0.0;
+
+    HmmDataVec_t mean3;
+    mean3 << 0.0,4.0;
+    
+    HmmDataVec_t mean4;
+    mean4 << 4.0,4.0;
+    
+    ModelVec_t models;
+    
+    models.push_back(MultivariateGaussian(obsnums, mean1, getCovarianceMatirx(2.0,2.0,0.1),minstddev, 1.0).clone(false));
+    models.push_back(MultivariateGaussian(obsnums, mean2, getCovarianceMatirx(2.0,2.0,0.1),minstddev, 1.0).clone(false));
+    models.push_back(MultivariateGaussian(obsnums, mean3, getCovarianceMatirx(2.0,2.0,0.1),minstddev, 1.0).clone(false));
+    models.push_back(MultivariateGaussian(obsnums, mean4, getCovarianceMatirx(2.0,2.0,0.7),minstddev, 1.0).clone(false));
 
     return models;
 }
@@ -361,6 +397,12 @@ InitialModel_t InitialModelGenerator::getInitialModelFromData(const HmmDataMatri
         case partnerdiff:
         {
             models = getPartnerDiffModel();
+            break;
+        }
+            
+        case partnercorr:
+        {
+            models = getPartnerCorrelatedModel();
             break;
         }
             

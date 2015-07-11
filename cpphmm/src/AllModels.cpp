@@ -25,7 +25,7 @@
 #define GAMMA_PERTURBATION_STDDEV (0.1)
 #define POISSON_PERTURBATION_MEAN (0.1)
 #define ALPHABET_PERTURBATION  (0.05)
-
+#define MULTIGAUSS_MEAN_PERTURBATION (0.1)
 #define  MIN_CHISQ_INPUT (0.01)
 
 
@@ -654,11 +654,12 @@ uint32_t OneDimensionalGaussianModel::getNumberOfFreeParams() const {
 }
 
 
-MultivariateGaussian::MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov, const float weight)
+MultivariateGaussian::MultivariateGaussian(const UIntVec_t obsnums,const HmmDataVec_t & mean, const HmmDataMatrix_t & cov,const float minstddev, const float weight)
 :_mean(mean)
 ,_covariance(cov)
 ,_obsnums(obsnums)
 ,_weight(weight)
+,_minstddev(minstddev)
 {
    
 
@@ -669,7 +670,19 @@ MultivariateGaussian::~MultivariateGaussian() {
 }
 
 HmmPdfInterfaceSharedPtr_t MultivariateGaussian::clone(bool isPerturbed) const {
-    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_weight));
+    
+    if (isPerturbed) {
+        HmmDataVec_t newmean = _mean; //copy
+        
+        for (int32_t i = 0; i < _mean.size(); i++) {
+            newmean[i] = getPerturbedValue(_mean[i], MULTIGAUSS_MEAN_PERTURBATION);
+        }
+        
+        return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,newmean,_covariance,_minstddev,_weight));
+
+    }
+    
+    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_minstddev,_weight));
 }
 
 HmmPdfInterfaceSharedPtr_t MultivariateGaussian::reestimate(const HmmDataVec_t  & gammaForThisState, const HmmDataMatrix_t & meas, const HmmFloat_t eta) const {
@@ -696,7 +709,7 @@ HmmPdfInterfaceSharedPtr_t MultivariateGaussian::reestimate(const HmmDataVec_t  
     
     if (denom <= std::numeric_limits<HmmFloat_t>::epsilon()) {
         //fail
-        return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_weight));
+        return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,_mean,_covariance,_minstddev,_weight));
     }
     
     HmmDataVec_t means = getZeroedVec(n);
@@ -735,12 +748,29 @@ HmmPdfInterfaceSharedPtr_t MultivariateGaussian::reestimate(const HmmDataVec_t  
     for (int32_t j = 0; j < n; j++) {
         for (int32_t i = j; i < n; i++) {
             newCov[j][i] = covs[idx];
-            newCov[j][i] = covs[idx];
+            newCov[i][j] = covs[idx];
+
             idx++;
         }
     }
     
-    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,means,newCov,_weight) );
+    //scale change by eta
+    for (int32_t j = 0; j < n; j++) {
+        means[j] = (means[j] - _mean[j])*eta + _mean[j];
+        for (int32_t i = 0; i < n; i++) {
+            newCov[j][i] = (newCov[j][i] - _covariance[j][i]) * eta + _covariance[j][i];
+        }
+    }
+    
+    //check cov diagonals
+    
+    for (int32_t i = 0; i < n; i++) {
+        if (newCov[i][i] < _minstddev*_minstddev) {
+            newCov[i][i] = _minstddev*_minstddev;
+        }
+    }
+    
+    return HmmPdfInterfaceSharedPtr_t(new MultivariateGaussian(_obsnums,means,newCov,_minstddev,_weight) );
     
 }
 
@@ -823,11 +853,45 @@ HmmDataVec_t MultivariateGaussian::getLogOfPdf(const HmmDataMatrix_t & x) const 
 }
 
 std::string MultivariateGaussian::serializeToJson() const {
-   // char buf[1024];
-   // memset(buf,0,sizeof(buf));
-   // snprintf(buf, sizeof(buf),"{\"model_type\": \"multigauss\", \"model_data\": {\"obs_nums\": %d, \"mean\": %f,\"weight\": %f}}",_obsnum,_mu,_weight);
-   // return std::string(buf);
-    return "";
+    std::stringstream covstream;
+    const int n = _obsnums.size();
+    
+    int k = 0;
+    
+    covstream << "[";
+    for (int j = 0; j < n; j++) {
+        for (int i = j; i < n; i++) {
+        
+            if (k != 0) {
+                covstream << ",";
+            }
+            
+            covstream << _covariance[j][i];
+            
+            k++;
+        }
+    }
+    covstream << "]";
+    
+    std::stringstream meanstream;
+    meanstream << "[";
+    meanstream << _mean;
+    meanstream << "]";
+    
+    
+    std::stringstream obsnumsstream;
+    obsnumsstream << "[";
+    obsnumsstream << _obsnums;
+    obsnumsstream << "]";
+    
+   char buf[16384];
+   memset(buf,0,sizeof(buf));
+   snprintf(buf, sizeof(buf),"{\"model_type\": \"multigauss\", \"model_data\": {\"obs_nums\": %s, \"means\": %s,\"cov\" : %s,\"weight\": %f}}",
+            obsnumsstream.str().c_str(),
+            meanstream.str().c_str(),
+            covstream.str().c_str(),
+            _weight);
+   return std::string(buf);
 
 }
 

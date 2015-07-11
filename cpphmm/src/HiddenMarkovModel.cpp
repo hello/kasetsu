@@ -22,7 +22,7 @@
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.0001)
 #define NUM_SPLITS_PER_STATE (10)
-#define DAMPING_FACTOR (0.1)
+#define DAMPING_FACTOR (0.02)
 
 #define MIN_VALUE_FOR_SELF_TERM (0.01)
 
@@ -791,7 +791,8 @@ ReestimationResult_t HiddenMarkovModel::reestimate(const HmmDataMatrix_t & meas,
     _models.clear();
     
     for (ModelVec_t::iterator it = newModels.begin(); it != newModels.end(); it++) {
-        addModelForState((*it)->clone(false));
+        HmmPdfInterfaceSharedPtr_t theClone = (*it)->clone(false);
+        addModelForState(theClone);
     }
 
     
@@ -1581,5 +1582,12 @@ StateSegmentVec_t HiddenMarkovModel::getStateInfo(const ViterbiPath_t & path, co
     return segs;
 }
 
+
+void HiddenMarkovModel::printStateTransitionMatrix() const {
+    for (int i = 0; i < _A.size(); i++) {
+        std::cout << _A[i] << std::endl;
+    }
+
+}
 
 

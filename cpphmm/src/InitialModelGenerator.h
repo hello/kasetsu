@@ -11,7 +11,8 @@ typedef enum {
     light,
     sound,
     disturbance,
-    partnerdiff
+    partnerdiff,
+    partnercorr
 } EInitModel_t;
 
 typedef struct {

@@ -178,6 +178,155 @@ static HiddenMarkovModel * getDefaultModel() {
     return model;
 }
 
+static float getAFromDuration(int numIntervals) {
+    
+    if (numIntervals <= 1) {
+        numIntervals = 2;
+    }
+    
+    return 1.0 - 1.0 / (float)numIntervals;
+}
+
+static HiddenMarkovModel * getMotionOnlyModel(int numMinutesPerInterval) {
+    const int num_states = 7;
+    
+    //4 hours
+    const int off_bed_duration = 8 * 60 /numMinutesPerInterval;
+    
+    //60 min
+    const int sleep_gap_duration = 60 /numMinutesPerInterval;
+    
+    //10 minutes
+    const int short_motion_duration = 10 / numMinutesPerInterval;
+    
+    //30 minutes
+    const int sustained_motion_duration = 30 / numMinutesPerInterval;
+    
+    //models
+    HmmDataMatrix_t A;
+    
+    A.resize(num_states);
+    
+    const HmmFloat_t A_off_bed = getAFromDuration(off_bed_duration);
+    const HmmFloat_t A_sleep_no_motion = getAFromDuration(sleep_gap_duration);
+    const HmmFloat_t A_short_motion = getAFromDuration(short_motion_duration);
+    const HmmFloat_t A_long_motion = getAFromDuration(sustained_motion_duration);
+    
+    A[0] << A_off_bed, 0.5 * (1.0 - A_off_bed), 0.5 * (1.0 - A_off_bed), 0.0, 0.0, 0.0, 0.0;
+    A[1] << 0.0, A_long_motion, 0.333 * (1.0 - A_long_motion), 0.333 * (1.0 - A_long_motion), 0.333 * (1.0 - A_long_motion), 0.0, 0.0, 0.0;
+    A[2] << 0.0, 0.333 * (1.0 - A_short_motion), A_short_motion, 0.333 * (1.0 - A_short_motion), 0.333 * (1.0 - A_short_motion), 0.0, 0.0, 0.0;
+    A[3] << 0.0, 0.0, 0.0, A_short_motion, 0.333 * (1.0 - A_short_motion), 0.333 * (1.0 - A_short_motion), 0.333 * (1.0 - A_short_motion);
+    A[4] << 0.0, 0.0, 0.0, 0.333 * (1.0 - A_sleep_no_motion), A_sleep_no_motion, 0.333 * (1.0 - A_sleep_no_motion), 0.333 * (1.0 - A_sleep_no_motion);
+    A[5] << 0.333 * (1.0 - A_long_motion), 0.0, 0.0, 0.0,  0.333 * (1.0 - A_long_motion), A_long_motion, 0.333 * (1.0 - A_long_motion);
+    A[6] << 0.333 * (1.0 - A_short_motion), 0.0, 0.0, 0.0, 0.333 * (1.0 - A_short_motion), 0.333 * (1.0 - A_short_motion), A_short_motion;
+
+    std::cout << A[6] << std::endl;
+    
+    const float lowMean = 0.1;
+    const float medMean = 8;
+    const float highMean = 20;
+    
+    const float lowStdDev = 1.0;
+    const float medStdDev = 4.0;
+    const float highStdDev = 20.0;
+
+    
+    //const int32_t obsnum,const float mean, const float stddev, const float weight
+    CompositeModel c0;
+    c0.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,lowMean,lowStdDev,1.0)));
+    
+    CompositeModel c1;
+    c1.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,medMean,medStdDev,1.0)));
+    
+    CompositeModel c2;
+    c2.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,highMean,highStdDev,1.0)));
+    
+    CompositeModel c3;
+    c3.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,medMean,medStdDev,1.0)));
+    
+    CompositeModel c4;
+    c4.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,lowMean,lowStdDev,1.0)));
+    
+    CompositeModel c5;
+    c5.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,medMean,medStdDev,1.0)));
+    
+    CompositeModel c6;
+    c6.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,highMean,highStdDev,1.0)));
+
+    HiddenMarkovModel * hmm = new HiddenMarkovModel(A);
+    
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c0.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c1.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c2.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c3.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c4.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c5.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c6.clone(false)));
+    
+    return hmm;
+    
+}
+
+
+static HiddenMarkovModel * getMotionOnlyModel2(int numMinutesPerInterval) {
+    const int num_states = 3;
+    
+    //4 hours
+    const int off_bed_duration = 8 * 60 /numMinutesPerInterval;
+    
+    //2 hours
+    const int sleep_gap_duration = 2 * 60 /numMinutesPerInterval;
+    
+    //10 minutes
+    const int short_motion_duration = 30 / numMinutesPerInterval;
+    
+       //models
+    HmmDataMatrix_t A;
+    
+    A.resize(num_states);
+    
+    const HmmFloat_t A_off_bed = getAFromDuration(off_bed_duration);
+    const HmmFloat_t A_sleep_no_motion = getAFromDuration(sleep_gap_duration);
+    const HmmFloat_t A_short_motion = getAFromDuration(short_motion_duration);
+   
+    A[0] << A_off_bed,1.0 - A_off_bed,0.0;
+    A[1] << 0.5 * (1.0 - A_short_motion), A_short_motion, 0.5 * (1.0 - A_short_motion);
+    A[2] << 0.0,1.0 - A_sleep_no_motion, A_sleep_no_motion;
+    
+    std::cout << A[6] << std::endl;
+    
+    const float lowMean = 0.1;
+    const float medMean = 8;
+    const float highMean = 20;
+    
+    const float lowStdDev = 1.0;
+    const float medStdDev = 4.0;
+    const float highStdDev = 20.0;
+    
+    
+    //const int32_t obsnum,const float mean, const float stddev, const float weight
+    CompositeModel c0;
+    c0.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,lowMean,lowStdDev,1.0)));
+    
+    CompositeModel c1;
+    c1.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,highMean,highStdDev,1.0)));
+    
+    CompositeModel c2;
+    c2.addModel(HmmPdfInterfaceSharedPtr_t(new GammaModel(1,lowMean,lowStdDev,1.0)));
+   
+    
+    HiddenMarkovModel * hmm = new HiddenMarkovModel(A);
+    
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c0.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c1.clone(false)));
+    hmm->addModelForState(HmmPdfInterfaceSharedPtr_t(c2.clone(false)));
+    
+    
+    return hmm;
+    
+}
+
+
 static HiddenMarkovModel * getPartnerSeparationModel() {
     const int num_states = 4;
     
@@ -334,9 +483,15 @@ HiddenMarkovModel * HmmFactory::getModel(const std::string & modelname,const Hmm
     }
     else if (modelname == "partnerseed") {
         std::cout << "found the partner seed model" << std::endl;
-        return getSeedModel(meas,stateSaver,partnerdiff);
+        return getSeedModel(meas,stateSaver,partnercorr);
 
     }
+    else if (modelname == "motionmodel") {
+        std::cout << "found the motion model" << std::endl;
+        return getMotionOnlyModel2(5);
+    }
+    
+    
     
   
     
