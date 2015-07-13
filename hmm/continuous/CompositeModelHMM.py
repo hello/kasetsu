@@ -33,6 +33,8 @@ def model_factory(model_type, model_data):
         return ChiSquareModel(model_data)
     elif model_type == 'gaussian':
         return OneDimensionalGaussian(model_data)
+    elif model_type == 'multigauss':
+        return MultivariateGaussian(model_data)
     elif model_type == 'beta':
         return BetaModel(model_data)
     elif model_type == 'gamma':
@@ -44,6 +46,55 @@ def model_factory(model_type, model_data):
         
     return None
 
+class MultivariateGaussian(object):
+    def __init__(self,data):
+        self.obsnums = data['obs_nums']
+        if data.has_key('weight'):
+            self.weight = data['weight']
+        else:
+            self.weight = 1.0
+
+        self.mean = numpy.array(data['means'])
+        covvec = data['cov']
+        n = len(self.mean)
+        self.cov = self.vec_to_cov(covvec,n)
+ 
+
+    def vec_to_cov(self,covvec,n):
+        cov = numpy.zeros((n,n))
+        k = 0
+        for j in range(n):
+            for i in range(n - j):
+                ii = i + j;
+                cov[j,ii] = covvec[k]
+                k += 1
+
+        return cov
+
+    def cov_to_vec(self,cov):
+        n = cov.shape[0]
+        covvec = []
+        k = 0
+        for j in range(n):
+            for i in range(n - j):
+                ii = i + j;
+                covvec.append(cov[j,ii])
+                k += 1;
+
+        return covvec
+
+    def to_dict(self):
+        return {'model_type' : 'beta', 'model_data' : {'means' : self.mean.tolist(), 'covs' : self.cov_to_vec(self.cov),  'obs_nums' : self.obsnums,  'weight' : self.weight } }
+
+    def get_status(self):
+        return "mgmean:%s" % (numpy.array_str(self.mean))
+
+    def eval(self, x):
+        self.dist = scipy.stats.multivariate_normal(self.mean,self.cov)                             
+        data = x[:, self.obsnums]
+        the_eval = self.dist.pdf(data)
+        return the_eval
+                
 class BetaModel(object):
     def __init__(self, data):
         self.obsnum = data['obs_num']
@@ -451,9 +502,10 @@ class CompositeModelHMM(_BaseHMM):
         
             for i in xrange(self.n):
                 models_for_this_state = model_list[i]
-                #print models_for_this_state
+                
                 for j in xrange(len(models_for_this_state)):
-                    self.models[i].add_model_from_dict(models_for_this_state[j])
+                    models_for_state = models_for_this_state[j]
+                    self.models[i].add_model_from_dict(models_for_state)
     
     def _mapB(self,observations):
         self.B_map = numpy.zeros( (self.n,observations.shape[0]), dtype=self.precision)
