@@ -21,12 +21,12 @@
 #define NUM_SPLIT_STATE_VITERBI_ITERATIONS (20)
 
 #define THRESHOLD_FOR_REMOVING_STATE (0.0001)
-#define NUM_SPLITS_PER_STATE (10)
+#define NUM_SPLITS_PER_STATE (3)
 #define DAMPING_FACTOR (0.02)
 
 #define MIN_VALUE_FOR_SELF_TERM (0.01)
 
-#define NUM_BAD_COUNTS_TO_EXIT (10)
+#define NUM_BAD_COUNTS_TO_EXIT (2)
 
 #define THREAD_POOL_SIZE (8)
 #define USE_THREADPOOL
@@ -553,15 +553,21 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
     
     //fill out new values
     for (i = 0; i < 2; i++) {
+        //columns... so transitioning from any state to the states that are being split
+        //so these values are the original transition probabilities divided by 2
         const int idx = splitIndices[i];
         
         //s' --> si
         for (j = 0; j < _numStates; j++) {
-            splitA[j][idx] = 0.5 * _A[j][stateToSplit];
+            if (j != splitIndices[0] && j != splitIndices[1]) {
+                splitA[j][idx] = 0.5 * _A[j][stateToSplit];
+            }
         }
     }
     
     for (i = 0; i < 2; i++) {
+        //rows of the split states... so transitioning from split state to any other state
+        //keep them the same as the original state that was split
         const int idx = splitIndices[i];
 
         HmmDataVec_t & row = splitA[idx];
@@ -576,10 +582,11 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
     }
     
     //si1 --> si2,, si2 --> si1, etc. etc.
-    splitA[splitIndices[0]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
-    splitA[splitIndices[0]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
-    splitA[splitIndices[1]][splitIndices[0]] = 0.5 * _A[stateToSplit][stateToSplit];
-    splitA[splitIndices[1]][splitIndices[1]] = 0.5 * _A[stateToSplit][stateToSplit];
+    //transition probabilties between the split states
+    splitA[splitIndices[0]][splitIndices[0]] = _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[0]][splitIndices[1]] = 0.01; //0.5 * _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[1]][splitIndices[0]] = 0.01; //0.5 * _A[stateToSplit][stateToSplit];
+    splitA[splitIndices[1]][splitIndices[1]] = _A[stateToSplit][stateToSplit];
 
     
     std::stringstream ss;
@@ -587,30 +594,41 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
     //printMat(ss.str(), splitA);
     
     if (perturb) {
-        for (j = 0; j < 2; j++) {
-            const int idx = splitIndices[j];
-            for (i = 0; i < _numStates + 1; i++) {
-                splitA[idx][i] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
-                
-                if (splitA[idx][i] < MIN_VALUE_FOR_A) {
-                    splitA[idx][i] = MIN_VALUE_FOR_A;
-                }
-                
-                if (splitA[idx][i] > MAX_VALUE_FOR_A) {
-                    splitA[idx][i] = MAX_VALUE_FOR_A;
-                }
-                
-                splitA[i][idx] += getRandomFloat() * SPLIT_A_PERTURBATION_MAX;
-                
-                if (splitA[i][idx]  < MIN_VALUE_FOR_A) {
-                    splitA[i][idx]  = MIN_VALUE_FOR_A;
-                }
-                
-                if (splitA[i][idx]  > MAX_VALUE_FOR_A) {
-                    splitA[i][idx]  = MAX_VALUE_FOR_A;
-                }
-            }
+        HmmFloat_t a0 = splitA[splitIndices[0]][splitIndices[0]];
+        HmmFloat_t a1 = splitA[splitIndices[1]][splitIndices[1]];
+        
+        HmmFloat_t T1 = 1.0 / (1.0 - a0);
+        HmmFloat_t T2 = 1.0 / (1.0 - a1);
+        
+        if (T1 == INFINITY || isnan(T1) || T2 == INFINITY || isnan(T2) ) {
+            std::cerr << "bolloxed up self term in split transition matrix " << std::endl;
         }
+        else {
+            
+            T1 *= (1.0 + getRandomFloat()) * 10.0;
+            T2 *= 1.0;
+            
+            a0 = 1.0 - 1.0 / T1;
+            a1 = 1.0 - 1.0 / T2;
+        }
+        
+        splitA[splitIndices[0]][splitIndices[0]] = a0;
+        splitA[splitIndices[1]][splitIndices[1]] = a1;
+
+        HmmDataVec_t & row0 = splitA[splitIndices[0]];
+        HmmDataVec_t & row1 = splitA[splitIndices[1]];
+        HmmFloat_t sum0 = 0;
+        HmmFloat_t sum1 = 0;
+        for (j = 0; j < _numStates + 1; j++) {
+            sum0 += row0[j];
+            sum1 += row1[j];
+        }
+        
+        for (j = 0; j < _numStates + 1; j++) {
+            row0[j] /= sum0;
+            row1[j] /= sum1;
+        }
+
     }
     
 
