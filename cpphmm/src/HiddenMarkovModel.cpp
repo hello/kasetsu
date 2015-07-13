@@ -605,9 +605,9 @@ HmmSharedPtr_t HiddenMarkovModel::splitState(uint32_t stateToSplit,bool perturb)
         }
         else {
             
-            T1 *= (1.0 + getRandomFloat()) * 10.0;
-            T2 *= 1.0;
-            
+            T1 *= 1.0;
+            T2 *= (1.0 + getRandomFloat()) * 10.0;
+
             a0 = 1.0 - 1.0 / T1;
             a1 = 1.0 - 1.0 / T2;
         }
