@@ -88,7 +88,7 @@ public:
     ReestimationResult_t reestimateViterbi(const HmmDataMatrix_t & meas);
     HmmFloat_t getModelCost(const HmmDataMatrix_t & meas) const;
     ViterbiDecodeResult_t decode(const HmmDataMatrix_t & meas) const;
-    bool reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas);
+    bool reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas, bool reestimateMeas);
     
     void enlargeWithVSTACS(const HmmDataMatrix_t & meas,uint32_t numToGrow) ;
     void enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) ;
@@ -97,7 +97,7 @@ public:
 
 
     std::string serializeToJson() const;
-    HmmSharedPtr_t splitState(uint32_t state,bool perturb) const;
+    HmmSharedPtr_t splitState(uint32_t stateToSplit,bool perturbSelfTerm,bool perturbMeasurements) const;
     HmmSharedPtr_t deleteStates(UIntSet_t statesToDelete) const;
 
     uint32_t getNumberOfFreeParams() const;
