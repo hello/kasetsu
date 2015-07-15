@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sleep_hmm_bayesnet_pb2
+import beta_binomial_pb2
 import sys
 import base64
 import sys
@@ -16,17 +17,20 @@ pill_magnitude_disturbance_threshold_lsb = 15000
 enable_interval_search = False
 meas_period = 5
 
-num_measurements_for_prior = 5.0
+k_num_measurements_for_prior = 5.0
 
 obs_strings_to_enums = {'light' : sleep_hmm_bayesnet_pb2.LOG_LIGHT,
            'sound' : sleep_hmm_bayesnet_pb2.LOG_SOUND,
            'duration' : sleep_hmm_bayesnet_pb2.MOTION_DURATION,
            'natlight' : sleep_hmm_bayesnet_pb2.NATURAL_LIGHT,
-           'pill_disturbance' : sleep_hmm_bayesnet_pb2.PILL_MAGNITUDE_DISTURBANCE }
+           'pill_disturbance' : sleep_hmm_bayesnet_pb2.PILL_MAGNITUDE_DISTURBANCE,
+            'wave_disturbance' : sleep_hmm_bayesnet_pb2.WAVE_DISTURBANCE,
+        'light_disturbance' : sleep_hmm_bayesnet_pb2.LIGHT_INCREASE_DISTURBANCE,
+        'sound_disturbance' : sleep_hmm_bayesnet_pb2.SOUND_INCREASE_DISTURBANCE}
 
 def get_obs_model(model,state_idx,obs_type,obs):
     obs.state_index = state_idx
-    obs.meas_type = obs_strings_to_enums[obs_type]
+    obs.meas_type.append(obs_strings_to_enums[obs_type])
     
     model_type = model['model_type']
     model_data = model['model_data']
@@ -81,7 +85,7 @@ def get_probs_from_params(params):
 
     return mydict
 
-def place_condprobs(bayesnet,probdict,model_id):
+def place_condprobs(bayesnet,probdict,model_id,num_measurements_for_prior):
     for key in probdict:
         probs =  probdict[key]
 
@@ -123,11 +127,16 @@ def to_proto(input_filenames):
         models = data['models']
         params = data['params']
         model_id = params['model_name']
+        
+        if params.has_key('num_measurements_for_prior'):
+            num_measurements_for_prior = params['num_measurements_for_prior']
+        else:
+            num_measurements_for_prior = k_num_measurements_for_prior
 
         obs_map = params['obs_map']
 
         probdict = get_probs_from_params(params)        
-        place_condprobs(bayes_net,probdict,model_id)
+        place_condprobs(bayes_net,probdict,model_id,num_measurements_for_prior)
         
         if len(models) != len(data['A']):
             print ('ERROR state transition matrix dimensions did not match the number of models')
