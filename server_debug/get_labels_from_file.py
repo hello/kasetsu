@@ -67,7 +67,7 @@ def reduce_data_by_user(rows):
 
     #go through every row
     for row in rows:
-        account_id = row['account_id']
+        account_id = row['id']
         model = row['model']
         state = int(row['state'])
         label = int(row['label'])
