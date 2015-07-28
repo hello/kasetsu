@@ -8,14 +8,14 @@ import csv
 num_days = 2
 start_date_string = '2015-05-16'
 
-k_endpoint = 'v1/datascience/matchedfeedback/'
-#k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'
+#k_endpoint = 'v1/datascience/matchedfeedback/'
+k_url = 'http://localhost:9997/v1/datascience/matchedfeedback/'
 #k_server = 'https://research-api-benjo.hello.is/'
-k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/'
-k_url = k_server + k_endpoint
+#k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/'
+#k_url = k_server + k_endpoint
 
-k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
-#k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
+#k_magic_auth = '7.e0aa1ca0289449f5b3b3c257da9523ec'
+k_magic_auth = '2.26d34270933b4d5e88e513b0805a0644'
 
 k_headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 

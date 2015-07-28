@@ -24,7 +24,7 @@ user_id = int(sys.argv[2])
 k_algorithm = 'hmm'
 k_algorithm2 = 'sleep_score'
 
-k_params = {'partner_filter' : False, 'algorithm' : k_algorithm2}
+k_params = {'partner_filter' : True, 'algorithm' : k_algorithm2}
 
 def pull_date_for_user(userid):
     responses = []
