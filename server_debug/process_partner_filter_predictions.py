@@ -71,7 +71,7 @@ def process_errors(events,is_positive_err_failure,err_threshold):
         if is_success:
             success_count += 1
             
-        if not is_fail and not is_success:
+        if not is_fail and not is_success and not is_improved:
             no_change_count += 1
 
         if is_screwed_up_something_that_was_already_good:
