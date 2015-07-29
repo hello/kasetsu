@@ -9,23 +9,25 @@ k_err_threshold = 20
 k_improvement_margin = 10
 
 def print_report(event_type,results):
-    fuck_up_count,fail_count,improved_count,success_count,no_change_count,total_count = results
+    fuck_up_count,fail_count,improved_count,success_count,no_change_count,switched_count,total_count = results
     
-    percents = np.array([fuck_up_count,fail_count,improved_count,success_count,no_change_count]) / float(total_count)
+    percents = np.array([fail_count,no_change_count,improved_count,success_count,switched_count,fuck_up_count]) / float(total_count)
 
-    names = ['good results changed to bad results',
-             'all bad predictions',
-             'percent of improved but not successful predictions',
-             'percent of predictions switched from failure to success',
-             'percent of predictions that did not make things better or worse']
+    names = ['all predictions that were failures',
+             'all predictions not successful or failed which did not make things better',
+             'all predictions not successful or failed which improved the prediction',
+             'all predictions that were successful',
+             'predictions switched from failure to success (GOOD)',
+             'predictions switched from success to failure (BAD)']
 
     print '\n\n\n'
-    print event_type
+    print 'PARTNER FILTER PREDICTIONS: ',event_type
     print '-------------------------------------------------------'
     for i in range(len(names)):
-        print int(percents[i] * 100) / 100.0, '\t' ,names[i]
+        print '%3.1f%%' % (int(percents[i] * 1000) / 10.0), '\t' ,names[i]
         
     print total_count,'\t','total number of predictions'
+
 
 def process_errors(events,is_positive_err_failure,err_threshold):
     fail_count = 0
@@ -33,6 +35,7 @@ def process_errors(events,is_positive_err_failure,err_threshold):
     no_change_count = 0
     fuck_up_count = 0
     improved_count = 0
+    switched_count = 0
     total_count = 0
     
     for row in events:
@@ -43,6 +46,7 @@ def process_errors(events,is_positive_err_failure,err_threshold):
         is_fail = False
         is_success = False
         is_improved = False
+        is_switched = False
         
         if is_positive_err_failure:
             if row[0] > k_err_threshold:
@@ -57,8 +61,10 @@ def process_errors(events,is_positive_err_failure,err_threshold):
 
         if not is_fail:
             #if prediction error is less than threshold and the original prediction was not good
-            if abs(row[0]) < err_threshold and abs(row[1]) >= err_threshold:  
+            if abs(row[0]) < err_threshold:  
                 is_success = True
+                if abs(row[1]) >= err_threshold:
+                    is_switched = True
 
             #if things are just generally improved
             if abs(row[0]) < (abs(row[1]) - k_improvement_margin) and not is_success:
@@ -80,10 +86,13 @@ def process_errors(events,is_positive_err_failure,err_threshold):
         if is_improved:
             improved_count += 1
 
+        if is_switched:
+            switched_count += 1
+
         total_count += 1
 
 
-    return fuck_up_count,fail_count,improved_count,success_count,no_change_count,total_count
+    return fuck_up_count,fail_count,improved_count,success_count,no_change_count,switched_count,total_count
 
         
 
