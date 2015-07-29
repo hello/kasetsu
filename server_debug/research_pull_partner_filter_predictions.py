@@ -3,15 +3,16 @@ import requests
 import os
 import sys
 import csv
+import copy
 
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/partnerfilter_predictions/{}/{}/'
 k_magic_auth = os.environ['RESEARCH_TOKEN']
-k_num_days = 3
-
 k_headers = {'Authorization' : 'Bearer %s' % k_magic_auth}
 
 k_target_file = 'partnerfeedbacks.csv'
 #k_target_file = 'p.csv'
+
+k_output_file = 'part_pred_err.csv'
 
 def pull_data(datestring,account_id):
 
@@ -36,7 +37,7 @@ def get_in_out_of_bed(filename):
     rows = []
     
     for row in reader:
-        #account_id,query_date,event_type,new_time_utc,old_time_utc
+    
         event_type = row['event_type']
         if event_type == 'IN_BED' or event_type == 'OUT_OF_BED':
             rows.append(row)
@@ -48,10 +49,15 @@ def get_in_out_of_bed(filename):
 if __name__ == '__main__':
     rows = get_in_out_of_bed(k_target_file)
     count = 0
+
+    f = open(k_output_file,'w')
+    writer = csv.DictWriter(f,fieldnames=['account_id','query_date','event_type','prediction_error','orig_error'],extrasaction='ignore')
+    writer.writeheader()
+                            
     for row in rows:
         query_date = row['query_date']
         account_id = row['account_id']
-
+        event_type = row['event_type']
         print 'querying %s for account %s' % (query_date,account_id)
         data = pull_data(query_date,account_id)
 
@@ -64,12 +70,28 @@ if __name__ == '__main__':
 
         result = data[0]
         feedback_time = int(row['new_time_utc'])
-        predicted_time = int(result['start_time_utc'])
+        orig_time = int(row['old_time_utc'])
 
-        print (feedback_time - predicted_time) / 60000
-        
-        count += 1
+        predicted_time_in_bed = int(result['start_time_utc'])
+        predicted_time_out_of_bed = int(result['end_time_utc'])
 
-        if count > 10:
-            break
+        diff = None
         
+        if event_type == 'OUT_OF_BED':
+            diff = (feedback_time - predicted_time_out_of_bed) / 60000
+        elif event_type == 'IN_BED':
+            diff = (feedback_time - predicted_time_in_bed) / 60000
+
+        orig_error = (feedback_time - orig_time) / 60000
+
+        if diff != None:
+            row2 = copy.deepcopy(row)
+            row2['prediction_error'] = diff
+            row2['orig_error'] = orig_error
+
+            writer.writerow(row2)
+
+        
+  
+
+    f.close()
