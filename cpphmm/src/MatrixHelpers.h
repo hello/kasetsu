@@ -6,6 +6,7 @@
 
 
 void printMat(const std::string & name, const HmmDataMatrix_t & mat) ;
+void printVec(const std::string & name, const HmmDataVec_t & vec);
 
 uint32_t getArgMaxInVec(const HmmDataVec_t & x) ;
 ViterbiPathMatrix_t getZeroedPathMatrix(size_t numVecs, size_t vecSize) ;

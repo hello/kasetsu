@@ -148,21 +148,7 @@ void HiddenMarkovModel::addModelForState(HmmPdfInterfaceSharedPtr_t model) {
 }
 
 
-static void printVec(const std::string & name, const HmmDataVec_t & vec) {
-    bool first = true;
-    for (HmmDataVec_t::const_iterator itvec2 = vec.begin(); itvec2 != vec.end(); itvec2++) {
-        if (!first) {
-            std::cout << ",";
-        }
-        
-        std::cout << *itvec2;
-        
-        
-        first = false;
-    }
-    std::cout << std::endl;
 
-}
 
 HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const ModelVec_t & models, const HmmDataMatrix_t & meas) const {
     HmmDataMatrix_t logbmap;
@@ -213,151 +199,11 @@ HmmDataMatrix_t HiddenMarkovModel::getLogBMap(const ModelVec_t & models, const H
 
 
 AlphaBetaResult_t HiddenMarkovModel::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A) const {
-    /*
-    Calculates 'alpha' the forward variable.
-    
-    The alpha variable is a numpy array indexed by time, then state (NxT).
-    alpha[i][t] = the probability of being in state 'i' after observing the
-    first t symbols.
-    */
-    int t,j,i;
-    HmmDataMatrix_t logalpha = getLogZeroedMatrix(_numStates,numObs);
-    HmmDataMatrix_t logbeta = getLogZeroedMatrix(_numStates,numObs);
-    HmmFloat_t temp;
-    HmmDataMatrix_t logA = A; //copy
-    
-    for (j = 0; j < _numStates; j++) {
-        for (i = 0; i < _numStates; i++) {
-            logA[j][i] = eln(logA[j][i]);
-        }
-    }
-    
-    
-    //init stage - alpha_1(x) = pi(x)b_x(O1)
-
-    for (j = 0; j < _numStates; j++) {
-        logalpha[j][0] = elnproduct(eln(pi[j]), logbmap[j][0]);
-    }
-    
-    
-    for (t = 1; t < numObs; t++) {
-        for (j = 0; j < _numStates; j++) {
-            temp = LOGZERO;
-            
-            for (i = 0; i < _numStates; i++) {
-                const HmmFloat_t tempval = elnproduct(logalpha[i][t-1],logA[i][j]);
-                temp = elnsum(temp,tempval);
-                //alpha[j][t] += alpha[i][t-1]*A[i][j];
-            }
-            
-            if (temp == LOGZERO) {
-                int foo = 3;
-                foo++;
-            }
-            
-            logalpha[j][t] = elnproduct(temp, logbmap[j][t]);
-            //alpha[j][t] *= bmap[j][t];
-        }
-        
-    }
-    
-    /*
-        Calculates 'beta' the backward variable.
-                        
-        The beta variable is a numpy array indexed by time, then state (NxT).
-        beta[i][t] = the probability of being in state 'i' and then observing the
-        symbols from t+1 to the end (T).
-     */
-    
-                        
-    // init stage
-    for (int s = 0; s < _numStates; s++) {
-        logbeta[s][numObs - 1] = 0.0;
-    }
-    
-
-    
-    for (t = numObs - 2; t >= 0; t--) {
-        for (i = 0; i < _numStates; i++) {
-            temp = LOGZERO;
-            for (j = 0;  j < _numStates; j++) {
-                const HmmFloat_t tempval  = elnproduct(logbmap[j][t+1], logbeta[j][t+1]);
-                const HmmFloat_t tempval2 = elnproduct(tempval, logA[i][j]);
-                temp = elnsum(temp,tempval2);
-                //beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
-            }
-            
-            logbeta[i][t] = temp;
-            
-        }
-    }
-    
-    temp = LOGZERO;
-    for (i = 0; i < _numStates; i++) {
-        temp = elnsum(temp,logalpha[i][numObs-1]);
-    }
-    
-    
-    const AlphaBetaResult_t result(logalpha,logbeta,logA,temp);
-    
-    (void)printMat;
-    (void)printVec;
-    //printVec("c",c);
-    //printMat("alpha",alpha);
-    //printMat("beta",beta);
-
-    return result;
-    
-    
-
+    return HmmHelpers::getAlphaAndBeta(numObs, pi, logbmap, A, _numStates);
 }
 
 Hmm3DMatrix_t HiddenMarkovModel::getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,size_t numObs) const {
-    /*
-    Calculates 'xi', a joint probability from the 'alpha' and 'beta' variables.
-    
-    The xi variable is a numpy array indexed by time, state, and state (TxNxN).
-    xi[t][i][j] = the probability of being in state 'i' at time 't', and 'j' at
-    time 't+1' given the entire observation sequence.
-    */
-    int32_t t,i,j;
-
-    const HmmDataMatrix_t & logalpha = alphabeta.logalpha;
-    const HmmDataMatrix_t & logbeta = alphabeta.logbeta;
-    const HmmDataMatrix_t & logA = alphabeta.logA;
-    Hmm3DMatrix_t logxi = getLogZeroed3dMatrix(_numStates,_numStates, numObs);
-    HmmDataVec_t tempvec = getZeroedVec(_numStates);
-    HmmDataVec_t logdenomvec = getZeroedVec(_numStates);
-    HmmFloat_t normalizer;
-    
-    for (t = 0; t < numObs - 1; t++) {
-        normalizer = LOGZERO;
-        
-        for (i = 0; i < _numStates; i++) {
-            for (j = 0; j < _numStates; j++) {
-                
-                const HmmFloat_t tempval1 = elnproduct(logalpha[i][t], logA[i][j]);
-                const HmmFloat_t tempval2 = elnproduct(logbmap[j][t+1], logbeta[j][t+1]);
-                const HmmFloat_t tempval3 = elnproduct(tempval1,tempval2);
-                
-                logxi[i][j][t] = tempval3;
-                
-                normalizer = elnsum(tempval3, normalizer);
-            }
-        }
-        
-        
-        for (i = 0; i < _numStates; i++) {
-            for (j = 0; j < _numStates; j++) {
-                logxi[i][j][t] = elnproduct(logxi[i][j][t], -normalizer);
-            }
-            
-        }
-        
-    }
-    
-    return logxi;
-
+    return HmmHelpers::getLogXi(alphabeta, logbmap, numObs, _numStates);
 }
 
 HmmDataMatrix_t HiddenMarkovModel::getLogGamma(const AlphaBetaResult_t & alphabeta,size_t numObs) const {

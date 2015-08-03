@@ -152,3 +152,19 @@ void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
     
     
 }
+
+void printVec(const std::string & name, const HmmDataVec_t & vec) {
+    bool first = true;
+    for (HmmDataVec_t::const_iterator itvec2 = vec.begin(); itvec2 != vec.end(); itvec2++) {
+        if (!first) {
+            std::cout << ",";
+        }
+        
+        std::cout << *itvec2;
+        
+        
+        first = false;
+    }
+    std::cout << std::endl;
+    
+}

@@ -35,6 +35,8 @@ ReestimationResult.cpp
 SerializationHelpers.cpp
 MatrixHelpers.cpp
 RandomHelpers.cpp
+MultiObsSequenceHiddenMarkovModel.cpp
+HmmHelpers.cpp
 )
 
 target_link_libraries(cpphmm pthread ${GSL_LIBRARIES})

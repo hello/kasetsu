@@ -1,7 +1,7 @@
 #ifndef _HIDDENMARKOVMODEL_H_
 #define _HIDDENMARKOVMODEL_H_
 
-#include "HmmPdfInterface.h"
+#include "HmmHelpers.h"
 #include "ReestimationResult.h"
 #include "SaveStateInterface.h"
 #include <cmath>
@@ -11,21 +11,7 @@
       this class is stateful.
  */
 
-class AlphaBetaResult_t  {
-public:
-    
-    AlphaBetaResult_t(const HmmDataMatrix_t & a, const HmmDataMatrix_t & b,const HmmDataMatrix_t & la, HmmFloat_t c)
-    : logalpha(a)
-    , logbeta(b)
-    , logA(la)
-    , logmodelcost(c)
-    {}
-    
-    const HmmDataMatrix_t logalpha;
-    const HmmDataMatrix_t logbeta;
-    const HmmDataMatrix_t logA;
-    const HmmFloat_t logmodelcost;
-} ;
+
 
 
 class ViterbiDecodeResult_t {
