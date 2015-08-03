@@ -1,18 +1,8 @@
 #include "HmmHelpers.h"
 #include "LogMath.h"
 #include "MatrixHelpers.h"
-#include "ThreadPool.h"
 
-typedef std::pair<int32_t,HmmPdfInterfaceSharedPtr_t> StateIdxModelPair_t;
-typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
-typedef std::pair<int32_t,HmmFloat_t> StateIdxCostPair_t;
-
-typedef std::vector<std::future<StateIdxModelPair_t>> FutureModelVec_t;
-typedef std::vector<std::future<StateIdxPdfEvalPair_t>> FuturePdfEvalVec_t;
-typedef std::vector<std::future<StateIdxCostPair_t>> FutureCostVec_t;
-
-AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A, const uint32_t numStates) {
-    
+AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions) {
     
     /*
      Calculates 'alpha' the forward variable.
@@ -102,7 +92,18 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     const AlphaBetaResult_t result(logalpha,logbeta,logA,temp);
     
     return result;
+    
 
+    
+}
+
+AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A, const uint32_t numStates) {
+    
+    //pass empty structures
+    LabelMap_t labels;
+    TransitionMultiMap_t forbiddenTransitions;
+    
+    return getAlphaAndBeta(numObs, pi, logbmap, A, numStates, labels, forbiddenTransitions);
     
 }
 

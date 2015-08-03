@@ -2,7 +2,7 @@
 #define _HMMHELPERS_H_
 
 #include "HmmPdfInterface.h"
-
+#include "MultiObsSequence.h"
 class AlphaBetaResult_t  {
 public:
     
@@ -22,6 +22,8 @@ public:
 class HmmHelpers {
 public:
     static AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates);
+    
+    static AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions);
     
     static Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const uint32_t numObs,const uint32_t numStates);
     

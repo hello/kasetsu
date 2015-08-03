@@ -7,6 +7,7 @@
 #include <limits>
 #include <algorithm>    
 #include "CompatibilityTypes.h"
+#include <future>
 
 typedef float HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;
@@ -75,6 +76,12 @@ inline std::ostream & operator << (std::ostream & lhs, const UIntSet_t & rhs) {
     return lhs;
 }
 
+
+typedef std::pair<int32_t,HmmDataVec_t> StateIdxPdfEvalPair_t;
+typedef std::pair<int32_t,HmmFloat_t> StateIdxCostPair_t;
+
+typedef std::vector<std::future<StateIdxPdfEvalPair_t> > FuturePdfEvalVec_t;
+typedef std::vector<std::future<StateIdxCostPair_t> > FutureCostVec_t;
 
 
 #endif //_HMMTYPES_H_
