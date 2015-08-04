@@ -15,6 +15,7 @@ private:
     ModelVec_t _models;
     uint32_t _numStates;
     HmmDataMatrix_t _A;
+    HmmDataVec_t _pi;
     
 };
 

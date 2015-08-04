@@ -207,104 +207,12 @@ Hmm3DMatrix_t HiddenMarkovModel::getLogXi(const AlphaBetaResult_t & alphabeta,co
 }
 
 HmmDataMatrix_t HiddenMarkovModel::getLogGamma(const AlphaBetaResult_t & alphabeta,size_t numObs) const {
-    /*
-    Calculates 'gamma' from xi.
-    
-    Gamma is a (TxN) numpy array, where gamma[t][i] = the probability of being
-    in state 'i' at time 't' given the full observation sequence.
-    */
-    
-    int32_t t,i;
-    HmmFloat_t normalizer;
-    HmmFloat_t temp;
-    HmmDataMatrix_t loggamma = getLogZeroedMatrix(_numStates, numObs);
-    
-    for (t = 0; t < numObs; t++) {
-        normalizer = LOGZERO;
-        for (i = 0; i < _numStates; i++) {
-            temp = elnproduct(alphabeta.logalpha[i][t], alphabeta.logbeta[i][t]);
-            loggamma[i][t] = temp;
-            normalizer = elnsum(normalizer, temp);
-        }
-        
-        
-        for (i = 0; i < _numStates; i++) {
-            loggamma[i][t] = elnproduct(loggamma[i][t], -normalizer);
-        }
-    }
-    
-    return loggamma;
-
+    return HmmHelpers::getLogGamma(alphabeta, numObs, _numStates);
 }
 
 HmmDataMatrix_t HiddenMarkovModel::reestimateA(const Hmm3DMatrix_t & logxi, const HmmDataMatrix_t & loggamma,const size_t numObs,const HmmFloat_t damping, const HmmFloat_t minValueForA) const {
     
-    int32_t i,j,t;
-    HmmDataMatrix_t A = getZeroedMatrix(_numStates, _numStates);
-    
-    for (i = 0; i < _numStates; i++) {
-        HmmFloat_t denom = LOGZERO;
-        
-        for (t = 0; t < numObs; t++) {
-            denom = elnsum(denom, loggamma[i][t]) ;
-        }
-    
-        for (j = 0; j < _numStates; j++) {
-            HmmFloat_t numer = LOGZERO;
-            for (t = 0; t < numObs; t++) {
-                numer = elnsum(numer,logxi[i][j][t]);
-            }
-            
-            A[i][j] = eexp(elnproduct(numer, -denom));
-            
-            if (_A[i][j] > EPSILON) {
-                if (A[i][j] <= minValueForA) {
-                    A[i][j] = minValueForA;
-                }
-            }
-        }
-    }
-    
-    
-    for (j = 0; j < _numStates; j++) {
-        for (i = 0; i < _numStates; i++) {
-            A[j][i] = damping * A[j][i] + (1.0 - damping) * _A[j][i];
-        }
-    }
-    
-    for (j = 0; j < _numStates; j++) {
-        HmmFloat_t sum = 0.0;
-        for (i = 0; i < _numStates; i++) {
-            sum += A[j][i];
-        }
-        
-        if (sum < EPSILON) {
-            continue;
-        }
-        
-        for (i = 0; i < _numStates; i++) {
-            A[j][i] /= sum;
-        }
-    }
-    
-    for (j = 0; j < _numStates; j++) {
-        for (i = 0; i < _numStates; i++) {
-            
-            if (A[j][i] > EPSILON) {
-                if (A[j][i] <= MIN_VALUE_FOR_A) {
-                    A[j][i] = MIN_VALUE_FOR_A;
-                }
-                
-                if (A[j][i] > MAX_VALUE_FOR_A) {
-                    A[j][i] = MAX_VALUE_FOR_A;
-                }
-            }
-            
-        }
-    }
-    
-    return A;
-    
+    return HmmHelpers::reestimateA(_A, logxi, loggamma, numObs, DAMPING_FACTOR, MIN_VALUE_FOR_A,_numStates);
 }
 
 static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & paths) {

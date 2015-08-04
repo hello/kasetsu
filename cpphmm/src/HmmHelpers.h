@@ -25,9 +25,15 @@ public:
     
     static AlphaBetaResult_t getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions);
     
-    static Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const uint32_t numObs,const uint32_t numStates);
+    static Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap, const uint32_t numObs,const uint32_t numStates);
+
+    static Hmm3DMatrix_t getLogXi(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const TransitionMultiMap_t & forbiddenTransitions, const uint32_t numObs,const uint32_t numStates);
     
     static HmmDataMatrix_t getLogBMap(const ModelVec_t & models, const HmmDataMatrix_t & meas);
+
+    static HmmDataMatrix_t getLogGamma(const AlphaBetaResult_t & alphabeta,uint32_t numObs, uint32_t numStates);
+    
+    static HmmDataMatrix_t reestimateA(const HmmDataMatrix_t & A, const Hmm3DMatrix_t & logxi, const HmmDataMatrix_t & loggamma,const size_t numObs,const HmmFloat_t damping, const HmmFloat_t minValueForA, const uint32_t numStates);
 
 };
 
