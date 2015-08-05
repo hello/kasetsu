@@ -114,8 +114,9 @@ HmmDataVec_t getPoissonSignal(const int length, const HmmDataMatrix_t & A, const
 
 }
 
-HmmDataVec_t getAlphabetSignal(const int length, const HmmDataMatrix_t & A, const HmmDataMatrix_t & alphabet) {
-    
+HmmDataVec_t getAlphabetSignal(UIntVec_t & states, const int length, const HmmDataMatrix_t & A, const HmmDataMatrix_t & alphabet) {
+    states.clear();
+    states.reserve(length);
     srand(time(NULL));
     
     
@@ -127,7 +128,7 @@ HmmDataVec_t getAlphabetSignal(const int length, const HmmDataMatrix_t & A, cons
     int istate = 0;
     
     for (int iter = 0; iter < length; iter++) {
-        
+        states.push_back(istate);
         //generate measurement
         const HmmDataVec_t & probs = alphabet[istate];
         

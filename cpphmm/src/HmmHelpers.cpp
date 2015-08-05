@@ -33,7 +33,8 @@ static bool getLabel(uint32_t & label, const uint32_t t, const LabelMap_t & labe
 }
 
 AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions) {
-    
+    (void)getLabel;
+
     /*
      Calculates 'alpha' the forward variable.
      
@@ -82,10 +83,16 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
             logalpha[j][t] = elnproduct(temp, logbmap[j][t]);
         }
         
+        
         uint32_t label;
         if (getLabel(label,t,labels)) {
-            logalpha[label][t] = LOGZERO;
+            for (j = 0; j < numStates; j++) {
+                if (j != label) {
+                    logalpha[j][t] = LOGZERO;
+                }
+            }
         }
+        
         
     }
     
@@ -121,10 +128,16 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
             logbeta[i][t] = temp;
         }
         
+        
         uint32_t label;
         if (getLabel(label,t,labels)) {
-            logbeta[label][t] = LOGZERO;
+            for (j = 0; j < numStates; j++) {
+                if (j != label) {
+                    logbeta[j][t] = LOGZERO;
+                }
+            }
         }
+        
     }
     
     temp = LOGZERO;

@@ -9,7 +9,7 @@ public:
     MultiObsHiddenMarkovModel(const HmmDataMatrix_t &initalAlphabetProbs,const HmmDataMatrix_t & A);
     ~MultiObsHiddenMarkovModel();
     
-    void reestimate(const MultiObsSequence & meas);
+    void reestimate(const MultiObsSequence & meas,const uint32_t numIter);
     
     HmmDataMatrix_t getAMatrix() const;
     HmmDataMatrix_t getAlphabetMatrix() const;

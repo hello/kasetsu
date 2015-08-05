@@ -73,11 +73,11 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLogBMap(const HmmDataMatrix_t & ra
 
 
 
-void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas) {
+void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter) {
     
     const uint32_t alphabetSize = _alphabetNumerator[0].size();
     
-    for (int iter = 0; iter < 100; iter++) {
+    for (int iter = 0; iter < numIter; iter++) {
         for (int iSequence = 0; iSequence < meas.size(); iSequence++) {
             const HmmDataMatrix_t & rawdata = meas.getMeasurements(iSequence);
             const LabelMap_t & labels = meas.getLabels(iSequence);
@@ -105,7 +105,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas) {
             const HmmDataVec_t logDenominator = HmmHelpers::getLogDenominator(alphaBeta, _numStates, numObs);
             
             
-            if (iSequence == 0 ) {
+            if (iSequence == 0) {
                 _ANumerator = logANumerator;
                 _alphabetNumerator = logAlphabetNumerator;
                 _logDenominator = logDenominator;
@@ -114,16 +114,15 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas) {
                 _ANumerator = HmmHelpers::elnAddMatrix(_ANumerator, logANumerator);
                 _alphabetNumerator = HmmHelpers::elnAddMatrix(_alphabetNumerator, logAlphabetNumerator);
                 _logDenominator = HmmHelpers::elnAddVector(_logDenominator, logDenominator);
-                
             }
             
             
             
-            
-            
+            /*
             printMat("A2", getAMatrix());
             printMat("alphabet2", getAlphabetMatrix());
             printVec("gammacount", _logDenominator);
+             */
         }
     }
 }
