@@ -128,7 +128,7 @@ TEST_F(TestModels, TestMultivariateGaussian) {
     UIntVec_t obsnums;
     obsnums << 0,1;
     
-    MultivariateGaussian mvg(obsnums,mu,P,1.0);
+    MultivariateGaussian mvg(obsnums,mu,P,0.0001,1.0);
     
     HmmDataMatrix_t obs;
     obs.resize(2);

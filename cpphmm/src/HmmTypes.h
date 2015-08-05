@@ -9,7 +9,7 @@
 #include "CompatibilityTypes.h"
 #include <future>
 
-typedef float HmmFloat_t;
+typedef double HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;
 typedef std::vector<HmmDataVec_t> HmmDataMatrix_t;
 typedef std::vector<HmmDataMatrix_t> Hmm3DMatrix_t;

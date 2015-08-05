@@ -23,6 +23,7 @@ add_executable(unit-test
                main.cpp
                signalgenerator.cpp 
                testhmm.cpp
+               testmultiobshmm.cpp
                testmodels.cpp)
 
 target_link_libraries(unit-test gtest cpphmm ${GSL_LIBRARIES})

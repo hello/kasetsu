@@ -34,6 +34,18 @@ public:
     static HmmDataMatrix_t getLogGamma(const AlphaBetaResult_t & alphabeta,uint32_t numObs, uint32_t numStates);
     
     static HmmDataMatrix_t reestimateA(const HmmDataMatrix_t & A, const Hmm3DMatrix_t & logxi, const HmmDataMatrix_t & loggamma,const size_t numObs,const HmmFloat_t damping, const HmmFloat_t minValueForA, const uint32_t numStates);
+    
+    static HmmDataMatrix_t getLogANumerator(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const TransitionMultiMap_t & forbiddenTransitions,const size_t numObs, const uint32_t numStates);
+    
+    static HmmDataMatrix_t getLogAlphabetNumerator(const AlphaBetaResult_t & alphabeta, const HmmDataVec_t & rawdata, const uint32_t numStates, const uint32_t numObs, const uint32_t alphabetSize );
+    
+    static HmmDataVec_t getLogDenominator(const AlphaBetaResult_t & alphabeta, const uint32_t numStates, const uint32_t numObs);
+    
+    static HmmDataVec_t elnAddVector(const HmmDataVec_t & m1, const HmmDataVec_t & m2);
+        
+    static HmmDataMatrix_t elnAddMatrix(const HmmDataMatrix_t & m1, const HmmDataMatrix_t & m2);
+
+
 
 };
 

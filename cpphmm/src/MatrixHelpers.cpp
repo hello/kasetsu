@@ -20,6 +20,21 @@ HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) {
     return y;
 }
 
+HmmDataMatrix_t getELNofMatrix(const HmmDataMatrix_t & x) {
+    HmmDataMatrix_t y = x;
+    
+    for (HmmDataMatrix_t::iterator ivec = y.begin();
+         ivec != y.end(); ivec++) {
+        HmmDataVec_t & row = *ivec;
+        
+        for (int i = 0; i < row.size(); i++) {
+            row[i] = eln(row[i]);
+        }
+    }
+    
+    return y;
+}
+
 HmmDataVec_t getZeroedVec(size_t vecSize) {
     HmmDataVec_t vec;
     vec.resize(vecSize);

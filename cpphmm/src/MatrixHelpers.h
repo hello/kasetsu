@@ -19,6 +19,7 @@ HmmDataMatrix_t getZeroedMatrix(size_t numVecs, size_t vecSize) ;
 HmmDataVec_t getLogZeroedVec(size_t vecSize) ;
 HmmDataVec_t getZeroedVec(size_t vecSize) ;
 HmmDataMatrix_t getEEXPofMatrix(const HmmDataMatrix_t & x) ;
+HmmDataMatrix_t getELNofMatrix(const HmmDataMatrix_t & x);
 HmmDataVec_t getUniformVec(size_t vecSize);
 
 #endif

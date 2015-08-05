@@ -1,6 +1,7 @@
 #include "HmmHelpers.h"
 #include "LogMath.h"
 #include "MatrixHelpers.h"
+#include <assert.h>
 
 static HmmDataMatrix_t getLogAWithForbiddenStates(const HmmDataMatrix_t & logA,const TransitionMultiMap_t & forbiddenTransitions, uint32_t t) {
     
@@ -320,5 +321,128 @@ HmmDataMatrix_t HmmHelpers::reestimateA(const HmmDataMatrix_t & A, const Hmm3DMa
     
 }
 
+
+HmmDataMatrix_t HmmHelpers::getLogANumerator(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const TransitionMultiMap_t & forbiddenTransitions,const size_t numObs, const uint32_t numStates) {
+    
+    int32_t i,j,t;
+    HmmDataMatrix_t logANumerator = getLogZeroedMatrix(numStates, numStates);
+    
+    const HmmDataMatrix_t & logalpha = alphabeta.logalpha;
+    const HmmDataMatrix_t & logbeta = alphabeta.logbeta;
+    const HmmDataMatrix_t & logA = alphabeta.logA;
+    
+    
+    for (i = 0; i < numStates; i++) {
+        for (j = 0; j < numStates; j++) {
+            HmmFloat_t numer = LOGZERO;
+            
+            for (t = 0; t < numObs - 1; t++) {
+                HmmDataMatrix_t logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+                
+                const HmmFloat_t tempval1 = elnproduct(logalpha[i][t], logAThisTimeStep[i][j]);
+                const HmmFloat_t tempval2 = elnproduct(logbmap[j][t+1], logbeta[j][t+1]);
+                const HmmFloat_t tempval3 = elnproduct(tempval1,tempval2);
+                
+                numer = elnsum(numer,tempval3);
+            }
+            
+            logANumerator[i][j] = numer;
+        }
+    }
+    
+    
+    
+    for (i = 0; i < numStates; i++) {
+        for (j = 0; j < numStates; j++) {
+            logANumerator[j][i] = elnproduct(logANumerator[j][i], -alphabeta.logmodelcost);
+        }
+    }
+    
+    
+    return logANumerator;
+    
+}
+
+HmmDataMatrix_t HmmHelpers::getLogAlphabetNumerator(const AlphaBetaResult_t & alphabeta, const HmmDataVec_t & rawdata, const uint32_t numStates, const uint32_t numObs, const uint32_t alphabetSize ) {
+    
+    int32_t iState,iAlphabet,t;
+
+    HmmDataMatrix_t logAlphabetNumerator = getLogZeroedMatrix(numStates, alphabetSize);
+
+    const HmmDataMatrix_t & logalpha = alphabeta.logalpha;
+    const HmmDataMatrix_t & logbeta = alphabeta.logbeta;
+    
+    for (iState = 0; iState < numStates; iState++) {
+       
+        for (t = 0; t < numObs; t++) {
+            const uint32_t idx = (uint32_t)rawdata[t];
+            
+            assert(idx >= 0 && idx < alphabetSize);
+            
+            logAlphabetNumerator[iState][idx] = elnsum(logAlphabetNumerator[iState][idx] ,elnproduct(logalpha[iState][t], logbeta[iState][t]));
+        }
+
+    }
+
+    
+    for (iState = 0; iState < numStates; iState++) {
+        for (iAlphabet = 0; iAlphabet < alphabetSize; iAlphabet++) {
+            logAlphabetNumerator[iState][iAlphabet] = elnproduct(logAlphabetNumerator[iState][iAlphabet], -alphabeta.logmodelcost);
+        }
+    }
+    
+    return logAlphabetNumerator;
+
+
+}
+
+
+HmmDataVec_t HmmHelpers::getLogDenominator(const AlphaBetaResult_t & alphabeta, const uint32_t numStates, const uint32_t numObs) {
+    
+    int32_t iState,t;
+    
+    HmmDataVec_t logDenominator = getLogZeroedVec(numStates);
+    
+    const HmmDataMatrix_t & logalpha = alphabeta.logalpha;
+    const HmmDataMatrix_t & logbeta = alphabeta.logbeta;
+    
+    for (iState = 0; iState < numStates; iState++) {
+        for (t = 0; t < numObs; t++) {
+            logDenominator[iState] = elnsum(logDenominator[iState],elnproduct(logalpha[iState][t], logbeta[iState][t]));
+        }
+        
+        logDenominator[iState] = elnproduct(logDenominator[iState], -alphabeta.logmodelcost);
+    }
+    
+    return logDenominator;
+}
+
+HmmDataMatrix_t HmmHelpers::elnAddMatrix(const HmmDataMatrix_t & m1, const HmmDataMatrix_t & m2) {
+    const int m = m1.size();
+    const int n = m1[0].size();
+    
+    HmmDataMatrix_t m3 = getZeroedMatrix(m, n);
+    
+    for (int j = 0; j < m; j++) {
+        for (int i = 0; i < n; i++) {
+            m3[j][i] = elnsum(m1[j][i], m2[j][i]);
+        }
+    }
+    
+    return m3;
+}
+
+HmmDataVec_t HmmHelpers::elnAddVector(const HmmDataVec_t & m1, const HmmDataVec_t & m2) {
+    const int m = m1.size();
+    
+    HmmDataVec_t m3 = getZeroedVec(m);
+    
+    for (int j = 0; j < m; j++) {
+        m3[j] = elnsum(m1[j], m2[j]);
+        
+    }
+    
+    return m3;
+}
 
 

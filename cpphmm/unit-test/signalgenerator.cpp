@@ -3,6 +3,30 @@
 #include <random>
 #include <assert.h>
 
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
+
+static HmmFloat_t getRandomFloatBetweenZeroAndOne() {
+    return static_cast <HmmFloat_t> (rand()) / static_cast <HmmFloat_t> (RAND_MAX);
+}
+
+static uint32_t getRandomAlphabetSymbol(const HmmDataVec_t & probs) {
+    const HmmFloat_t f = getRandomFloatBetweenZeroAndOne();
+    uint32_t i;
+    HmmFloat_t cummprob = 0.0;
+    for (i = 0; i < probs.size(); i++) {
+        const HmmFloat_t p = probs[i];
+        
+        if (f >= cummprob && f < cummprob + p) {
+            break;
+        }
+        
+        cummprob += p;
+    }
+    
+    return i;
+}
+
 static int transitionState(const HmmDataVec_t & row) {
     //number between 0 and 1
     const float f = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
@@ -88,6 +112,33 @@ HmmDataVec_t getPoissonSignal(const int length, const HmmDataMatrix_t & A, const
     
     return signal;
 
+}
+
+HmmDataVec_t getAlphabetSignal(const int length, const HmmDataMatrix_t & A, const HmmDataMatrix_t & alphabet) {
+    
+    srand(time(NULL));
+    
+    
+    HmmDataVec_t signal;
+    
+    signal.resize(length);
+    
+
+    int istate = 0;
+    
+    for (int iter = 0; iter < length; iter++) {
+        
+        //generate measurement
+        const HmmDataVec_t & probs = alphabet[istate];
+        
+        signal[iter] = (HmmFloat_t)getRandomAlphabetSymbol(probs);
+        
+        //determine state to transition to
+        istate = transitionState(A[istate]);
+    }
+    
+    
+    return signal;
 }
 
 
