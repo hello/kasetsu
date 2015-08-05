@@ -6,16 +6,19 @@
 
 class MultiObsHiddenMarkovModel {
 public:
-    MultiObsHiddenMarkovModel(const ModelVec_t &models,const HmmDataMatrix_t & A);
+    MultiObsHiddenMarkovModel(const HmmDataMatrix_t &initalAlphabetProbs,const HmmDataMatrix_t & A);
     ~MultiObsHiddenMarkovModel();
     
     void reestimate(const MultiObsSequence & meas);
 private:
     
-    ModelVec_t _models;
-    uint32_t _numStates;
-    HmmDataMatrix_t _A;
+    HmmDataMatrix_t _ANumerator;
+    HmmDataMatrix_t _alphabetNumerator;
+    HmmDataVec_t _gammaCount;
     HmmDataVec_t _pi;
+
+    uint32_t _numStates;
+
     
 };
 
