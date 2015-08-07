@@ -459,3 +459,87 @@ HmmDataVec_t HmmHelpers::elnAddVector(const HmmDataVec_t & m1, const HmmDataVec_
 }
 
 
+static ViterbiPath_t decodePath(int32_t startidx,const ViterbiPathMatrix_t & paths) {
+    size_t len = paths[0].size();
+    
+    
+    ViterbiPath_t path;
+    path.resize(len);
+    
+    path[len-1] = startidx;
+    for(int i = len - 2; i >= 0; i--) {
+        path[i] = paths[path[i+1]][i];
+    }
+    
+    
+    return path;
+}
+
+static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const ViterbiPathMatrix_t & paths,const HmmDataMatrix_t & phi)  {
+    
+    const size_t len = paths[0].size();
+    
+    
+    //get viterbi path
+    ViterbiPath_t path = decodePath(startidx,paths);
+    
+    //compute cost stuff
+    const HmmFloat_t cost = phi[path[len-1]][len-1];
+    
+    //really -bic
+//    const HmmFloat_t bic = 2*cost - _alphabetNumerator[0].size() * _numStates * log(len);
+    
+    return ViterbiDecodeResult_t(path,cost,cost);
+}
+
+
+ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & meas, const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs) {
+    int j,i,t;
+    
+
+
+    HmmDataVec_t costs;
+    costs.resize(numStates);
+    
+    HmmDataMatrix_t phi = getLogZeroedMatrix(numStates, numObs);
+    ViterbiPathMatrix_t vindices = getZeroedPathMatrix(numStates, numObs);
+    HmmDataMatrix_t logA = getELNofMatrix(A);
+    
+    //init
+    for (i = 0; i < numStates; i++) {
+        phi[i][0] = elnproduct(logbmap[i][0], eln(pi[i]));
+    }
+    
+    for (t = 1; t < numObs; t++) {
+        
+        HmmDataMatrix_t logAThisIndex = getLogAWithForbiddenStates(logA, forbiddenTransitions, t);
+
+        
+        for (j = 0; j < numStates; j++) {
+            const HmmFloat_t obscost = logbmap[j][t];
+            
+            for (i = 0; i < numStates; i++) {
+                costs[i] = elnproduct(logAThisIndex[i][j], obscost);
+            }
+            
+            for (i = 0; i < numStates; i++) {
+                costs[i] = elnproduct(costs[i], phi[i][t-1]);
+            }
+            
+            const int32_t maxidx = getArgMaxInVec(costs);
+            const HmmFloat_t maxval = costs[maxidx];
+            
+            phi[j][t] = maxval;
+            vindices[j][t] = maxidx;
+        }
+    }
+    
+    const ViterbiDecodeResult_t result = decodePathAndGetCost(0, vindices, phi);
+    
+    
+    return result;
+    
+}
+
+
+

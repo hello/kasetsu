@@ -66,8 +66,47 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         }
     }
     
+    if (!sleep.isNull()) {
+        const int updated = sleep["updated"].asInt();
+        const int original = sleep["original"].asInt();
+        
+        if (updated > original) {
+            //sleep time moved up -- labeling period as awake
+            for (int i = original; i <= updated; i++) {
+                labelMap.insert(std::make_pair(i, 0));
+            }
+        }
+        else {
+            //sleep time moved back -- labeling as sleep
+            for (int i = updated; i <= original; i++) {
+                labelMap.insert(std::make_pair(i, 1));
+            }
+        }
 
+    }
+    
+    
+    if (wake.isNull()) {
+        const int updated = sleep["updated"].asInt();
+        const int original = sleep["original"].asInt();
+        
+        if (updated > original) {
+            //wake time moved up -- labeling period as sleep
+            for (int i = original; i <= updated; i++) {
+                labelMap.insert(std::make_pair(i, 1));
+            }
+        }
+        else {
+            //wake time moved back -- labeling as wake
+            for (int i = updated; i <= original; i++) {
+                labelMap.insert(std::make_pair(i, 0));
+            }
+        }
+
+    }
+/*
     if (!sleep.isNull() && !wake.isNull()) {
+        
         const int updated1 = sleep["updated"].asInt();
         const int updated2 = wake["updated"].asInt();
         
@@ -95,6 +134,7 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
     else if (wake.isNull()) {
         
     }
+ */
     
     return labelMap;
     

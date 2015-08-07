@@ -25,6 +25,8 @@ MultiObsHiddenMarkovModel::~MultiObsHiddenMarkovModel() {
 }
 
 
+
+
 HmmDataMatrix_t MultiObsHiddenMarkovModel::getAMatrix() const {
     //construct transition matrix
     HmmDataMatrix_t A = _ANumerator;
@@ -124,6 +126,20 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             printVec("gammacount", _logDenominator);
             
         }
+    }
+    
+    
+    for (int iSequence = 0; iSequence < meas.size(); iSequence++) {
+        const HmmDataMatrix_t & rawdata = meas.getMeasurements(iSequence);
+        const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
+
+        ViterbiDecodeResult_t decodedResult = HmmHelpers::decodeWithoutLabels(rawdata, getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, rawdata[0].size());
+        
+        int foo = 3;
+        std::cout << decodedResult.getPath() << std::endl;
+        std::cout << rawdata[0] << std::endl;
+        foo++;
+        
     }
 }
 

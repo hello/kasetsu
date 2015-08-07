@@ -3,6 +3,38 @@
 
 #include "HmmPdfInterface.h"
 #include "MultiObsSequence.h"
+
+
+class ViterbiDecodeResult_t {
+public:
+    ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost, const HmmFloat_t bicScore)
+    :_path(vpath)
+    ,_cost(vcost)
+    ,_bic(bicScore)
+    {}
+    
+    ViterbiDecodeResult_t() : _path(ViterbiPath_t()), _cost(-INFINITY),_bic(-INFINITY) {}
+    
+    ViterbiPath_t getPath() const {
+        return _path;
+    }
+    
+    HmmFloat_t getCost() const {
+        return _cost;
+    }
+    
+    HmmFloat_t getBIC() const {
+        return _bic;
+    }
+    
+    
+private:
+    
+    ViterbiPath_t _path;
+    HmmFloat_t _cost;
+    HmmFloat_t _bic;
+};
+
 class AlphaBetaResult_t  {
 public:
     
@@ -44,6 +76,9 @@ public:
     static HmmDataVec_t elnAddVector(const HmmDataVec_t & m1, const HmmDataVec_t & m2);
         
     static HmmDataMatrix_t elnAddMatrix(const HmmDataMatrix_t & m1, const HmmDataMatrix_t & m2);
+    
+    
+    static ViterbiDecodeResult_t decodeWithoutLabels(const HmmDataMatrix_t & meas, const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs);
 
 
 

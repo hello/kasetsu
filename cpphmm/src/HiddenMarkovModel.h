@@ -14,35 +14,7 @@
 
 
 
-class ViterbiDecodeResult_t {
-public:
-    ViterbiDecodeResult_t(const ViterbiPath_t & vpath,const HmmFloat_t vcost, const HmmFloat_t bicScore)
-    :_path(vpath)
-    ,_cost(vcost)
-    ,_bic(bicScore)
-    {}
-    
-    ViterbiDecodeResult_t() : _path(ViterbiPath_t()), _cost(-INFINITY),_bic(-INFINITY) {}
-   
-    ViterbiPath_t getPath() const {
-        return _path;
-    }
-    
-    HmmFloat_t getCost() const {
-        return _cost;
-    }
-    
-    HmmFloat_t getBIC() const {
-        return _bic;
-    }
-    
 
-private:
-        
-    ViterbiPath_t _path;
-    HmmFloat_t _cost;
-    HmmFloat_t _bic;
-};
 
 typedef std::pair<uint32_t,uint32_t> Segment_t;
 

@@ -3,6 +3,7 @@
 
 #include "HmmPdfInterface.h"
 #include "MultiObsSequence.h"
+#include "HmmHelpers.h"
 
 class MultiObsHiddenMarkovModel {
 public:
@@ -21,7 +22,7 @@ private:
     HmmDataMatrix_t _alphabetNumerator;
     HmmDataVec_t _logDenominator;
     HmmDataVec_t _pi;
-
+    
     uint32_t _numStates;
 
     
