@@ -118,11 +118,11 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             
             
-            /*
+            
             printMat("A2", getAMatrix());
             printMat("alphabet2", getAlphabetMatrix());
             printVec("gammacount", _logDenominator);
-             */
+            
         }
     }
 }

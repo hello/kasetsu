@@ -4,7 +4,15 @@
 
 static const char * k_alphabets = "alphabets";
 static const char * k_labels = "feedback";
+static const char * k_state_sizes = "state_sizes";
 
+static void printKeys(Json::Value json) {
+    Json::Value::Members members = json.getMemberNames();
+    
+    for (auto it = members.begin(); it != members.end(); it++) {
+        std::cout << (*it) << std::endl;
+    }
+}
 
 static bool hasString(Json::Value json, const std::string & key, const std::string & value) {
     auto members = json.getMemberNames();
@@ -63,6 +71,10 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         const int updated1 = sleep["updated"].asInt();
         const int updated2 = wake["updated"].asInt();
         
+        if (updated2 < updated1) {
+            return labelMap;
+        }
+        
         for (int i = 0; i < updated1; i++) {
             labelMap.insert(std::make_pair(i, 0));
         }
@@ -102,6 +114,16 @@ static MeasAndLabels_t alphabetToMeasAndLabels(Json::Value alphabet, Json::Value
     
 }
 
+static void updateStateSizes(StateSizesMap_t & sizes, Json::Value json) {
+    Json::Value::Members members = json.getMemberNames();
+    
+    for (auto it = members.begin(); it != members.end(); it++) {
+        if (json[*it].isInt()) {
+            sizes.insert(std::make_pair(*it, json[*it].asInt()));
+        }
+    }
+}
+
 DataFile::DataFile() {
     
 }
@@ -130,12 +152,18 @@ bool DataFile::parse(const std::string & filename) {
         return false;
     }
     
+    //loop through each entry
     for (int idx = 0; idx < top.size(); idx++) {
         const Json::Value item = top[idx];
         const Json::Value alphabets = item[k_alphabets];
         const Json::Value labels = item[k_labels];
+        const Json::Value stateSizes = item[k_state_sizes];
         
+        updateStateSizes(_sizes,stateSizes);
+                
+        //measurements by model
         const Json::Value::Members alphabetNames = alphabets.getMemberNames();
+        
         
         for (Json::Value::Members::const_iterator it = alphabetNames.begin(); it != alphabetNames.end(); it++) {
             
@@ -146,10 +174,42 @@ bool DataFile::parse(const std::string & filename) {
         
     }
     
-    for (MeasMap_t::const_iterator it = _measMap.begin(); it != _measMap.end(); it++) {
-        std::cout << (*it).first << std::endl;
-    }
     
     return true;
     
 }
+
+uint32_t DataFile::getNumStates(const std::string & modelName) const {
+    auto it = _sizes.find(modelName);
+    
+    if (it == _sizes.end()) {
+        return 0;
+    }
+    
+    return (*it).second;
+}
+
+MeasVec_t  DataFile::getMeasurement(const std::string & modelName) const {
+    MeasVec_t measVec;
+    
+    if ( _measMap.find(modelName) == _measMap.end()) {
+        return measVec;
+    }
+    
+    
+    auto mapRange = _measMap.equal_range(modelName);
+    
+    for (auto it = mapRange.first; it != mapRange.second; it++) {
+        measVec.push_back((*it).second);
+    }
+    
+    return measVec;
+}
+
+
+
+
+
+
+
+
