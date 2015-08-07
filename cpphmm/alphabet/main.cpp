@@ -55,7 +55,7 @@ int main() {
         
         MultiObsHiddenMarkovModel hmm(alphabet,A);
         
-        hmm.reestimate(getMotionSequence(meas), 20);
+        hmm.reestimate(getMotionSequence(meas), 1);
     }
     
     

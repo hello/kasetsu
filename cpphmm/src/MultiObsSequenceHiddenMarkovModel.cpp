@@ -5,6 +5,8 @@
 #include "ThreadPool.h"
 #include "LogMath.h"
 
+#define MIN_A (1e-6)
+#define MIN_PROB (1e-6)
 
 MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const HmmDataMatrix_t & initialAlphabetProbs,const HmmDataMatrix_t & A) {
     
@@ -33,8 +35,14 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getAMatrix() const {
     for (int iState = 0; iState < _numStates; iState++) {
         for (int j = 0; j < _numStates; j++) {
             A[iState][j] = eexp(elnproduct(_ANumerator[iState][j], -_logDenominator[iState]));
+            
+            if (A[iState][j] < MIN_A) {
+                A[iState][j] = MIN_A;
+            }
         }
     }
+    
+    
     
     return A;
 }
@@ -47,6 +55,10 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getAlphabetMatrix() const {
     for (int iState = 0; iState < _numStates; iState++) {
         for (int iAlphabet = 0; iAlphabet < alphabetSize; iAlphabet++) {
             alphabetProbs[iState][iAlphabet] = eexp(elnproduct(_alphabetNumerator[iState][iAlphabet], -_logDenominator[iState]));
+            
+            if (alphabetProbs[iState][iAlphabet] < MIN_PROB) {
+                alphabetProbs[iState][iAlphabet] = MIN_PROB;
+            }
         }
     }
     
@@ -89,6 +101,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 continue;
             }
             
+            
             const uint32_t numObs = rawdata[0].size();
             
             
@@ -120,14 +133,17 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             
             
-            
-            printMat("A2", getAMatrix());
-            printMat("alphabet2", getAlphabetMatrix());
-            printVec("gammacount", _logDenominator);
+       //     std::cout << "OBSNUM: " << iSequence << std::endl;
+       //     printMat("A2", getAMatrix());
+       //     printMat("alphabet2", getAlphabetMatrix());
+          //  printVec("gammacount", _logDenominator);
             
         }
     }
     
+    
+    printMat("A2", getAMatrix());
+    printMat("alphabet2", getAlphabetMatrix());
     
     for (int iSequence = 0; iSequence < meas.size(); iSequence++) {
         const HmmDataMatrix_t & rawdata = meas.getMeasurements(iSequence);
@@ -136,8 +152,9 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
         ViterbiDecodeResult_t decodedResult = HmmHelpers::decodeWithoutLabels(rawdata, getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, rawdata[0].size());
         
         int foo = 3;
-        std::cout << decodedResult.getPath() << std::endl;
-        std::cout << rawdata[0] << std::endl;
+        std::cout << "path = [" << decodedResult.getPath() << "]" << std::endl;
+        std::cout << "meas = [" << rawdata[0] << "]" << std::endl;
+
         foo++;
         
     }

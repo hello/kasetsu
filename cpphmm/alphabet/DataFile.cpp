@@ -66,6 +66,7 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         }
     }
     
+    
     if (!sleep.isNull()) {
         const int updated = sleep["updated"].asInt();
         const int original = sleep["original"].asInt();
@@ -104,7 +105,9 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         }
 
     }
-/*
+    
+     /*
+
     if (!sleep.isNull() && !wake.isNull()) {
         
         const int updated1 = sleep["updated"].asInt();

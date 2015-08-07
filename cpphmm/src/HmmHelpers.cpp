@@ -3,6 +3,8 @@
 #include "MatrixHelpers.h"
 #include <assert.h>
 
+#define FORBIDDEN_TRANSITION_PENALTY (-100.0)
+
 static HmmDataMatrix_t getLogAWithForbiddenStates(const HmmDataMatrix_t & logA,const TransitionMultiMap_t & forbiddenTransitions, uint32_t t) {
     
     HmmDataMatrix_t logA2 = logA;
@@ -13,7 +15,7 @@ static HmmDataMatrix_t getLogAWithForbiddenStates(const HmmDataMatrix_t & logA,c
         const uint32_t i1 = (*it).second.from;
         const uint32_t i2 = (*it).second.to;
         
-        logA2[i1][i2] = LOGZERO;
+        logA2[i1][i2] = FORBIDDEN_TRANSITION_PENALTY;
     }
     
     return logA2;

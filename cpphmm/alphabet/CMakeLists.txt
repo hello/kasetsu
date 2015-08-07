@@ -15,6 +15,7 @@ endif()
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib")
 
 FIND_PACKAGE(JsonCpp REQUIRED)
+FIND_PACKAGE(PLplot REQUIRED)
 
 include_directories("../src/")
 include_directories(${JSONCPP_INCLUDE_DIRS})
