@@ -1,28 +1,13 @@
 #include <string>
-#include <json/json.h>
 #include <iostream>
-#include <fstream>
-
+#include "DataFile.h"
 
 int main() {
-    std::ifstream file("1012.json");
     
-    if (!file.is_open()) {
-        return -1;
-    }
+    DataFile dataFile;
     
-    Json::Reader reader;
-    Json::Value top;
-    
-    if (!reader.parse(file, top)) {
-        return -1;
-    }
-    
-    int foo = 3;
-    foo++;
+    dataFile.parse("1012.json");
     
     
-    
-    
-  return 0;
+    return 0;
 }

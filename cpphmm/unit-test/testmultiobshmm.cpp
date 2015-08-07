@@ -25,7 +25,7 @@ protected:
 
 class DISABLED_TestMultiObsHmm : public TestMultiObsHmm {};
 
-TEST_F(TestMultiObsHmm,TestUnlabeled) {
+TEST_F(DISABLED_TestMultiObsHmm,TestUnlabeled) {
     
     HmmDataMatrix_t alphabetProbs;
     alphabetProbs.resize(2);
@@ -126,16 +126,17 @@ TEST_F(TestMultiObsHmm,TestSemiSupervised) {
     
     MultiObsHiddenMarkovModel hmm(alphabetProbsInit,Ainit);
     int n = 1000;
-    
+    int n2 = 50;
+
     LabelMap_t emptyLabels;
     
     UIntVec_t states1;
     LabelMap_t labels1;
     HmmDataMatrix_t raw1;
     raw1.resize(1);
-    raw1[0] = getAlphabetSignal(states1,n,A,alphabetProbs);
+    raw1[0] = getAlphabetSignal(states1,n2,A,alphabetProbs);
     
-    for (int t = 0; t < n; t++) {
+    for (int t = 0; t < states1.size(); t++) {
         labels1.insert(std::make_pair(t, states1[t]));
     }
     
@@ -144,9 +145,7 @@ TEST_F(TestMultiObsHmm,TestSemiSupervised) {
     HmmDataMatrix_t raw2;
     raw2.resize(1);
     raw2[0] = getAlphabetSignal(states2,n,A,alphabetProbs);
-    for (int t = 0; t < n; t++) {
-        labels2.insert(std::make_pair(t, states2[t]));
-    }
+    
     UIntVec_t states3;
     LabelMap_t labels3;
     HmmDataMatrix_t raw3;
@@ -154,10 +153,6 @@ TEST_F(TestMultiObsHmm,TestSemiSupervised) {
     raw3[0] = getAlphabetSignal(states3,n,A,alphabetProbs);
     
     TransitionMultiMap_t emptyForbiddenTransitions;
-    for (int t = 0; t < n; t++) {
-        labels3.insert(std::make_pair(t, states3[t]));
-    }
-   
     
     MultiObsSequence multiObsSequence;
     multiObsSequence.addSequence(raw1,emptyForbiddenTransitions, labels1);
@@ -165,7 +160,7 @@ TEST_F(TestMultiObsHmm,TestSemiSupervised) {
     multiObsSequence.addSequence(raw3,emptyForbiddenTransitions, emptyLabels);
     
     
-    hmm.reestimate(multiObsSequence,1);
+    hmm.reestimate(multiObsSequence,5);
     
     HmmDataMatrix_t A2 = hmm.getAMatrix();
     HmmDataMatrix_t alphabet2 = hmm.getAlphabetMatrix();

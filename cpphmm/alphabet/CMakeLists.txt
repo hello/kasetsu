@@ -12,6 +12,7 @@ ADD_DEFINITIONS(
 MESSAGE(STATUS "LINUX")
 endif()
 
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib")
 
 FIND_PACKAGE(JsonCpp REQUIRED)
 
@@ -26,7 +27,8 @@ add_subdirectory("../src/" "${CMAKE_CURRENT_BINARY_DIR}/main")
 
 
 add_executable(alphabet
-               main.cpp)
+               main.cpp
+               DataFile.cpp)
 
-target_link_libraries(alphabet cpphmm jsoncpp)
+target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES})
 
