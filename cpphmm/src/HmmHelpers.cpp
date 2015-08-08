@@ -495,7 +495,7 @@ static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const Viterbi
 }
 
 
-ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & meas, const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs) {
+ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs) {
     int j,i,t;
     
 
@@ -536,7 +536,7 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & me
         }
     }
     
-    const ViterbiDecodeResult_t result = decodePathAndGetCost(0, vindices, phi);
+    const ViterbiDecodeResult_t result = decodePathAndGetCost(A.size() - 1, vindices, phi);
     
     
     return result;

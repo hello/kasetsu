@@ -13,9 +13,10 @@ MESSAGE(STATUS "LINUX")
 endif()
 
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib")
+#set(CMAKE_CXX_FLAGS_DEBUG "-g -D_GLIBCXX_DEBUG -O0")
 
 FIND_PACKAGE(JsonCpp REQUIRED)
-FIND_PACKAGE(PLplot REQUIRED)
+#FIND_PACKAGE(PLplot REQUIRED)
 
 include_directories("../src/")
 include_directories(${JSONCPP_INCLUDE_DIRS})

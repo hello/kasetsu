@@ -8,9 +8,9 @@ import scipy.signal
 import argparse
 from matplotlib.pyplot import *
 
-k_num_minutes_smoothed = 5
+k_num_minutes_smoothed = 2
 light_offset = 0.0
-    
+RANGE_THRESHOLD = 0.0    
 def fill_zeros_if_none(data):
     for i in xrange(len(data)):
         vec =data[i]
@@ -50,12 +50,26 @@ def plot_data(mydict):
         svm_mag = np.array(data[5] ) / 2000.0
         pillrange = np.array(data[7])  / 4096.0
         duration = np.array(data[8])
+        partnerduration = np.array(data[10])
         soundmag = np.array(data[4]) / 10.0
         wave = np.array(data[6])
         light = np.array(data[2])
         light = light - light_offset
         light[np.where(light < 0.0)] = 0.0
         light = np.log2(4.0 * light + 1.0)
+
+        the_mean = np.mean(pillrange[np.where(pillrange > 0.0)])
+        the_std = np.std(pillrange[np.where(pillrange > 0.0)])
+        
+        #RANGE_THRESHOLD = the_mean
+        #print RANGE_THRESHOLD
+        threshold_idx = np.where(pillrange < RANGE_THRESHOLD)
+        duration[threshold_idx] = 0
+        kickoff_counts[threshold_idx] = 0
+        pillrange[threshold_idx] = 0
+        svm_mag[threshold_idx] = 0
+       
+
         ax = subplot(1,1,1)
         ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
         plot(
@@ -64,10 +78,11 @@ def plot_data(mydict):
         times, svm_mag, 'o', 
         times, pillrange, 'o', 
         times, smooth(duration), '.-', 
+        times, smooth(partnerduration), '.-',
         times, soundmag, '+',
         times, wave,'h'); 
         grid('on')
-        legend(['light','counts', 'mag', 'range', 'duration', 'soundmag','waves'])
+        legend(['light','counts', 'mag', 'range', 'duration','pduration', 'soundmag','waves'])
         title('userid=%s' % str(key))
         show()
 

@@ -10,6 +10,7 @@ from tabulate import tabulate
 #k_type_map = {'IN_BED' : 'PRED_IN_BED', 'SLEEP' : 'PRED_SLEEP', 'WAKE_UP' : 'PRED_WAKE_UP', 'OUT_OF_BED' : 'PRED_OUT_OF_BED'}
 k_type_map = {'LABEL_IN_BED' : 'PRED_IN_BED', 'LABEL_SLEEP' : 'PRED_SLEEP', 'LABEL_WAKE_UP' : 'PRED_WAKE_UP', 'LABEL_OUT_OF_BED' : 'PRED_OUT_OF_BED'}
 k_fail_threshold = 20 #minutes
+k_bootstrap_fraction = 0.2
 
 def get_datestr_as_timestamp(datestr):
     mydate = datetime.datetime.strptime(datestr, '%Y-%m-%d')

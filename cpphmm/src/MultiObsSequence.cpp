@@ -9,7 +9,7 @@ MultiObsSequence::~MultiObsSequence() {
 }
 
     
-void MultiObsSequence::addSequence(const HmmDataMatrix_t & rawdata, TransitionMultiMap_t forbiddenTransitions, LabelMap_t labels) {
+void MultiObsSequence::addSequence(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions, LabelMap_t labels) {
     
     _measurements.push_back(rawdata);
     _forbiddenTransitions.push_back(forbiddenTransitions);
@@ -17,7 +17,7 @@ void MultiObsSequence::addSequence(const HmmDataMatrix_t & rawdata, TransitionMu
     
 }
     
-const HmmDataMatrix_t & MultiObsSequence::getMeasurements(const uint32_t sequenceNumber) const {
+const MatrixMap_t & MultiObsSequence::getMeasurements(const uint32_t sequenceNumber) const {
     return _measurements[sequenceNumber];
 }
     

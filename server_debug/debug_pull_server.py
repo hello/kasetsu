@@ -9,6 +9,11 @@ import json
 k_uri = 'http://127.0.0.1:9999/v1/timeline/'
 
 
+#num_days = 1
+#start_date_string = '2015-02-17'
+num_days = int(sys.argv[2])
+start_date_string = sys.argv[1]
+
 def get_time_as_string(timestamp,offset):
     t = datetime.datetime.utcfromtimestamp(( offset + timestamp)/1000)
     return t.strftime('%Y-%m-%d %H:%M:%S')
@@ -23,13 +28,11 @@ my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171',
             }
 '''
 
-#my_users = {'sp' : '4.4a4a066a56164203b0f2828096bcdc01'}
+my_users = {'sp' : '4.4a4a066a56164203b0f2828096bcdc01'}
 #my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171' }
 #my_users = {'kik' : '4.9a1f7741f22a46959d7923a53f15776e'}
-my_users={'am' : '3.2260a267c7b54ad093d765c63f066dcc'}
+#my_users={'am' : '3.2260a267c7b54ad093d765c63f066dcc'}
 
-num_days = 5
-start_date_string = '2015-02-15'
 def pull_date(users_dict):
 #    users_dict2 = {'fm' : users_dict['fm']}
     for user in users_dict:

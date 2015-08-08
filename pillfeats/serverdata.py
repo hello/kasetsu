@@ -53,7 +53,8 @@ class BinnedDataGetter(object):
                     'nat_light_start_hour' : self.aux_params['natural_light_filter_start_hour'], 
                     'nat_light_stop_hour' : self.aux_params['natural_light_filter_stop_hour'],
                     'meas_period' : self.aux_params['meas_period_minutes'],
-                    'skip_unpartnered' : skip_unpartnered   
+                    'skip_unpartnered' : skip_unpartnered,   
+                    'source' : 'bayes'
                  }
         
        
@@ -140,7 +141,7 @@ class ServerDataGetter(object):
             key = record['account_id']
             
             if not datadict.has_key(key):
-                datadict[key] = [[], [], [], [], [], [], [], [], [], []]
+                datadict[key] = [[], [], [], [], [], [], [], [], [], [], []]
                 
             datadict[key][0].append(record['ts']/1000)
             datadict[key][1].append(record['offset_millis']/1000)
@@ -152,7 +153,12 @@ class ServerDataGetter(object):
             datadict[key][7].append(record['motion_range'])
             datadict[key][8].append(record['on_duration_seconds'])
             datadict[key][9].append(record['kickoff_counts'])
-            
+
+            if record.has_key('partner_on_duration_seconds'):
+                datadict[key][10].append(record['partner_on_duration_seconds'])
+            else:
+                datadict[key][10].append(None)
+
         for key in datadict:
                 
             pill_data = datadict[key][3]

@@ -163,7 +163,7 @@ class _BaseHMM(object):
         
         return beta
     
-    def decode(self, observations):
+    def decode(self, observations,allowable_end_states = None):
         '''
         Find the best state sequence (path), given the model and an observation. i.e: max(P(Q|O,model)).
         
@@ -171,7 +171,7 @@ class _BaseHMM(object):
         '''        
         # use Viterbi's algorithm. It is possible to add additional algorithms in the future.
         
-        return self._viterbi(observations, len(observations))
+        return self._viterbi(observations, len(observations),allowable_end_states)
         
        
     
@@ -188,7 +188,7 @@ class _BaseHMM(object):
         
         
 
-    def _viterbi(self, observations, numobs):
+    def _viterbi(self, observations, numobs,allowable_end_states = None):
         '''
         Find the best state sequence (path) using viterbi algorithm - a method of dynamic programming,
         very similar to the forward-backward algorithm, with the added step of maximization and eventual
@@ -223,7 +223,7 @@ class _BaseHMM(object):
                 
                 for i in xrange(self.n): #i means the incoming from ith hidden state
                     #compute incoming costs
-                    cost[i] = -numpy.log(self.A[i][j] + 1e-32) + obscost 
+                    cost[i] = -numpy.log(self.A[i][j] + 1e-100) + obscost 
                 
                 for i in xrange(self.n): 
                     cost[i] = cost[i] + phi[i][t-1]
@@ -246,14 +246,19 @@ class _BaseHMM(object):
                 viterbi_indices[j][t] = minidx
        
         path = numpy.zeros((numobs, )).astype(int)
-        
-        endingcosts = numpy.zeros((self.n, ))
-        
-        for i in xrange(self.n):
-            
-        
+               
+        if allowable_end_states == None:
+            end_states = range(self.n)
+        else:
+            end_states = allowable_end_states
+ 
+        endingcosts = numpy.zeros((len(end_states), ))
+
+        for i in xrange(len(end_states)):
+            istate = end_states[i]
+
             #let's just say you wind up in state zero at the end? 
-            path[numobs-1] = i
+            path[numobs-1] = istate
             
     
             #backtrack to get optimal path
@@ -262,7 +267,8 @@ class _BaseHMM(object):
                 
             endingcosts[i] = numpy.sum(self.evaluate_path_cost(observations, path, numobs))
             
-        lowest_cost_path_idx = numpy.argmin(endingcosts)
+        min_idx = numpy.argmin(endingcosts)
+        lowest_cost_path_idx = end_states[min_idx]
         print 'picked ending state ', lowest_cost_path_idx, endingcosts
         
          #let's just say you wind up in state zero at the end? 

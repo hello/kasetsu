@@ -20,9 +20,9 @@ public:
     MultiObsSequence();
     ~MultiObsSequence();
     
-    void addSequence(const HmmDataMatrix_t & rawdata, TransitionMultiMap_t forbiddenTransitions, LabelMap_t labels);
+    void addSequence(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions, LabelMap_t labels);
     
-    const HmmDataMatrix_t & getMeasurements(const uint32_t sequenceNumber) const;
+    const MatrixMap_t & getMeasurements(const uint32_t sequenceNumber) const;
     
     const TransitionMultiMap_t & getForbiddenTransitions(const uint32_t sequenceNumber) const;
     
@@ -32,7 +32,7 @@ public:
     
 private:
     //measurment raw data by measurement sequence
-    std::vector<HmmDataMatrix_t> _measurements;
+    std::vector<MatrixMap_t> _measurements;
 
     //restrictions on state transitions by measurement sequence
     std::vector<TransitionMultiMap_t> _forbiddenTransitions;

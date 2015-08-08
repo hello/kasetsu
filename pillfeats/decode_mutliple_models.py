@@ -40,15 +40,23 @@ k_min_prob = 5e-2
 k_max_gap = 12 * 1.5
 
 
-A_not_sleep = 1 - 1.0 / (12.0 * 4.5)
-A_sleep = 1 - 1.0 / (12.0 * 7.0)
+A_not_sleep = 1 - 1.0 / (12.0 * 4.0)
+A_sleep = 1 - 1.0 / (12.0 * 8.0)
 
 segmenter_model = { 'pi': [1.0,0.0,0.0],
                     'A' : [[A_not_sleep,1.0 - A_not_sleep,0.0],[0.0,A_sleep,1.0-A_sleep],[0.0,0.0,A_not_sleep]],
                     'models' : [
     [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 1.0,  'obs_num' : 0,  'weight' : 1.0 } }],
-    [{'model_type' : 'beta', 'model_data' : {'beta' : 1.0, 'alpha' : 20.0,  'obs_num' : 0,  'weight' : 1.0 } }],
-    [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 1.0,  'obs_num' : 0,  'weight' : 1.0 } }]]}
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 2.0, 'alpha' : 40.0,  'obs_num' : 0,  'weight' : 1.0 } }],
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 4.0, 'alpha' : 2.0,  'obs_num' : 0,  'weight' : 1.0 } }]]}
+
+segmenter_model_permissive = { 'pi': [1.0,0.0,0.0],
+                    'A' : [[A_not_sleep,1.0 - A_not_sleep,0.0],[0.0,A_sleep,1.0-A_sleep],[0.0,0.0,A_not_sleep]],
+                    'models' : [
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 2.0,  'obs_num' : 0,  'weight' : 1.0 } }],
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 2.0, 'alpha' : 6.0,  'obs_num' : 0,  'weight' : 1.0 } }],
+    [{'model_type' : 'beta', 'model_data' : {'beta' : 10.0, 'alpha' : 2.0,  'obs_num' : 0,  'weight' : 1.0 } }]]}
+
 
 def get_unix_time_as_datetime(unix_time):
     return datetime.datetime.utcfromtimestamp(unix_time)
@@ -163,10 +171,16 @@ def decode_probs(paths,condprobs):
             
     p = 0.05 #initial prior
 
+    indiv_probs = []
     for t in xrange(T):
+
+        p2 = 1.0
+        p3 = 1.0
+        
         for imodel in xrange(num_models):
             cond = condprobs[imodel]
-            
+            p2 *= cond[t]
+            p3 *= (1.0 - cond[t])
             newp = two_state_bayes(p,cond[t])
         
  
@@ -181,6 +195,7 @@ def decode_probs(paths,condprobs):
 
         forward_probs.append(newp)
         backward_probs.append(0.0)
+        indiv_probs.append([p2,p3])
     
     p = 0.05 #prior
 
@@ -204,15 +219,15 @@ def decode_probs(paths,condprobs):
     probs = []
     for t in range(len(path)):
         #NOT joint of not sleeping forwards and not sleeping backwards
+#        union_of_sleep = forward_probs[t]
         union_of_sleep = 1.0 - (1.0 - forward_probs[t]) * (1.0 - backward_probs[t])
-#        union_of_sleep = forward_probs[t] * backward_probs[t]
         
  
         probs.append(union_of_sleep)
 
     segments = get_sleep_wake_from_probs(probs)
     
-    return probs,segments,forward_probs,backward_probs
+    return probs,segments,forward_probs,backward_probs,indiv_probs
 
 def get_data(filename,num_days,startidx):
     x = np.loadtxt(filename,delimiter=',')
@@ -269,6 +284,7 @@ if __name__ == '__main__':
     #if a model was specified, load it
     f = open(args.model1, 'r')
     hmm_dict = json.load(f)
+    print hmm_dict.keys()
     f.close()
     hmm = CompositeModelHMM()
 
@@ -373,9 +389,9 @@ if __name__ == '__main__':
             hmm = hmms[imodel]
 
             
-            #print 'MODEL %d' % (imodel)
+            print 'MODEL %d' % (imodel)
             #print hmm.A
-            #print hmm.get_status()
+            print hmm.get_status()
             #print seg.transpose().tolist()
             path, reliability = hmm.decode(seg)
             #print 'data' ,seg[:,1].transpose().tolist()
@@ -388,10 +404,10 @@ if __name__ == '__main__':
            
 
         #np.savetxt('paths.csv',np.array(paths),delimiter=",")
-        smoothed_probs,sleep_segments,forward_probs,backward_probs = decode_probs(paths,prob_mappings)
+        smoothed_probs,sleep_segments,forward_probs,backward_probs,indiv_probs = decode_probs(paths,prob_mappings)
 
         probmeas = np.array(smoothed_probs).reshape((len(smoothed_probs),1))
-        segment_path,other_stuff = segmenter.decode(probmeas)
+        segment_path,other_stuff = segmenter.decode(probmeas,[2])
         
 #        print np.array(smoothed_probs).tolist()
         #joined_segments = join_segments(sleep_segments)
@@ -432,7 +448,7 @@ if __name__ == '__main__':
         ax3.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
 #        plot(t2,forward_probs,t2,backward_probs,t2,smoothed_probs,'k')
 #        legend(['forward','backward','smoothed'])
-        plot(t2,smoothed_probs,'k-')
+        plot(t2,(array(smoothed_probs)),'k-')
         plot(t2,segment_path / 3.0,'mo')
         legend('sleep prob')
 

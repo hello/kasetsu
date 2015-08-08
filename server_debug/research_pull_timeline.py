@@ -19,12 +19,16 @@ def get_time_as_string(timestamp,offset):
 num_days = 1
 start_date_string = sys.argv[1]
 user_id = int(sys.argv[2])
-#num_days = 10
-#start_date_string = '2015-02-18'
+
+partner_filter = False
+if len(sys.argv) > 4:
+    if sys.argv[4] == 'yes':
+        partner_filter = True
+
 k_algorithm = 'hmm'
 k_algorithm2 = 'sleep_score'
 
-k_params = {'partner_filter' : True, 'algorithm' : k_algorithm2}
+k_params = {'partner_filter' : partner_filter, 'algorithm' : k_algorithm2}
 
 def pull_date_for_user(userid):
     responses = []

@@ -14,6 +14,10 @@ static void printKeys(Json::Value json) {
     }
 }
 
+#define LABEL_PRE_SLEEP (0)
+#define LABEL_SLEEP (1)
+#define LABEL_POST_SLEEP (2)
+
 static bool hasString(Json::Value json, const std::string & key, const std::string & value) {
     auto members = json.getMemberNames();
     
@@ -50,8 +54,8 @@ static HmmDataVec_t jsonToVec(Json::Value value) {
 }
 
 static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
-    Json::Value sleep;
-    Json::Value wake;
+    Json::Value sleep = Json::Value(Json::Value::null);
+    Json::Value wake = Json::Value(Json::Value::null);
     
     LabelMap_t labelMap;
     
@@ -67,48 +71,19 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
     }
     
     
-    if (!sleep.isNull()) {
-        const int updated = sleep["updated"].asInt();
-        const int original = sleep["original"].asInt();
-        
-        if (updated > original) {
-            //sleep time moved up -- labeling period as awake
-            for (int i = original; i <= updated; i++) {
-                labelMap.insert(std::make_pair(i, 0));
-            }
-        }
-        else {
-            //sleep time moved back -- labeling as sleep
-            for (int i = updated; i <= original; i++) {
-                labelMap.insert(std::make_pair(i, 1));
-            }
-        }
-
+    if (sleep.isMember("updated")) {
+       
     }
     
     
-    if (wake.isNull()) {
-        const int updated = sleep["updated"].asInt();
-        const int original = sleep["original"].asInt();
+    if (wake.isMember("updated")) {
         
-        if (updated > original) {
-            //wake time moved up -- labeling period as sleep
-            for (int i = original; i <= updated; i++) {
-                labelMap.insert(std::make_pair(i, 1));
-            }
-        }
-        else {
-            //wake time moved back -- labeling as wake
-            for (int i = updated; i <= original; i++) {
-                labelMap.insert(std::make_pair(i, 0));
-            }
-        }
-
     }
     
-     /*
+    
 
-    if (!sleep.isNull() && !wake.isNull()) {
+    
+    if (wake.isMember("updated") && sleep.isMember("updated")) {
         
         const int updated1 = sleep["updated"].asInt();
         const int updated2 = wake["updated"].asInt();
@@ -118,40 +93,99 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         }
         
         for (int i = 0; i < updated1; i++) {
-            labelMap.insert(std::make_pair(i, 0));
+            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
         }
         
         for (int i = updated1; i <= updated2; i++) {
-            labelMap.insert(std::make_pair(i, 1));
+            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
         }
         
         for (int i = updated2; i < alphabetLength; i++) {
-            labelMap.insert(std::make_pair(i, 0));
+            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
         }
 
         
     }
-    else if (sleep.isNull()) {
+    else if (sleep.isMember("updated")) {
+        const int updated = sleep["updated"].asInt();
+        const int original = sleep["original"].asInt();
         
+        if (updated > original) {
+            //sleep time moved up -- labeling period as awake
+            for (int i = 0; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+            }
+            
+            labelMap.insert(std::make_pair(updated, LABEL_SLEEP)); //begin sleep
+            
+        }
+        else {
+            //labeling everything up to sleep as wake
+            for (int i = 0; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+            }
+            
+            //sleep time moved back -- labeling as sleep
+            for (int i = updated; i <= original; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
+        }
+
     }
-    else if (wake.isNull()) {
+    else if (wake.isMember("updated")) {
+        const int updated = wake["updated"].asInt();
+        const int original = wake["original"].asInt();
         
+        if (updated > original) {
+            //wake time moved up -- labeling period as sleep
+            for (int i = original; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
+            
+            //everything from wake afterwards is "wake"
+            for (int i = updated; updated < alphabetLength; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+                
+            }
+        }
+        else {
+            //wake time moved back -- labeling as wake
+            for (int i = updated; i < alphabetLength; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+            }
+            
+            labelMap.insert(std::make_pair(updated - 1, LABEL_SLEEP));
+            
+        }
+
     }
- */
+ 
     
     return labelMap;
     
 }
 
 
-static MeasAndLabels_t alphabetToMeasAndLabels(Json::Value alphabet, Json::Value labels) {
-    MeasAndLabels_t meas;
-    HmmDataMatrix_t raw;
-    raw.resize(1);
+static MeasAndLabels_t alphabetToMeasAndLabels(Json::Value alphabets, Json::Value labels) {
     
-    raw[0] = jsonToVec(alphabet);
-    meas.labels = jsonToLabels(labels,raw[0].size());
-    meas.rawdata = raw;
+    const Json::Value::Members alphabetNames = alphabets.getMemberNames();
+    
+    MeasAndLabels_t meas;
+
+    for (auto it = alphabetNames.begin(); it != alphabetNames.end(); it++) {
+        
+        Json::Value alphabet = alphabets[*it];
+        
+        HmmDataMatrix_t raw;
+        raw.resize(1);
+        
+        raw[0] = jsonToVec(alphabet);
+        meas.labels = jsonToLabels(labels,raw[0].size());
+        meas.rawdata.insert(std::make_pair(*it,raw));
+        
+    }
+    
+   
     
     return meas;
     
@@ -205,16 +239,9 @@ bool DataFile::parse(const std::string & filename) {
         updateStateSizes(_sizes,stateSizes);
                 
         //measurements by model
-        const Json::Value::Members alphabetNames = alphabets.getMemberNames();
         
-        
-        for (Json::Value::Members::const_iterator it = alphabetNames.begin(); it != alphabetNames.end(); it++) {
-            
-            Json::Value alphabet = alphabets[*it];
-            _measMap.insert(std::make_pair(*it, alphabetToMeasAndLabels(alphabet,labels)));
-            
-        }
-        
+        _measurements.push_back(alphabetToMeasAndLabels(alphabets,labels));
+
     }
     
     
@@ -232,22 +259,10 @@ uint32_t DataFile::getNumStates(const std::string & modelName) const {
     return (*it).second;
 }
 
-MeasVec_t  DataFile::getMeasurement(const std::string & modelName) const {
-    MeasVec_t measVec;
-    
-    if ( _measMap.find(modelName) == _measMap.end()) {
-        return measVec;
-    }
-    
-    
-    auto mapRange = _measMap.equal_range(modelName);
-    
-    for (auto it = mapRange.first; it != mapRange.second; it++) {
-        measVec.push_back((*it).second);
-    }
-    
-    return measVec;
+const MeasVec_t & DataFile::getMeasurements() const {
+    return _measurements;
 }
+
 
 
 

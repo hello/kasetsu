@@ -8,6 +8,8 @@
 #include <algorithm>    
 #include "CompatibilityTypes.h"
 #include <future>
+#include <unordered_map>
+#include <map>
 
 typedef double HmmFloat_t;
 typedef std::vector<HmmFloat_t> HmmDataVec_t;
@@ -16,6 +18,7 @@ typedef std::vector<HmmDataMatrix_t> Hmm3DMatrix_t;
 typedef std::vector<uint32_t> ViterbiPath_t;
 typedef std::vector<uint32_t> UIntVec_t;
 typedef UNORDERED_SET<uint32_t> UIntSet_t;
+typedef std::map<std::string,HmmDataMatrix_t> MatrixMap_t;
 
 typedef std::vector<ViterbiPath_t> ViterbiPathMatrix_t;
 

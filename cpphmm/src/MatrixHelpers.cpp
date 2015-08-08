@@ -146,17 +146,19 @@ uint32_t getArgMaxInVec(const HmmDataVec_t & x) {
 }
 
 void printMat(const std::string & name, const HmmDataMatrix_t & mat) {
-    
+    int j,i;
     std::cout << std::fixed << std::setprecision(2) << name << std::endl;
     
-    for (HmmDataMatrix_t::const_iterator it = mat.begin(); it != mat.end(); it++) {
+    for (j = 0; j < mat.size(); j++) {
         bool first = true;
-        for (HmmDataVec_t::const_iterator itvec2 = (*it).begin(); itvec2 != (*it).end(); itvec2++) {
+        const HmmDataVec_t & ref = mat[j];
+        for (i = 0; i <  ref.size(); i++) {
+            
             if (!first) {
                 std::cout << ",";
             }
             
-            std::cout << *itvec2;
+            std::cout << ref[i];
             
             
             first = false;
