@@ -25,8 +25,7 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
             //if no motion, it is forbidden to go from sleep to wake
             if (vec[t] == 0.0 || vec[t] == 6.0) {
                 //forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(1,0)));
-               // forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(1,2)));
-                
+                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(1,2)));
             }
         }
         
@@ -74,15 +73,24 @@ int main() {
         const MeasVec_t & meas = dataFile.getMeasurements();
         
         HmmDataMatrix_t A;
+        
+        
         A.resize(3);
         A[0] << 0.99,0.01,0.0;
         A[1] << 0.00,0.99,0.01;
         A[2] << 0.00,0.00,1.0;
         
         
-        MultiObsHiddenMarkovModel hmm(getUniformInitProbabilities(dataFile,A.size()),A);
+        /*
+        A.resize(2);
+        A[0] << 0.99,0.01;
+        A[1] << 0.01,0.99;
+        */
         
-        hmm.reestimate(getMotionSequence(meas), 1);
+        MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
+        MultiObsHiddenMarkovModel hmm(initAlphabetProbabilities,A);
+        MultiObsSequence multiObsSequence = getMotionSequence(meas);
+        hmm.reestimate(multiObsSequence, 20);
     }
     
     

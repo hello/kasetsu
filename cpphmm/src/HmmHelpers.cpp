@@ -337,7 +337,7 @@ HmmDataMatrix_t HmmHelpers::reestimateA(const HmmDataMatrix_t & A, const Hmm3DMa
 }
 
 
-HmmDataMatrix_t HmmHelpers::getLogANumerator(const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const TransitionMultiMap_t & forbiddenTransitions,const size_t numObs, const uint32_t numStates) {
+HmmDataMatrix_t HmmHelpers::getLogANumerator(const HmmDataMatrix_t & originalA, const AlphaBetaResult_t & alphabeta,const HmmDataMatrix_t & logbmap,const TransitionMultiMap_t & forbiddenTransitions,const size_t numObs, const uint32_t numStates) {
     
     int32_t i,j,t;
     HmmDataMatrix_t logANumerator = getLogZeroedMatrix(numStates, numStates);
@@ -361,7 +361,12 @@ HmmDataMatrix_t HmmHelpers::getLogANumerator(const AlphaBetaResult_t & alphabeta
                 numer = elnsum(numer,tempval3);
             }
             
-            logANumerator[i][j] = numer;
+            if (originalA[i][j] == 0.0) {
+                logANumerator[i][j] = LOGZERO;
+            }
+            else {
+                logANumerator[i][j] = numer;
+            }
         }
     }
     

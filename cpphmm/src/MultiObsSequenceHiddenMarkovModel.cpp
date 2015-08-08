@@ -42,7 +42,7 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getAMatrix() const {
         for (int j = 0; j < _numStates; j++) {
             A[iState][j] = eexp(elnproduct(_ANumerator[iState][j], -_logDenominator[iState]));
             
-            if (A[iState][j] < MIN_A) {
+            if (A[iState][j] < MIN_A && A[iState][j] != 0.0) {
                 A[iState][j] = MIN_A;
             }
         }
@@ -92,11 +92,11 @@ MatrixMap_t MultiObsHiddenMarkovModel::getAlphabetMatrix() const {
             }
             
             HmmFloat_t thesum = 0.0;
-            for (int iAlphabet = 0; iAlphabet < _numStates; iAlphabet++) {
+            for (int iAlphabet = 0; iAlphabet < alphabetSize; iAlphabet++) {
                 thesum += alphabetProbs[iState][iAlphabet];
             }
             
-            for (int iAlphabet = 0; iAlphabet < _numStates; iAlphabet++) {
+            for (int iAlphabet = 0; iAlphabet < alphabetSize; iAlphabet++) {
                 alphabetProbs[iState][iAlphabet] /= thesum;
             }
 
@@ -155,9 +155,10 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLogBMap(const MatrixMap_t & rawdat
 
 
 void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter) {
+    int iterationNumber,iSequence;
     
-    for (int iter = 0; iter < numIter; iter++) {
-        for (int iSequence = 0; iSequence < meas.size(); iSequence++) {
+    for (iterationNumber = 0; iterationNumber < numIter; iterationNumber++) {
+        for (iSequence = 0; iSequence < meas.size(); iSequence++) {
             const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
             const LabelMap_t & labels = meas.getLabels(iSequence);
             const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
@@ -172,11 +173,11 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             const HmmDataMatrix_t A = getAMatrix();
             
-            const HmmDataMatrix_t logbmap = this->getLogBMap(rawdata,alphabetProbsMap);
+            const HmmDataMatrix_t logbmap = getLogBMap(rawdata,alphabetProbsMap);
             
             const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions);
             
-            const HmmDataMatrix_t logANumerator = HmmHelpers::getLogANumerator(alphaBeta, logbmap, forbiddenTransitions, numObs, _numStates);
+            const HmmDataMatrix_t logANumerator = HmmHelpers::getLogANumerator(A,alphaBeta, logbmap, forbiddenTransitions, numObs, _numStates);
             
             const HmmDataVec_t logDenominator = HmmHelpers::getLogDenominator(alphaBeta, _numStates, numObs);
             
@@ -190,7 +191,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             }
 
             
-            for (auto it = rawdata.begin(); it != rawdata.end(); it++) {
+            for (MatrixMap_t::const_iterator it = rawdata.begin(); it != rawdata.end(); it++) {
                 const std::string & key = (*it).first;
 
                 assert(_alphabetNumerator.find(key) != _alphabetNumerator.end());
@@ -206,15 +207,12 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                     _alphabetNumerator[key] = HmmHelpers::elnAddMatrix(_alphabetNumerator[key], logAlphabetNumerator);
                 }
                 
-                const MatrixMap_t alphabetProbsMap2 = getAlphabetMatrix();
-                auto fooness = (*alphabetProbsMap2.find(key));
-                printMat(key, fooness.second);
             }
             
             
             auto alphabetProbsMap2 = getAlphabetMatrix();
             
-            for (auto it = alphabetProbsMap.begin(); it != alphabetProbsMap.end(); it++) {
+            for (MatrixMap_t::const_iterator it = alphabetProbsMap.begin(); it != alphabetProbsMap.end(); it++) {
                 
                 std::string key = (*it).first;
                 
@@ -243,7 +241,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
 
     
     
-    for (int iSequence = 0; iSequence < meas.size(); iSequence++) {
+    for (iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
         const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
         const uint32_t numObs = (*rawdata.begin()).second[0].size();
