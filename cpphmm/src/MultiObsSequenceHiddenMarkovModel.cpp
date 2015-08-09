@@ -208,23 +208,6 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 }
                 
             }
-            
-            
-            auto alphabetProbsMap2 = getAlphabetMatrix();
-            
-            for (MatrixMap_t::const_iterator it = alphabetProbsMap.begin(); it != alphabetProbsMap.end(); it++) {
-                
-                std::string key = (*it).first;
-                
-                printMat((*it).first, (*it).second);
-
-                std::cout << std::endl;
-                break;
-            }
-            
-            int foo = 3;
-            foo++;
-             
         }
     }
     

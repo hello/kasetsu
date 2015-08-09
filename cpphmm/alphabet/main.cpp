@@ -90,7 +90,7 @@ int main() {
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
         MultiObsHiddenMarkovModel hmm(initAlphabetProbabilities,A);
         MultiObsSequence multiObsSequence = getMotionSequence(meas);
-        hmm.reestimate(multiObsSequence, 20);
+        hmm.reestimate(multiObsSequence, 1);
     }
     
     
