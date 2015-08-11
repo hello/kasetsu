@@ -150,6 +150,41 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLogBMap(const MatrixMap_t & rawdat
     return logbmap;
 }
 
+/*
+static UIntVec_t getVecFromLabels(const LabelMap_t & labels, const uint32_t end,const uint32_t nolabellabel) {
+    UIntVec_t vec;
+    vec.reserve(end);
+    for (uint32_t t = 0; t < end; t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            vec.push_back((*it).second);
+        }
+        else {
+            vec.push_back(nolabellabel);
+        }
+    }
+    
+    return vec;
+}
+*/
+static void evalLabels(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix) {
+    
+    for (uint32_t t = 0; t < path.size(); t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            uint32_t label = (*it).second;
+            uint32_t prediction = path[t];
+            
+            confusionMatrix[prediction][label] += 1.0;
+        }
+        
+        
+    }
+    
+    
+}
 
 
 void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter) {
@@ -165,7 +200,8 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 continue;
             }
             
-            std::cout << "SEQUENCE " <<iSequence << std::endl;
+            if (iSequence % 100 == 0)
+                std::cout << "SEQUENCE " <<iSequence << std::endl;
             
             const uint32_t numObs = (*rawdata.begin()).second[0].size();
             
@@ -209,37 +245,60 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 
             }
         }
-    }
     
     
-    printMat("A", getAMatrix());
-    std::cout << std::endl;
-    
-    const MatrixMap_t alphabetProbsMap = getAlphabetMatrix();
-
-    for (auto it = alphabetProbsMap.begin(); it != alphabetProbsMap.end(); it++) {
-        printMat((*it).first, (*it).second);
+        
+        printMat("A", getAMatrix(),4);
         std::cout << std::endl;
-    }
-
-    
-    /*
-    for (iSequence = 0; iSequence < meas.size(); iSequence++) {
-        const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
-        const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
-        const uint32_t numObs = (*rawdata.begin()).second[0].size();
-
-        ViterbiDecodeResult_t decodedResult = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
         
-        int foo = 3;
-        std::cout << "path = [" << decodedResult.getPath() << "]" << std::endl;
-        std::cout << "meas = [" << (*rawdata.find("motion")).second[0] << "]" << std::endl;
-        std::cout << "meas2 = [" << (*rawdata.find("light2")).second[0] << "]" << std::endl;
-
-        foo++;
+        const MatrixMap_t alphabetProbsMap = getAlphabetMatrix();
+        
+        for (auto it = alphabetProbsMap.begin(); it != alphabetProbsMap.end(); it++) {
+            printMat((*it).first, (*it).second);
+            std::cout << std::endl;
+        }
+        
+        
+        HmmDataMatrix_t confusionMatrix = getZeroedMatrix(_numStates,_numStates);
+        
+        for (iSequence = 0; iSequence < meas.size(); iSequence++) {
+            const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
+            const LabelMap_t & labels = meas.getLabels(iSequence);
+            const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
+            const uint32_t numObs = (*rawdata.begin()).second[0].size();
+            
+            ViterbiDecodeResult_t decodedResult = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
+            
+            
+            evalLabels(labels,decodedResult.getPath(),confusionMatrix);
+            
+            /*
+             const UIntVec_t v = getVecFromLabels(labels,numObs,3);
+             
+             int foo = 3;
+             std::cout << "path = [" << decodedResult.getPath() << "]" << std::endl;
+             std::cout << "meas = [" << (*rawdata.find("motion")).second[0] << "]" << std::endl;
+             std::cout << "labels = [" << v << "]" << std::endl;
+             std::cout << "meas2 = [" << (*rawdata.find("light2")).second[0] << "]" << std::endl;
+             
+             foo++;
+             */
+            
+        }
+        
+        for (int i = 0; i < _numStates; i++) {
+            HmmFloat_t thesum = 0.0;
+            for (int j = 0; j < _numStates; j++) {
+                thesum += confusionMatrix[i][j];
+            }
+            
+            for (int j = 0; j < _numStates; j++) {
+                confusionMatrix[i][j] /= thesum;
+            }
+        }
+        
+        printMat("CONFUSION", confusionMatrix);
         
     }
-     */
-    
 }
 

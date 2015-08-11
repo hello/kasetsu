@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 
-void printMat(const std::string & name, const HmmDataMatrix_t & mat) ;
+void printMat(const std::string & name, const HmmDataMatrix_t & mat,const uint32_t precision = 2);
 void printVec(const std::string & name, const HmmDataVec_t & vec);
 
 uint32_t getArgMaxInVec(const HmmDataVec_t & x) ;

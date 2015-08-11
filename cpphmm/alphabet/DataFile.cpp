@@ -244,11 +244,11 @@ bool DataFile::parse(const std::string & filename) {
         
         updateStateSizes(_sizes,(*itr)[k_state_sizes].MemberBegin(),(*itr)[k_state_sizes].MemberEnd());
         
-        std::cout << "processing item " << count++ << std::endl;
-        
+        count++;
     }
 
-    
+    std::cout << "processed " << count << " items" << std::endl;
+
     
     
     return true;
