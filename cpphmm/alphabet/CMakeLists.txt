@@ -14,16 +14,18 @@ endif()
 
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib")
 #set(CMAKE_CXX_FLAGS_DEBUG "-g -D_GLIBCXX_DEBUG -O0")
-set("CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS} -Wall -Werror ")
+set("CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS}  -Wall -Werror -std=c++11")
 
+#-stdlib=libc++
+#${RAPIDJSON_CXX_FLAGS}
 
 FIND_PACKAGE(JsonCpp REQUIRED)
+FIND_PACKAGE(RapidJson REQUIRED)
 #FIND_PACKAGE(PLplot REQUIRED)
 
 include_directories("../src/")
 include_directories(${JSONCPP_INCLUDE_DIRS})
-
-
+include_directories(${RAPIDJSON_INCLUDE_DIRS})
 
 
 #compile algs

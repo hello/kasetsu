@@ -1,11 +1,14 @@
 #include "DataFile.h"
 #include <fstream>
 #include <json/json.h>
+#include <rapidjson/document.h>
 
 static const char * k_alphabets = "alphabets";
 static const char * k_labels = "feedback";
 static const char * k_state_sizes = "state_sizes";
 
+using namespace rapidjson;
+/*
 static void printKeys(Json::Value json) {
     Json::Value::Members members = json.getMemberNames();
     
@@ -13,17 +16,19 @@ static void printKeys(Json::Value json) {
         std::cout << (*it) << std::endl;
     }
 }
-
+*/
 #define LABEL_PRE_SLEEP (0)
 #define LABEL_SLEEP (1)
 #define LABEL_POST_SLEEP (2)
 
-static bool hasString(Json::Value json, const std::string & key, const std::string & value) {
-    auto members = json.getMemberNames();
+static bool hasString(Value::ConstMemberIterator begin,Value::ConstMemberIterator end, const std::string & key, const std::string & value) {
     
     bool foundKey = false;
-    for (auto it = members.begin(); it != members.end(); it++) {
-        if (key == *it) {
+
+    Value::ConstMemberIterator it;
+    
+    for (it = begin; it != end; it++) {
+        if (key == it->name.GetString()) {
             foundKey = true;
             break;
         }
@@ -33,60 +38,45 @@ static bool hasString(Json::Value json, const std::string & key, const std::stri
         return false;
     }
     
-    if (!json[key].isString()) {
-        return false;
-    }
-    
-    return json[key].asString() == value;
+    return it->value.GetString() == value;
     
 }
 
 
-static HmmDataVec_t jsonToVec(Json::Value value) {
-    HmmDataVec_t vec;
-    vec.reserve(value.size());
-    
-    for (int i = 0; i < value.size(); i++) {
-        vec.push_back(value[i].asDouble());
-    }
-    
-    return vec;
-}
 
-static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
-    Json::Value sleep = Json::Value(Json::Value::null);
-    Json::Value wake = Json::Value(Json::Value::null);
+
+
+
+static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValueIterator end, uint32_t alphabetLength) {
     
+    Value::ConstValueIterator sleep;
+    Value::ConstValueIterator wake;
     LabelMap_t labelMap;
     
-    for (int i = 0; i < labels.size(); i++) {
+    bool hasWake = false;
+    bool hasSleep = false;
+    
+    
+    for (auto it = begin; it != end; it++) {
         
-        if (hasString(labels[i],"type","SLEEP")) {
-            sleep = labels[i];
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","SLEEP")) {
+            sleep = it;
+            hasSleep = true;
         }
         
-        if (hasString(labels[i],"type","WAKE_UP")) {
-            wake = labels[i];
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","WAKE_UP")) {
+            wake = it;
+            hasWake = true;
         }
     }
     
     
-    if (sleep.isMember("updated")) {
-       
-    }
     
     
-    if (wake.isMember("updated")) {
+    if (hasWake && hasSleep) {
         
-    }
-    
-    
-
-    
-    if (wake.isMember("updated") && sleep.isMember("updated")) {
-        
-        const int updated1 = sleep["updated"].asInt();
-        const int updated2 = wake["updated"].asInt();
+        const int updated1 = (*sleep)["updated"].GetInt();
+        const int updated2 = (*wake)["updated"].GetInt();
         
         if (updated2 < updated1) {
             return labelMap;
@@ -106,9 +96,9 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
 
         
     }
-    else if (sleep.isMember("updated")) {
-        const int updated = sleep["updated"].asInt();
-        const int original = sleep["original"].asInt();
+    else if (hasSleep) {
+        const int updated = (*sleep)["updated"].GetInt();
+        const int original = (*sleep)["original"].GetInt();
         
         if (updated > original) {
             //sleep time moved up -- labeling period as awake
@@ -132,9 +122,9 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
         }
 
     }
-    else if (wake.isMember("updated")) {
-        const int updated = wake["updated"].asInt();
-        const int original = wake["original"].asInt();
+    else if (hasWake) {
+        const int updated = (*wake)["updated"].GetInt();
+        const int original = (*wake)["original"].GetInt();
         
         if (updated > original) {
             //wake time moved up -- labeling period as sleep
@@ -143,7 +133,7 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
             }
             
             //everything from wake afterwards is "wake"
-            for (int i = updated; updated < alphabetLength; i++) {
+            for (int i = updated; i < alphabetLength; i++) {
                 labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
                 
             }
@@ -166,43 +156,54 @@ static LabelMap_t jsonToLabels(Json::Value labels, uint32_t alphabetLength) {
 }
 
 
-static MeasAndLabels_t alphabetToMeasAndLabels(Json::Value alphabets, Json::Value labels) {
+static HmmDataVec_t jsonToVec(Value::ConstValueIterator begin, Value::ConstValueIterator end) {
+    HmmDataVec_t vec;
+    vec.reserve(1024);
     
-    const Json::Value::Members alphabetNames = alphabets.getMemberNames();
+    for (Value::ConstValueIterator it = begin; it != end; it++) {
+        vec.push_back(it->GetDouble());
+    }
+    
+    return vec;
+}
+
+MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphabetBegin,Value::ConstMemberIterator alphabetEnd,Value::ConstValueIterator labelsBegin, Value::ConstValueIterator labelsEnd) {
     
     MeasAndLabels_t meas;
-
-    for (auto it = alphabetNames.begin(); it != alphabetNames.end(); it++) {
+    uint32_t size = 0;
+    for (Value::ConstMemberIterator it = alphabetBegin; it != alphabetEnd; it++) {
         
-        Json::Value alphabet = alphabets[*it];
+        const std::string key = it->name.GetString();
         
         HmmDataMatrix_t raw;
         raw.resize(1);
+        raw[0] = jsonToVec(it->value.Begin(), it->value.End() );
         
-        raw[0] = jsonToVec(alphabet);
-        meas.labels = jsonToLabels(labels,raw[0].size());
-        meas.rawdata.insert(std::make_pair(*it,raw));
-        
+        meas.rawdata.insert( std::make_pair(key,raw));
+        size = raw[0].size();
     }
     
-   
+    meas.labels = jsonToLabels(labelsBegin,labelsEnd,size);
     
     return meas;
-    
 }
 
-static void updateStateSizes(StateSizesMap_t & sizes, Json::Value json) {
-    Json::Value::Members members = json.getMemberNames();
+
+
+
+
+static void updateStateSizes(StateSizesMap_t & sizes, Value::ConstMemberIterator begin, Value::ConstMemberIterator end) {
     
-    for (auto it = members.begin(); it != members.end(); it++) {
-        if (json[*it].isInt()) {
-            sizes.insert(std::make_pair(*it, json[*it].asInt()));
-        }
+    for (auto it = begin; it != end; it++) {
+        const std::string key = it->name.GetString();
+        const uint32_t value = it->value.GetInt();
+        sizes.insert(std::make_pair(key,value));
     }
 }
+ 
+
 
 DataFile::DataFile() {
-    
 }
 
 DataFile::~DataFile() {
@@ -216,33 +217,38 @@ bool DataFile::parse(const std::string & filename) {
         return false;
     }
     
-    Json::Reader reader;
-    Json::Value top;
+    file.seekg(0,std::ios::end);
+    std::string str;
+    str.reserve(file.tellg());
+    file.seekg(0, std::ios::beg);
     
-    if (!reader.parse(file, top)) {
-        return false;
-    }
+    str.assign((std::istreambuf_iterator<char>(file)),
+               std::istreambuf_iterator<char>());
     
-    file.close();
+    Document document;
     
-    if (top.type() != Json::arrayValue) {
-        return false;
-    }
+    document.Parse(str.c_str());
+    
+    assert(document.IsArray());
+    
+    uint32_t count = 0;
     
     //loop through each entry
-    for (int idx = 0; idx < top.size(); idx++) {
-        const Json::Value item = top[idx];
-        const Json::Value alphabets = item[k_alphabets];
-        const Json::Value labels = item[k_labels];
-        const Json::Value stateSizes = item[k_state_sizes];
+    for (Value::ConstValueIterator itr = document.Begin(); itr != document.End(); ++itr) {
+        assert(itr->IsObject());
         
-        updateStateSizes(_sizes,stateSizes);
-                
-        //measurements by model
+        _measurements.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End()));
         
-        _measurements.push_back(alphabetToMeasAndLabels(alphabets,labels));
-
+        
+      
+        
+        updateStateSizes(_sizes,(*itr)[k_state_sizes].MemberBegin(),(*itr)[k_state_sizes].MemberEnd());
+        
+        std::cout << "processing item " << count++ << std::endl;
+        
     }
+
+    
     
     
     return true;

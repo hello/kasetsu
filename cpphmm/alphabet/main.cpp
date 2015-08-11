@@ -4,7 +4,7 @@
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-static const char * k_filename = "1012.json";
+static const char * k_filename = "many_users.json";
 
 
 static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
@@ -69,6 +69,8 @@ int main() {
     
     DataFile dataFile;
     
+    std::cout << "PARSING MEASUREMENTS FROM " << k_filename << std::endl;
+
     if (dataFile.parse(k_filename)) {
         const MeasVec_t & meas = dataFile.getMeasurements();
         
