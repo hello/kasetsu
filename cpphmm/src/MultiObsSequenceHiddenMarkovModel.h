@@ -10,18 +10,20 @@ public:
     MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A);
     ~MultiObsHiddenMarkovModel();
     
+    ViterbiDecodeResult_t evaluatePath(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions) const ;
     void reestimate(const MultiObsSequence & meas,const uint32_t numIter);
-    
+    HmmDataVec_t getPi() const;
     HmmDataMatrix_t getAMatrix() const;
     MatrixMap_t getAlphabetMatrix() const;
     HmmDataMatrix_t getLogBMap(const MatrixMap_t & rawdataMap, const MatrixMap_t & alphabetProbsMap) const;
-
+    HmmDataMatrix_t getLastConfusionMatrix() const;
 private:
 
     HmmDataMatrix_t _ANumerator;
     MatrixMap_t _alphabetNumerator;
     HmmDataVec_t _logDenominator;
     HmmDataVec_t _pi;
+    HmmDataMatrix_t _lastConfusionMatrix;
     
     uint32_t _numStates;
 

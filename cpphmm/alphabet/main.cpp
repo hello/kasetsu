@@ -1,11 +1,13 @@
 #include <string>
 #include <iostream>
 #include "DataFile.h"
+#include "ModelFile.h"
+
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-static const char * k_filename = "many_users.json";
-
+//static const char * k_filename = "many_users.json";
+static const char * k_filename = "24520.json";
 
 static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
     
@@ -65,36 +67,42 @@ static MatrixMap_t getUniformInitProbabilities(const DataFile & dataFile, const 
     return initProbsMap;
 }
 
-int main() {
+int main(int argc , const char * argv[]) {
     
     DataFile dataFile;
     
-    std::cout << "PARSING MEASUREMENTS FROM " << k_filename << std::endl;
-
-    if (dataFile.parse(k_filename)) {
-        const MeasVec_t & meas = dataFile.getMeasurements();
-        
-        HmmDataMatrix_t A;
-        
-        
-        A.resize(3);
-        A[0] << 0.99,0.01,0.0;
-        A[1] << 0.00,0.99,0.01;
-        A[2] << 0.00,0.00,1.0;
-        
-        
-        /*
-        A.resize(2);
-        A[0] << 0.99,0.01;
-        A[1] << 0.01,0.99;
-        */
-        
-        MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
-        MultiObsHiddenMarkovModel hmm(initAlphabetProbabilities,A);
-        MultiObsSequence multiObsSequence = getMotionSequence(meas);
-        hmm.reestimate(multiObsSequence, 1);
+    std::string filename = k_filename;
+    
+    if (argc > 1) {
+        filename.assign(argv[1]);
     }
     
+    std::cout << "PARSING MEASUREMENTS FROM " << filename << std::endl;
+
+    if (!dataFile.parse(filename)) {
+        std::cerr << "FAILED TO PARSE " << filename << std::endl;
+        return 1;
+    }
+    
+    const MeasVec_t & meas = dataFile.getMeasurements();
+    
+    HmmDataMatrix_t A;
+    
+    
+    A.resize(3);
+    A[0] << 0.99,0.01,0.0;
+    A[1] << 0.00,0.99,0.01;
+    A[2] << 0.00,0.00,1.0;
+    
+    
+    
+    MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
+    MultiObsHiddenMarkovModel hmm(initAlphabetProbabilities,A);
+    MultiObsSequence multiObsSequence = getMotionSequence(meas);
+    hmm.reestimate(multiObsSequence, 1);
+    
+    ModelFile::SaveFile(hmm, "foobars.model");
+    //ModelFile::LoadFile("foobars.model");
     
     return 0;
 }

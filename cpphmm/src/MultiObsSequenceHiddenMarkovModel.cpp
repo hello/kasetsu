@@ -26,6 +26,8 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initial
     _ANumerator = getELNofMatrix(A);
     _pi = getZeroedVec(_numStates);
     _pi[0] = 1.0;
+    
+    _lastConfusionMatrix = getZeroedMatrix(_numStates, _numStates);
 }
 
 MultiObsHiddenMarkovModel::~MultiObsHiddenMarkovModel() {
@@ -299,6 +301,25 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
         
         printMat("CONFUSION", confusionMatrix);
         
+        _lastConfusionMatrix = confusionMatrix;
+        
     }
 }
+
+HmmDataMatrix_t MultiObsHiddenMarkovModel::getLastConfusionMatrix() const {
+    return _lastConfusionMatrix;
+}
+
+HmmDataVec_t MultiObsHiddenMarkovModel::getPi() const {
+    return _pi;
+}
+
+
+ViterbiDecodeResult_t MultiObsHiddenMarkovModel::evaluatePath(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions) const {
+ 
+    const uint32_t numObs = (*rawdata.begin()).second[0].size();
+    
+     return HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
+}
+
 

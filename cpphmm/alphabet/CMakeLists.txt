@@ -34,7 +34,8 @@ add_subdirectory("../src/" "${CMAKE_CURRENT_BINARY_DIR}/main")
 
 add_executable(alphabet
                main.cpp
-               DataFile.cpp)
+               DataFile.cpp
+               ModelFile.cpp)
 
 target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES})
 
