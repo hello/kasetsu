@@ -4,13 +4,14 @@
 #include "HmmPdfInterface.h"
 #include "MultiObsSequence.h"
 #include "HmmHelpers.h"
+#include <vector>
 
 class MultiObsHiddenMarkovModel {
 public:
     MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A);
     ~MultiObsHiddenMarkovModel();
     
-    ViterbiDecodeResult_t evaluatePath(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions) const ;
+    std::vector<ViterbiDecodeResult_t> evaluatePaths(const MultiObsSequence & meas) const ;
     void reestimate(const MultiObsSequence & meas,const uint32_t numIter);
     HmmDataVec_t getPi() const;
     HmmDataMatrix_t getAMatrix() const;

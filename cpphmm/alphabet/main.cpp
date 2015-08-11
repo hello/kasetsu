@@ -3,11 +3,25 @@
 #include "DataFile.h"
 #include "ModelFile.h"
 
+#include <getopt.h>
+
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-//static const char * k_filename = "many_users.json";
-static const char * k_filename = "24520.json";
+/*
+extern int	getopt_long_only(int, char * const *, const char *,
+                             const struct option *, int *);
+*/
+
+static struct option long_options[] = {
+    {"input", required_argument, 0,  0 },
+    {"model",  required_argument,       0,  0},
+    {"output",  required_argument, 0,  0},
+    {"action",  required_argument, 0,  0},
+
+    {0,         0,                 0,  0 }
+};
+
 
 static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
     
@@ -67,42 +81,104 @@ static MatrixMap_t getUniformInitProbabilities(const DataFile & dataFile, const 
     return initProbsMap;
 }
 
-int main(int argc , const char * argv[]) {
+static bool isOption(uint32_t option_index, uint32_t idx) {
+    return strncmp(long_options[option_index].name,long_options[idx].name,strnlen(long_options[idx].name, 64)) == 0;
+}
+
+int main(int argc , char ** argv) {
+    
+    int c;
+    
+    std::string input_filename;
+    std::string output_filename;
+    std::string model_filename;
+    std::string action = "reestimate";
+
+    while (1) {
+        int option_index = 0;
+        
+        c = getopt_long_only(argc, argv, "",long_options, &option_index);
+        if (c == -1)
+            break;
+        
+        if (c == 0) {
+            if (isOption(option_index,0)) {
+                input_filename.assign(optarg);
+            }
+            else if (isOption(option_index,1)) {
+                model_filename.assign(optarg);
+            }
+            else if (isOption(option_index,2)) {
+                output_filename.assign(optarg);
+            }
+            else if (isOption(option_index,3)) {
+                action.assign(optarg);
+            }
+            
+        }
+    }
     
     DataFile dataFile;
     
-    std::string filename = k_filename;
-    
-    if (argc > 1) {
-        filename.assign(argv[1]);
+    if (input_filename.empty()) {
+        std::cerr << "need to specify \"--input\" for measurements file" <<std::endl;
+        return 1;
     }
     
-    std::cout << "PARSING MEASUREMENTS FROM " << filename << std::endl;
+    std::cout << "PARSING MEASUREMENTS FROM " << input_filename << std::endl;
 
-    if (!dataFile.parse(filename)) {
-        std::cerr << "FAILED TO PARSE " << filename << std::endl;
+    if (!dataFile.parse(input_filename)) {
+        std::cerr << "FAILED TO PARSE " << input_filename << std::endl;
         return 1;
     }
     
     const MeasVec_t & meas = dataFile.getMeasurements();
     
-    HmmDataMatrix_t A;
-    
-    
-    A.resize(3);
-    A[0] << 0.99,0.01,0.0;
-    A[1] << 0.00,0.99,0.01;
-    A[2] << 0.00,0.00,1.0;
-    
-    
-    
-    MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
-    MultiObsHiddenMarkovModel hmm(initAlphabetProbabilities,A);
     MultiObsSequence multiObsSequence = getMotionSequence(meas);
-    hmm.reestimate(multiObsSequence, 1);
     
-    ModelFile::SaveFile(hmm, "foobars.model");
-    //ModelFile::LoadFile("foobars.model");
     
+    MultiObsHiddenMarkovModel * phmm = NULL;
+    
+    if (model_filename.empty()) {
+        HmmDataMatrix_t A;
+
+        A.resize(3);
+        A[0] << 0.99,0.01,0.0;
+        A[1] << 0.00,0.99,0.01;
+        A[2] << 0.00,0.00,1.0;
+        
+        MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
+
+        phmm = new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A);
+    }
+    else {
+        phmm = ModelFile::LoadFile(model_filename);
+    }
+
+    if (!phmm) {
+        std::cerr << "failed to create HMM" << std::endl;
+        return 1;
+    }
+    
+    
+    if (action == "reestimate") {
+        phmm->reestimate(multiObsSequence, 1);
+
+    }
+    else if (action == "evaluate") {
+        auto paths = phmm->evaluatePaths(multiObsSequence);
+    }
+    else {
+        std::cerr << "needed to specify action reestimate or evaluate";
+        return 1;
+    }
+    
+    if (!output_filename.empty()) {
+        ModelFile::SaveFile(*phmm, output_filename);
+    }
+    
+    delete phmm;
+    phmm = NULL;
+
     return 0;
 }

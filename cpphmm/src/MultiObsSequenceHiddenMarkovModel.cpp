@@ -315,11 +315,40 @@ HmmDataVec_t MultiObsHiddenMarkovModel::getPi() const {
 }
 
 
-ViterbiDecodeResult_t MultiObsHiddenMarkovModel::evaluatePath(const MatrixMap_t & rawdata, TransitionMultiMap_t forbiddenTransitions) const {
+std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas) const {
  
-    const uint32_t numObs = (*rawdata.begin()).second[0].size();
+    std::vector<ViterbiDecodeResult_t> results;
+    HmmDataMatrix_t confusionMatrix = getZeroedMatrix(_numStates,_numStates);
+
+    for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
+        const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
+        const LabelMap_t & labels = meas.getLabels(iSequence);
+        const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
+        const uint32_t numObs = (*rawdata.begin()).second[0].size();
+
+        ViterbiDecodeResult_t result = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
+        
+        
+        evalLabels(labels, result.getPath(), confusionMatrix);
+        
+        results.push_back(result);
+    }
     
-     return HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
+    for (int i = 0; i < _numStates; i++) {
+        HmmFloat_t thesum = 0.0;
+        for (int j = 0; j < _numStates; j++) {
+            thesum += confusionMatrix[i][j];
+        }
+        
+        for (int j = 0; j < _numStates; j++) {
+            confusionMatrix[i][j] /= thesum;
+        }
+    }
+    
+    printMat("CONFUSION", confusionMatrix);
+    
+    
+    return results;
 }
 
 
