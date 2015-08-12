@@ -170,7 +170,73 @@ static UIntVec_t getVecFromLabels(const LabelMap_t & labels, const uint32_t end,
     return vec;
 }
 */
-static void evalLabels(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix) {
+
+
+static TransitionAtTime_t getPathTransitions(const ViterbiPath_t & path) {
+    TransitionAtTime_t results;
+    for (int t = 1; t < path.size(); t++) {
+        if (path[t] != path[t - 1]) {
+            results.insert(std::make_pair (StateIdxPair(path[t - 1],path[t]),t));
+        }
+    }
+    
+    return results;
+}
+
+static TransitionAtTime_t getLabelTransitions(const LabelMap_t & labels, const uint32_t end) {
+    uint32_t prev = 0xFFFFFFFF;
+    TransitionAtTime_t results;
+    for (uint32_t t = 0; t < end; t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            const uint32_t current  = (*it).second;
+            
+            if (current != prev && prev != 0xFFFFFFFF) {
+                results.insert(std::make_pair (StateIdxPair(prev,current),t));
+            }
+            
+            prev = (*it).second;
+        }
+        else {
+            prev = 0xFFFFFFFF;
+        }
+    }
+    
+    return results;
+}
+
+static TransitionAtTime_t evalLabels(TransitionAtTime_t & counts, const LabelMap_t & labels, const ViterbiPath_t & path) {
+    const TransitionAtTime_t lt = getLabelTransitions(labels,path.size());
+    const TransitionAtTime_t pt = getPathTransitions(path);
+    TransitionAtTime_t results;
+    
+    for (auto it = lt.begin(); it != lt.end(); it++) {
+        auto it2 = pt.find((*it).first);
+        auto itCounts = counts.find((*it).first);
+        
+        if (itCounts == counts.end()) {
+            counts.insert(std::make_pair((*it).first,0));
+        }
+        
+        counts[(*it).first]++;
+        
+        if (it2 == pt.end()) {
+            continue;
+        }
+        
+        const int32_t dt = (*it2).second - (*it).second;
+        
+        results.insert(std::make_pair((*it).first,dt));
+    }
+    
+    return results;
+    
+}
+
+
+
+static void updateConfusionCount(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix) {
     
     for (uint32_t t = 0; t < path.size(); t++) {
         LabelMap_t::const_iterator it = labels.find(t);
@@ -181,11 +247,7 @@ static void evalLabels(const LabelMap_t & labels,const ViterbiPath_t & path,HmmD
             
             confusionMatrix[prediction][label] += 1.0;
         }
-        
-        
     }
-    
-    
 }
 
 
@@ -260,49 +322,6 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             std::cout << std::endl;
         }
         
-        
-        HmmDataMatrix_t confusionMatrix = getZeroedMatrix(_numStates,_numStates);
-        
-        for (iSequence = 0; iSequence < meas.size(); iSequence++) {
-            const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
-            const LabelMap_t & labels = meas.getLabels(iSequence);
-            const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
-            const uint32_t numObs = (*rawdata.begin()).second[0].size();
-            
-            ViterbiDecodeResult_t decodedResult = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
-            
-            
-            evalLabels(labels,decodedResult.getPath(),confusionMatrix);
-            
-            /*
-             const UIntVec_t v = getVecFromLabels(labels,numObs,3);
-             
-             int foo = 3;
-             std::cout << "path = [" << decodedResult.getPath() << "]" << std::endl;
-             std::cout << "meas = [" << (*rawdata.find("motion")).second[0] << "]" << std::endl;
-             std::cout << "labels = [" << v << "]" << std::endl;
-             std::cout << "meas2 = [" << (*rawdata.find("light2")).second[0] << "]" << std::endl;
-             
-             foo++;
-             */
-            
-        }
-        
-        for (int i = 0; i < _numStates; i++) {
-            HmmFloat_t thesum = 0.0;
-            for (int j = 0; j < _numStates; j++) {
-                thesum += confusionMatrix[i][j];
-            }
-            
-            for (int j = 0; j < _numStates; j++) {
-                confusionMatrix[i][j] /= thesum;
-            }
-        }
-        
-        printMat("CONFUSION", confusionMatrix);
-        
-        _lastConfusionMatrix = confusionMatrix;
-        
     }
 }
 
@@ -315,11 +334,14 @@ HmmDataVec_t MultiObsHiddenMarkovModel::getPi() const {
 }
 
 
-std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas) const {
+std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError)  {
  
     std::vector<ViterbiDecodeResult_t> results;
     HmmDataMatrix_t confusionMatrix = getZeroedMatrix(_numStates,_numStates);
 
+    TransitionAtTime_t totalErrorCount;
+    TransitionAtTime_t totalLabelCount;
+    
     for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
         const LabelMap_t & labels = meas.getLabels(iSequence);
@@ -329,7 +351,29 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         ViterbiDecodeResult_t result = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
         
         
-        evalLabels(labels, result.getPath(), confusionMatrix);
+        updateConfusionCount(labels, result.getPath(), confusionMatrix);
+        
+        const TransitionAtTime_t matchedTransitions = evalLabels(totalLabelCount,labels,result.getPath());
+        
+        
+        
+        for (auto it = matchedTransitions.begin(); it != matchedTransitions.end(); it++) {
+            const int32_t error = (*it).second;
+            
+            if (abs(error) > toleranceForError) {
+                auto it2 = totalErrorCount.find((*it).first);
+                
+                if (it2 == totalErrorCount.end()) {
+                    totalErrorCount.insert(std::make_pair((*it).first,0));
+                }
+                
+                totalErrorCount[(*it).first] += 1;
+                
+            }
+            
+            //std::cout << (*it).first.from << "," << (*it).first.to << "," << (*it).second << std::endl;
+        }
+        
         
         results.push_back(result);
     }
@@ -345,8 +389,31 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         }
     }
     
-    printMat("CONFUSION", confusionMatrix);
     
+    if (totalErrorCount.empty()) {
+        std::cout << "NO BAD PREDICTIONS. MIRACULOUS." << std::endl;
+    }
+    else {
+        std::cout << "FOUND BAD PREDICTIONS" << std::endl;
+        for (auto it = totalErrorCount.begin(); it != totalErrorCount.end(); it++) {
+            const uint32_t fromState = (*it).first.from;
+            const uint32_t toState = (*it).first.to;
+            const int32_t errorCount = (*it).second;
+            const int32_t labelCount = totalLabelCount[(*it).first];
+            std::cout << "transition: " << fromState << " --> " << toState
+            << ", errors: " << errorCount
+            << ", out of #labels: " << labelCount
+            << ", success frac = " << 1.0 - (float)errorCount / (float) labelCount
+            << std::endl << std::endl;
+            
+            
+        }
+    }
+    
+    printMat("CONFUSION (BY PERIODS)", confusionMatrix);
+    
+    _lastConfusionMatrix = confusionMatrix;
+
     
     return results;
 }

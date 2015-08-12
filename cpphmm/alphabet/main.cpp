@@ -8,10 +8,7 @@
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-/*
-extern int	getopt_long_only(int, char * const *, const char *,
-                             const struct option *, int *);
-*/
+static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },
@@ -163,10 +160,12 @@ int main(int argc , char ** argv) {
     
     if (action == "reestimate") {
         phmm->reestimate(multiObsSequence, 1);
+        phmm->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+
 
     }
     else if (action == "evaluate") {
-        auto paths = phmm->evaluatePaths(multiObsSequence);
+        phmm->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
     }
     else {
         std::cerr << "needed to specify action reestimate or evaluate";

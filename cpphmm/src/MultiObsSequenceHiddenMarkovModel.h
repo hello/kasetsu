@@ -11,7 +11,7 @@ public:
     MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A);
     ~MultiObsHiddenMarkovModel();
     
-    std::vector<ViterbiDecodeResult_t> evaluatePaths(const MultiObsSequence & meas) const ;
+    std::vector<ViterbiDecodeResult_t> evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError) ;
     void reestimate(const MultiObsSequence & meas,const uint32_t numIter);
     HmmDataVec_t getPi() const;
     HmmDataMatrix_t getAMatrix() const;

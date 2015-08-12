@@ -18,7 +18,7 @@ typedef std::vector<HmmDataMatrix_t> Hmm3DMatrix_t;
 typedef std::vector<uint32_t> ViterbiPath_t;
 typedef std::vector<uint32_t> UIntVec_t;
 typedef UNORDERED_SET<uint32_t> UIntSet_t;
-typedef std::map<std::string,HmmDataMatrix_t> MatrixMap_t;
+typedef UNORDERED_MAP<std::string,HmmDataMatrix_t> MatrixMap_t;
 
 typedef std::vector<ViterbiPath_t> ViterbiPathMatrix_t;
 
