@@ -437,6 +437,21 @@ HmmDataVec_t HmmHelpers::getLogDenominator(const AlphaBetaResult_t & alphabeta, 
     return logDenominator;
 }
 
+HmmDataMatrix_t HmmHelpers::elnMatrixScalarProduct(const HmmDataMatrix_t & m1, const HmmFloat_t a) {
+    const int m = m1.size();
+    const int n = m1[0].size();
+    
+    HmmDataMatrix_t m3 = getZeroedMatrix(m, n);
+    HmmFloat_t elnA = (eln(a));
+    for (int j = 0; j < m; j++) {
+        for (int i = 0; i < n; i++) {
+            m3[j][i] = elnproduct(m1[j][i], elnA);
+        }
+    }
+    
+    return m3;
+}
+
 HmmDataMatrix_t HmmHelpers::elnAddMatrix(const HmmDataMatrix_t & m1, const HmmDataMatrix_t & m2) {
     const int m = m1.size();
     const int n = m1[0].size();

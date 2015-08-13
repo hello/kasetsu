@@ -98,8 +98,17 @@ MultiObsHiddenMarkovModel * ModelFile::LoadFile(const std::string & filename) {
          it != d["alphabets"].MemberEnd(); it++) {
         
         const HmmDataMatrix_t mtx = decodeMatrix((*it).value.Begin(),(*it).value.End());
-        alphabets.insert(std::make_pair((*it).name.GetString(), mtx));
+        const std::string key = (*it).name.GetString();
+        alphabets.insert(std::make_pair(key, mtx));
         
+    }
+    
+    if (alphabets.empty()) {
+        return NULL;
+    }
+    
+    if (A.empty()) {
+        return NULL;
     }
     
     return new MultiObsHiddenMarkovModel(alphabets,A);

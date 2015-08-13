@@ -20,6 +20,8 @@ public:
     HmmDataMatrix_t getLastConfusionMatrix() const;
 private:
 
+    HmmDataMatrix_t _A;
+
     HmmDataMatrix_t _ANumerator;
     MatrixMap_t _alphabetNumerator;
     HmmDataVec_t _logDenominator;

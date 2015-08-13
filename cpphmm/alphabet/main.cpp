@@ -8,7 +8,7 @@
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
+static const int32_t k_error_threshold_in_periods = 6; //each period is 5 minutes
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },
@@ -35,10 +35,17 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
         TransitionMultiMap_t forbiddenTransitions;
         
         for (int t = 0; t < vec.size(); t++) {
-            //if no motion, it is forbidden to go from sleep to wake
             if (vec[t] == 0.0 || vec[t] == 6.0) {
-                //forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(1,0)));
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(1,2)));
+                //if no motion, it is forbidden to go from sleep to wake
+                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
+                
+                /*
+                //if no motion, it is forbidden to go from off bed to on bed
+                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_BED,LABEL_PRE_SLEEP)));
+                
+                //if no motion, it is forbidden to go from on bed to off bed
+                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_POST_SLEEP,LABEL_POST_BED)));
+*/
             }
         }
         
@@ -139,10 +146,22 @@ int main(int argc , char ** argv) {
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
 
+        
         A.resize(3);
-        A[0] << 0.99,0.01,0.0;
-        A[1] << 0.00,0.99,0.01;
+        A[0] << 0.9999,0.0001,0.0;
+        A[1] << 0.00,0.9999,0.0001;
         A[2] << 0.00,0.00,1.0;
+        
+        
+        /*
+        A.resize(5);
+        A[0] << 0.99,0.01,0.00,0.00,0.00;
+        A[1] << 0.00,0.99,0.01,0.00,0.00;
+        A[2] << 0.00,0.00,0.999,0.001,0.00;
+        A[3] << 0.00,0.00,0.00,0.99,0.01;
+        A[4] << 0.00,0.00,0.00,0.00,1.0;
+*/
+        
         
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
 

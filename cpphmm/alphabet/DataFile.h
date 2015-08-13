@@ -6,6 +6,10 @@
 #include "../src/MultiObsSequence.h"
 #include <map>
 
+#define LABEL_PRE_SLEEP (0)
+#define LABEL_SLEEP (1)
+#define LABEL_POST_SLEEP (2)
+
 typedef struct {
     MatrixMap_t rawdata;
     LabelMap_t labels;

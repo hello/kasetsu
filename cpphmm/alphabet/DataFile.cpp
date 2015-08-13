@@ -1,6 +1,5 @@
 #include "DataFile.h"
 #include <fstream>
-#include <json/json.h>
 #include <rapidjson/document.h>
 
 static const char * k_alphabets = "alphabets";
@@ -8,18 +7,7 @@ static const char * k_labels = "feedback";
 static const char * k_state_sizes = "state_sizes";
 
 using namespace rapidjson;
-/*
-static void printKeys(Json::Value json) {
-    Json::Value::Members members = json.getMemberNames();
-    
-    for (auto it = members.begin(); it != members.end(); it++) {
-        std::cout << (*it) << std::endl;
-    }
-}
-*/
-#define LABEL_PRE_SLEEP (0)
-#define LABEL_SLEEP (1)
-#define LABEL_POST_SLEEP (2)
+
 
 static bool hasString(Value::ConstMemberIterator begin,Value::ConstMemberIterator end, const std::string & key, const std::string & value) {
     
@@ -96,6 +84,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
 
         
     }
+    
     else if (hasSleep) {
         const int updated = (*sleep)["updated"].GetInt();
         const int original = (*sleep)["original"].GetInt();
@@ -150,6 +139,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
 
     }
  
+     
     
     return labelMap;
     
@@ -174,6 +164,12 @@ MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphabetBegin
     for (Value::ConstMemberIterator it = alphabetBegin; it != alphabetEnd; it++) {
         
         const std::string key = it->name.GetString();
+        
+        
+        if (key == "disturbances") {
+            continue;
+        }
+         
         
         HmmDataMatrix_t raw;
         raw.resize(1);

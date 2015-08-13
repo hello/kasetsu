@@ -5,29 +5,37 @@
 #include "ThreadPool.h"
 #include "LogMath.h"
 #include <assert.h>
+#include <stdio.h>
 
 #define MIN_A (1e-6)
 #define MIN_PROB (1e-6)
 
+#define PRIOR_STRENGTH (1e-50)
+
 MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A) {
-    
+    _A = A;
     _numStates = A.size();
     _logDenominator.reserve(_numStates);
     
     for (int i = 0; i < _numStates; i++) {
-        _logDenominator.push_back(0.0);
+        _logDenominator.push_back(eln(PRIOR_STRENGTH));
     }
     
     for (auto it = initialAlphabetProbs.begin(); it != initialAlphabetProbs.end();it++) {
-        _alphabetNumerator[(*it).first] = getELNofMatrix((*it).second);
+        _alphabetNumerator[(*it).first] = HmmHelpers::elnMatrixScalarProduct(getELNofMatrix((*it).second),PRIOR_STRENGTH);
     }
     
     
-    _ANumerator = getELNofMatrix(A);
+    _ANumerator = HmmHelpers::elnMatrixScalarProduct(getELNofMatrix(A),PRIOR_STRENGTH);
+    
     _pi = getZeroedVec(_numStates);
     _pi[0] = 1.0;
     
     _lastConfusionMatrix = getZeroedMatrix(_numStates, _numStates);
+    
+    
+    printMat("original A", getAMatrix());
+    
 }
 
 MultiObsHiddenMarkovModel::~MultiObsHiddenMarkovModel() {
@@ -61,7 +69,7 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getAMatrix() const {
     }
     
     
-    
+    (void)A;
     return A;
 }
 
@@ -206,6 +214,31 @@ static TransitionAtTime_t getLabelTransitions(const LabelMap_t & labels, const u
     return results;
 }
 
+static void printTransitions(const ViterbiPath_t & path) {
+    const TransitionAtTime_t pt = getPathTransitions(path);
+    
+    for (auto it = pt.begin(); it != pt.end(); it++) {
+        StateIdxPair transition = (*it).first;
+        int32_t t = (*it).second;
+        t -= 1;
+        int hour = t * 5.0 / 60.0;
+        int min = t * 5.0 - hour * 60.0;
+        hour += 20;
+        
+        if (hour >= 24) {
+            hour -= 24;
+        }
+        
+        
+        char buf[16];
+        snprintf(buf, 16, "%02d:%02d",hour,min);
+        
+        std::cout << transition.from << " ---> " << transition.to << " at time " << buf << std::endl;
+    }
+    
+    std::cout << "----------" << std::endl;
+}
+
 static TransitionAtTime_t evalLabels(TransitionAtTime_t & counts, const LabelMap_t & labels, const ViterbiPath_t & path) {
     const TransitionAtTime_t lt = getLabelTransitions(labels,path.size());
     const TransitionAtTime_t pt = getPathTransitions(path);
@@ -264,6 +297,10 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 continue;
             }
             
+            if (labels.empty()) {
+                continue;
+            }
+            
             if (iSequence % 100 == 0)
                 std::cout << "SEQUENCE " <<iSequence << std::endl;
             
@@ -281,14 +318,10 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             const HmmDataVec_t logDenominator = HmmHelpers::getLogDenominator(alphaBeta, _numStates, numObs);
             
-            if (iSequence == 0) {
-                _ANumerator = logANumerator;
-                _logDenominator = logDenominator;
-            }
-            else {
-                _ANumerator = HmmHelpers::elnAddMatrix(_ANumerator, logANumerator);
-                _logDenominator = HmmHelpers::elnAddVector(_logDenominator, logDenominator);
-            }
+         
+            _ANumerator = HmmHelpers::elnAddMatrix(_ANumerator, logANumerator);
+            _logDenominator = HmmHelpers::elnAddVector(_logDenominator, logDenominator);
+          
 
             
             for (MatrixMap_t::const_iterator it = rawdata.begin(); it != rawdata.end(); it++) {
@@ -299,13 +332,9 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 const uint32_t alphabetSize = _alphabetNumerator[key][0].size();
                 const HmmDataMatrix_t logAlphabetNumerator = HmmHelpers::getLogAlphabetNumerator(alphaBeta, (*it).second[0], _numStates, numObs, alphabetSize);
                 
-                if (iSequence == 0) {
-                    _alphabetNumerator[key] = logAlphabetNumerator;
-
-                }
-                else {
-                    _alphabetNumerator[key] = HmmHelpers::elnAddMatrix(_alphabetNumerator[key], logAlphabetNumerator);
-                }
+                
+                _alphabetNumerator[key] = HmmHelpers::elnAddMatrix(_alphabetNumerator[key], logAlphabetNumerator);
+                
                 
             }
         }
@@ -350,6 +379,8 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
 
         ViterbiDecodeResult_t result = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
         
+        std::cout << "COST: " << result.getCost() << std::endl;
+        printTransitions(result.getPath());
         
         updateConfusionCount(labels, result.getPath(), confusionMatrix);
         
