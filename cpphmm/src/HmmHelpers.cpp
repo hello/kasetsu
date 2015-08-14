@@ -5,6 +5,22 @@
 
 #define FORBIDDEN_TRANSITION_PENALTY (-100.0)
 
+
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T> &v) {
+    
+    // initialize original index locations
+    std::vector<size_t> idx(v.size());
+    for (size_t i = 0; i != idx.size(); ++i) idx[i] = i;
+    
+    // sort indexes based on comparing values in v
+    sort(idx.begin(), idx.end(),
+         [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+    
+    return idx;
+}
+
+
 static HmmDataMatrix_t getLogAWithForbiddenStates(const HmmDataMatrix_t & logA,const TransitionMultiMap_t & forbiddenTransitions, uint32_t t) {
     
     HmmDataMatrix_t logA2 = logA;
@@ -529,8 +545,6 @@ static ViterbiDecodeResult_t decodePathAndGetCost(int32_t startidx,const Viterbi
 
 ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs) {
     int j,i,t;
-    
-
 
     HmmDataVec_t costs;
     costs.resize(numStates);
@@ -572,6 +586,100 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithoutLabels(const HmmDataMatrix_t & A,
     
     
     return result;
+    
+}
+
+ViterbiDecodeResult_t HmmHelpers::decodeWithMinimumDurationConstraints(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const UIntVec_t & durationMinimums,const uint32_t numStates,const uint32_t numObs) {
+    
+    
+    int j,i,t;
+    
+    HmmDataVec_t costs;
+    costs.resize(numStates);
+    
+    HmmDataMatrix_t phi = getLogZeroedMatrix(numStates, numObs);
+    ViterbiPathMatrix_t vindices = getZeroedPathMatrix(numStates, numObs);
+    HmmDataMatrix_t logA = getELNofMatrix(A);
+    
+    UIntVec_t zeta; //this is the count for how long you've been in the same state
+    //see the paper "Long-term Activities Segmentation using Viterbi Algorithm with a k-minimum-consecutive-states Constraint"
+    //by Enrique Garcia-Ceja, Ramon Brena, 2014
+    
+    zeta.reserve(numStates);
+    for (i = 0; i < numStates; i++) {
+        zeta[i] = 1;
+    }
+    
+    //init
+    for (i = 0; i < numStates; i++) {
+        phi[i][0] = elnproduct(logbmap[i][0], eln(pi[i]));
+    }
+    
+    for (t = 1; t < numObs; t++) {
+        
+        HmmDataMatrix_t logAThisIndex = getLogAWithForbiddenStates(logA, forbiddenTransitions, t);
+        
+        
+        for (j = 0; j < numStates; j++) {
+            
+            const HmmFloat_t obscost = logbmap[j][t];
+            
+            for (i = 0; i < numStates; i++) {
+                costs[i] = elnproduct(logAThisIndex[i][j], obscost);
+            }
+            
+            for (i = 0; i < numStates; i++) {
+                costs[i] = elnproduct(costs[i], phi[i][t-1]);
+            }
+            
+            
+            auto indices = sort_indexes(costs);
+            uint32_t maxii = numStates - 1; //sorted ascending
+            /*
+            if (j == 1) {
+                int foo = 3;
+                foo++;
+                std::cout << zeta[j] << std::endl;
+            }
+            */
+            int32_t maxidx = indices[maxii];
+            HmmFloat_t maxval = costs[maxidx];
+
+            //best path is to stay?  increment zeta.
+            if (maxidx == j) {
+                zeta[j] += 1;
+            }
+            else {
+                zeta[j] = 1;
+            }
+            
+            //if zeta of the state I'm coming FROM is above min durations,
+            //I'll let the transition happen.  Otherwise, pick the next best state.
+            
+            if (zeta[maxidx] >= durationMinimums[maxidx]) {
+                phi[j][t] = maxval;
+                vindices[j][t] = maxidx;
+            }
+            else {
+                //next best.... so in theory we should check if this violates the second best state's constraints
+                //TODO check everything
+                maxii--;
+                maxidx = indices[maxii];
+                maxval = costs[maxidx];
+                
+                phi[j][t] = maxval;
+                vindices[j][t] = maxidx;
+            }
+            
+            
+        }
+    }
+    
+    const ViterbiDecodeResult_t result = decodePathAndGetCost(A.size() - 1, vindices, phi);
+    
+    
+    return result;
+
     
 }
 

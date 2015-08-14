@@ -428,13 +428,27 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
     TransitionAtTime_t totalErrorCount;
     TransitionAtTime_t totalLabelCount;
     
+    UIntVec_t minDurations;
+    minDurations.reserve(_numStates);
+    for (int i = 0; i < _numStates; i++) {
+        minDurations.push_back(1);
+    }
+    
+    minDurations[1] = 12; //one hour for sleep
+    
     for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
         const LabelMap_t & labels = meas.getLabels(iSequence);
         const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
         const uint32_t numObs = (*rawdata.begin()).second[0].size();
 
-        ViterbiDecodeResult_t result = HmmHelpers::decodeWithoutLabels(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions, _numStates, numObs);
+        /*
+        if (iSequence != 1) {
+            continue;
+        }
+         */
+        
+        ViterbiDecodeResult_t result = HmmHelpers::decodeWithMinimumDurationConstraints(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions,minDurations, _numStates, numObs);
         
         std::cout << "COST: " << result.getCost() << std::endl;
         printTransitions(result.getPath());
