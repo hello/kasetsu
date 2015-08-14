@@ -12,6 +12,10 @@
 
 #define PRIOR_STRENGTH (1e-50)
 
+#define SLEEP_STATE (1) 
+#define SLEEP_STATE_MIN_DURATION (6)
+
+
 MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A) {
     _A = A;
     _numStates = A.size();
@@ -434,7 +438,7 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         minDurations.push_back(1);
     }
     
-    minDurations[1] = 12; //one hour for sleep
+    minDurations[SLEEP_STATE] = SLEEP_STATE_MIN_DURATION;
     
     for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);

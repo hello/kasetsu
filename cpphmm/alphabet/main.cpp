@@ -36,15 +36,21 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
         TransitionMultiMap_t forbiddenTransitions;
         
         for (int t = 0; t < vec.size(); t++) {
+            bool isFirst = true;
             if (vec[t] == 0.0 || vec[t] == 6.0) {
                 //if no motion, it is forbidden to go from sleep to wake
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
                 
                 
                 //if not on bed for some time state, you can't get into sleep.
-                if (vec[t] == 0.0) {
+                if (vec[t] == 0.0 && isFirst) {
                     forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_SLEEP,LABEL_SLEEP)));
                 }
+                else {
+                    isFirst = false;
+                }
+                
+                
                 /*
                 //if no motion, it is forbidden to go from off bed to on bed
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_BED,LABEL_PRE_SLEEP)));
