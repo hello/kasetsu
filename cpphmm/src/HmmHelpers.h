@@ -79,6 +79,8 @@ public:
     
     static HmmDataMatrix_t elnMatrixScalarProduct(const HmmDataMatrix_t & m1, const HmmFloat_t a);
 
+    static HmmDataVec_t elnVectorScalarProduct(const HmmDataVec_t & m1, const HmmFloat_t a);
+    
     static ViterbiDecodeResult_t decodeWithoutLabels(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs);
 
 

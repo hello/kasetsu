@@ -45,6 +45,10 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     bool hasSleep = false;
     
     
+#define SLEEP_LABEL_PERIOD (24)
+#define SLEEP_SPACING (2)
+    
+    
     for (auto it = begin; it != end; it++) {
         
         if (hasString(it->MemberBegin(),it->MemberEnd(),"type","SLEEP")) {
@@ -95,7 +99,9 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
                 labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
             }
             
-            labelMap.insert(std::make_pair(updated, LABEL_SLEEP)); //begin sleep
+            for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
             
         }
         else {
@@ -105,7 +111,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
             }
             
             //sleep time moved back -- labeling as sleep
-            for (int i = updated; i <= original; i++) {
+            for (int i = updated + SLEEP_SPACING; i <= updated + SLEEP_LABEL_PERIOD; i++) {
                 labelMap.insert(std::make_pair(i, LABEL_SLEEP));
             }
         }
@@ -117,7 +123,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
         
         if (updated > original) {
             //wake time moved up -- labeling period as sleep
-            for (int i = original; i < updated; i++) {
+            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
                 labelMap.insert(std::make_pair(i, LABEL_SLEEP));
             }
             
@@ -133,7 +139,10 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
                 labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
             }
             
-            labelMap.insert(std::make_pair(updated - 1, LABEL_SLEEP));
+            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
+            
             
         }
 

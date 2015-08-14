@@ -6,6 +6,10 @@
 #include <fstream>
 #include <assert.h>
 
+#define LOG_A_NUMERATOR           "log_a_numerator"
+#define LOG_ALPHABET_NUMERATOR    "log_alphabet_numerator"
+#define LOG_DENOMINATOR           "log_denominator"
+
 using namespace rapidjson;
 
 static Value encodeVector(Document & d, const HmmDataVec_t & vec) {
@@ -80,38 +84,42 @@ MultiObsHiddenMarkovModel * ModelFile::LoadFile(const std::string & filename) {
     d.Parse(str.c_str());
     
 
+    for (Value::ConstMemberIterator it = d.MemberBegin(); it != d.MemberEnd(); it++) {
+        std::cout << (*it).name.GetString() << std::endl;
+    }
+    
     
     assert(d.IsObject());
-    assert(d["A"].IsArray());
-    assert(d["confusion"].IsArray());
-    assert(d["alphabets"].IsObject());
-    assert(d["pi"].IsArray());
-
     
-    const HmmDataMatrix_t A = decodeMatrix(d["A"].Begin(),d["A"].End());
-    const HmmDataVec_t pi = decodeVector(d["pi"].Begin(),d["pi"].End());
-
+    const HmmDataMatrix_t logANumerator = decodeMatrix(d[LOG_A_NUMERATOR].Begin(),d[LOG_A_NUMERATOR].End());
+    const HmmDataVec_t logDenominator = decodeVector(d[LOG_DENOMINATOR].Begin(),d[LOG_DENOMINATOR].End());
     
-    MatrixMap_t alphabets;
+    MatrixMap_t logAlphabetNumerator;
     
-    for (Value::ConstMemberIterator it = d["alphabets"].MemberBegin();
-         it != d["alphabets"].MemberEnd(); it++) {
+    for (Value::ConstMemberIterator it = d[LOG_ALPHABET_NUMERATOR].MemberBegin();
+         it != d[LOG_ALPHABET_NUMERATOR].MemberEnd(); it++) {
         
         const HmmDataMatrix_t mtx = decodeMatrix((*it).value.Begin(),(*it).value.End());
         const std::string key = (*it).name.GetString();
-        alphabets.insert(std::make_pair(key, mtx));
+        logAlphabetNumerator.insert(std::make_pair(key, mtx));
         
     }
     
-    if (alphabets.empty()) {
+    if (logAlphabetNumerator.empty()) {
         return NULL;
     }
     
-    if (A.empty()) {
+    if (logANumerator.empty()) {
         return NULL;
     }
     
-    return new MultiObsHiddenMarkovModel(alphabets,A);
+    if (logDenominator.empty()) {
+        return NULL;
+    }
+    
+    std::cout << "successfully deserialized all the data... " << std::endl;
+    
+    return new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator);
 }
 
 void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string & filename) {
@@ -122,7 +130,8 @@ void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string
     
     d.SetObject();
     
-    const MatrixMap_t alphabets = hmm.getAlphabetMatrix();
+    const MatrixMap_t & alphabets = hmm.getLogAlphabetNumerator();
+    
     Value alphabetObj;
     alphabetObj.SetObject();
     
@@ -135,10 +144,13 @@ void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string
         alphabetObj.AddMember(name,encodeMatrix(d, mat),d.GetAllocator());
     }
     
-    d.AddMember("A",encodeMatrix(d,hmm.getAMatrix()),d.GetAllocator());
+
     d.AddMember("confusion",encodeMatrix(d,hmm.getLastConfusionMatrix()),d.GetAllocator());
-    d.AddMember("alphabets",alphabetObj,d.GetAllocator());
-    d.AddMember("pi",encodeVector(d,hmm.getPi()),d.GetAllocator());
+
+    d.AddMember(LOG_A_NUMERATOR,encodeMatrix(d,hmm.getLogANumerator()),d.GetAllocator());
+    d.AddMember(LOG_ALPHABET_NUMERATOR,alphabetObj,d.GetAllocator());
+    d.AddMember(LOG_DENOMINATOR,encodeVector(d, hmm.getLogDenominator()),d.GetAllocator());
+
     d.Accept(writer);
     
     std::ofstream outfile(filename);

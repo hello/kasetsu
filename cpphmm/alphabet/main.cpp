@@ -8,7 +8,8 @@
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
 
-static const int32_t k_error_threshold_in_periods = 6; //each period is 5 minutes
+static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
+static const int32_t priorScaleAsNumberOfSamples = 5;
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },
@@ -26,7 +27,7 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
     
     for (auto it = meas.begin(); it != meas.end(); it++) {
         const MatrixMap_t & ref = (*it).rawdata;
-        
+        LabelMap_t labelsCopy = (*it).labels;
         auto dataIterator = ref.find("motion");
         
         const HmmDataMatrix_t & mat = (*dataIterator).second;
@@ -39,6 +40,11 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
                 //if no motion, it is forbidden to go from sleep to wake
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
                 
+                
+                //if not on bed for some time state, you can't get into sleep.
+                if (vec[t] == 0.0) {
+                    forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_SLEEP,LABEL_SLEEP)));
+                }
                 /*
                 //if no motion, it is forbidden to go from off bed to on bed
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_BED,LABEL_PRE_SLEEP)));
@@ -49,7 +55,7 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
             }
         }
         
-        seq.addSequence(ref, forbiddenTransitions, (*it).labels);
+        seq.addSequence(ref, forbiddenTransitions, labelsCopy);
         
         
     }
@@ -178,7 +184,7 @@ int main(int argc , char ** argv) {
     
     
     if (action == "reestimate") {
-        phmm->reestimate(multiObsSequence, 1);
+        phmm->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
         phmm->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
 
 

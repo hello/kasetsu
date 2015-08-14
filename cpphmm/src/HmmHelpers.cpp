@@ -452,6 +452,18 @@ HmmDataMatrix_t HmmHelpers::elnMatrixScalarProduct(const HmmDataMatrix_t & m1, c
     return m3;
 }
 
+HmmDataVec_t HmmHelpers::elnVectorScalarProduct(const HmmDataVec_t & m1, const HmmFloat_t a) {
+    const int m = m1.size();
+    
+    HmmDataVec_t m3 = getZeroedVec(m);
+    HmmFloat_t elnA = (eln(a));
+    for (int j = 0; j < m; j++) {
+        m3[j] = elnproduct(m1[j], elnA);
+    }
+    
+    return m3;
+}
+
 HmmDataMatrix_t HmmHelpers::elnAddMatrix(const HmmDataMatrix_t & m1, const HmmDataMatrix_t & m2) {
     const int m = m1.size();
     const int n = m1[0].size();
