@@ -12,7 +12,7 @@
 
 #define PRIOR_STRENGTH (1e-50)
 
-#define SLEEP_STATE (1) 
+#define SLEEP_STATE (2) 
 #define SLEEP_STATE_MIN_DURATION (6)
 
 

@@ -39,12 +39,13 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
             bool isFirst = true;
             if (vec[t] == 0.0 || vec[t] == 6.0) {
                 //if no motion, it is forbidden to go from sleep to wake
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
-                
+                //forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_OUT_OF_BED)));
+                //forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_OUT_OF_BED,LABEL_POST_SLEEP)));
+
                 
                 //if not on bed for some time state, you can't get into sleep.
                 if (vec[t] == 0.0 && isFirst) {
-                    forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_SLEEP,LABEL_SLEEP)));
+                  //  forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_SLEEP,LABEL_IN_BED)));
                 }
                 else {
                     isFirst = false;
@@ -158,21 +159,21 @@ int main(int argc , char ** argv) {
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
 
-        
+        /*
         A.resize(3);
         A[0] << 0.9999,0.0001,0.0;
         A[1] << 0.00,0.9999,0.0001;
         A[2] << 0.00,0.00,1.0;
+        */
         
-        
-        /*
+    
         A.resize(5);
         A[0] << 0.99,0.01,0.00,0.00,0.00;
-        A[1] << 0.00,0.99,0.01,0.00,0.00;
+        A[1] << 0.00,0.80,0.20,0.00,0.00;
         A[2] << 0.00,0.00,0.999,0.001,0.00;
-        A[3] << 0.00,0.00,0.00,0.99,0.01;
+        A[3] << 0.00,0.00,0.00,0.80,0.20;
         A[4] << 0.00,0.00,0.00,0.00,1.0;
-*/
+
         
         
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());

@@ -7,8 +7,11 @@
 #include <map>
 
 #define LABEL_PRE_SLEEP (0)
-#define LABEL_SLEEP (1)
-#define LABEL_POST_SLEEP (2)
+#define LABEL_IN_BED (1)
+#define LABEL_SLEEP (2)
+#define LABEL_OUT_OF_BED (3)
+#define LABEL_POST_SLEEP (4)
+
 
 typedef struct {
     MatrixMap_t rawdata;
