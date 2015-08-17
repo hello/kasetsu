@@ -7,7 +7,7 @@ static const char * k_labels = "feedback";
 static const char * k_state_sizes = "state_sizes";
 
 #define SLEEP_LABEL_PERIOD (36)
-#define SLEEP_SPACING (2)
+#define SLEEP_SPACING (0)
 
 using namespace rapidjson;
 
@@ -77,7 +77,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
     
     
-    
+    /*
     if (hasWake && hasSleep) {
         
         const int updated1 = (*sleep)["updated"].GetInt();
@@ -101,8 +101,9 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
 
         
     }
+     */
     
-    else if (hasSleep) {
+    if (hasSleep) {
         const int updated = (*sleep)["updated"].GetInt();
         
         for (int i = 0; i < updated; i++) {
@@ -114,7 +115,8 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
         }
         
     }
-    else if (hasWake) {
+    
+    if (hasWake) {
         const int updated = (*wake)["updated"].GetInt();
        
         //wake time moved up -- labeling period as sleep
