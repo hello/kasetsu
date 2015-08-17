@@ -35,31 +35,48 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
         
         TransitionMultiMap_t forbiddenTransitions;
         
-        for (int t = 0; t < vec.size(); t++) {
-            bool isFirst = true;
-            if (vec[t] == 0.0 || vec[t] == 6.0) {
-                //if no motion, it is forbidden to go from sleep to wake
+        for (int t = 0; t < vec.size() - 1; t++) {
+            //if the next timestemp has no motion
+            if (vec[t + 1] == 0.0 || vec[t + 1] == 6.0) {
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
-                
-                
-                //if not on bed for some time state, you can't get into sleep.
-                if (vec[t] == 0.0 && isFirst) {
-                    forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_SLEEP,LABEL_SLEEP)));
-                }
-                else {
-                    isFirst = false;
-                }
-                
-                
-                /*
-                //if no motion, it is forbidden to go from off bed to on bed
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_PRE_BED,LABEL_PRE_SLEEP)));
-                
-                //if no motion, it is forbidden to go from on bed to off bed
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_POST_SLEEP,LABEL_POST_BED)));
-*/
+            }
+            
+            //or if this time stamp has no motion
+            if (vec[t] == 0.0 || vec[t] == 6.0) {
+                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
+            }
+
+        }
+        
+        
+        bool isFirst = true;
+        for (int t = 0; t < vec.size() - 1; t++) {
+            //all no motion before bed is definitely not sleep or post sleep
+            if (vec[t] == 0.0 && isFirst) {
+                labelsCopy.insert(std::make_pair(t,LABEL_PRE_SLEEP));
+            }
+            else if (isFirst) {
+                isFirst = false;
             }
         }
+        
+        
+        /*
+        isFirst = true;
+        for (int t = vec.size() - 1; t > 0; t--) {
+            //if not on bed for some time state, you can't get into sleep.
+            if (vec[t] == 0.0 && isFirst) {
+                labelsCopy.insert(std::make_pair(t,LABEL_POST_SLEEP));
+            }
+            else if (isFirst) {
+                isFirst = false;
+            }
+
+        }
+         */
+        
+        
+        
         
         seq.addSequence(ref, forbiddenTransitions, labelsCopy);
         
