@@ -6,6 +6,9 @@ static const char * k_alphabets = "alphabets";
 static const char * k_labels = "feedback";
 static const char * k_state_sizes = "state_sizes";
 
+#define SLEEP_LABEL_PERIOD (36)
+#define SLEEP_SPACING (2)
+
 using namespace rapidjson;
 
 
@@ -39,15 +42,15 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
     Value::ConstValueIterator sleep;
     Value::ConstValueIterator wake;
+    Value::ConstValueIterator inbed;
+    Value::ConstValueIterator outofbed;
+
     LabelMap_t labelMap;
     
     bool hasWake = false;
     bool hasSleep = false;
-    
-    
-#define SLEEP_LABEL_PERIOD (24)
-#define SLEEP_SPACING (2)
-    
+    bool hasInBed = false;
+    bool hasOutOfBed = false;
     
     for (auto it = begin; it != end; it++) {
         
@@ -59,6 +62,16 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
         if (hasString(it->MemberBegin(),it->MemberEnd(),"type","WAKE_UP")) {
             wake = it;
             hasWake = true;
+        }
+        
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","IN_BED")) {
+            inbed = it;
+            hasInBed = true;
+        }
+        
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","OUT_OF_BED")) {
+            outofbed = it;
+            hasOutOfBed = true;
         }
     }
     
@@ -91,61 +104,45 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
     else if (hasSleep) {
         const int updated = (*sleep)["updated"].GetInt();
-        const int original = (*sleep)["original"].GetInt();
         
-        if (updated > original) {
-            //sleep time moved up -- labeling period as awake
-            for (int i = 0; i < updated; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
-            }
-            
-            for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-            }
-            
+        for (int i = 0; i < updated; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
         }
-        else {
-            //labeling everything up to sleep as wake
-            for (int i = 0; i < updated; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
-            }
-            
-            //sleep time moved back -- labeling as sleep
-            for (int i = updated + SLEEP_SPACING; i <= updated + SLEEP_LABEL_PERIOD; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-            }
+        
+        for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
         }
-
+        
     }
     else if (hasWake) {
         const int updated = (*wake)["updated"].GetInt();
-        const int original = (*wake)["original"].GetInt();
+       
+        //wake time moved up -- labeling period as sleep
+        for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+        }
         
-        if (updated > original) {
-            //wake time moved up -- labeling period as sleep
-            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-            }
-            
-            //everything from wake afterwards is "wake"
-            for (int i = updated; i < alphabetLength; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
-                
-            }
-        }
-        else {
-            //wake time moved back -- labeling as wake
-            for (int i = updated; i < alphabetLength; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
-            }
-            
-            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
-                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-            }
-            
+        //everything from wake afterwards is "wake"
+        for (int i = updated; i < alphabetLength; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
             
         }
-
+       
+    }
+    
+    
+    if (hasInBed) {
+        const int updated = (*inbed)["updated"].GetInt();
+        for (int i = 0; i < updated; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+        }
+    }
+    
+    if (hasOutOfBed) {
+        const int updated = (*outofbed)["updated"].GetInt();
+        for (int i = updated; i < alphabetLength; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+        }
     }
  
      

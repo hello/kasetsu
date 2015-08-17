@@ -21,6 +21,11 @@ static struct option long_options[] = {
 };
 
 
+static bool isMotion(const HmmDataVec_t & motion, uint32_t t) {
+    return ! (motion[t] == 0.0 || motion[t] == 6.0);
+}
+
+
 static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
     
     MultiObsSequence seq;
@@ -34,49 +39,14 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
         const HmmDataVec_t & vec = mat[0];
         
         TransitionMultiMap_t forbiddenTransitions;
-        
         for (int t = 0; t < vec.size() - 1; t++) {
-            //if the next timestemp has no motion
-            if (vec[t + 1] == 0.0 || vec[t + 1] == 6.0) {
+            //need two consecutive motion events to have a wake
+            //I hypothessize that it improve things because it gets rid of bed-making events
+            if (  !( isMotion(vec, t) && isMotion(vec, t+1) ) )  {
                 forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
             }
-            
-            //or if this time stamp has no motion
-            if (vec[t] == 0.0 || vec[t] == 6.0) {
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
-            }
-
+        
         }
-        
-        
-        bool isFirst = true;
-        for (int t = 0; t < vec.size() - 1; t++) {
-            //all no motion before bed is definitely not sleep or post sleep
-            if (vec[t] == 0.0 && isFirst) {
-                labelsCopy.insert(std::make_pair(t,LABEL_PRE_SLEEP));
-            }
-            else if (isFirst) {
-                isFirst = false;
-            }
-        }
-        
-        
-        /*
-        isFirst = true;
-        for (int t = vec.size() - 1; t > 0; t--) {
-            //if not on bed for some time state, you can't get into sleep.
-            if (vec[t] == 0.0 && isFirst) {
-                labelsCopy.insert(std::make_pair(t,LABEL_POST_SLEEP));
-            }
-            else if (isFirst) {
-                isFirst = false;
-            }
-
-        }
-         */
-        
-        
-        
         
         seq.addSequence(ref, forbiddenTransitions, labelsCopy);
         
