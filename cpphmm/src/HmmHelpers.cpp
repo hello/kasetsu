@@ -605,7 +605,7 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithMinimumDurationConstraints(const Hmm
     //see the paper "Long-term Activities Segmentation using Viterbi Algorithm with a k-minimum-consecutive-states Constraint"
     //by Enrique Garcia-Ceja, Ramon Brena, 2014
     
-    zeta.reserve(numStates);
+    zeta.resize(numStates);
     for (i = 0; i < numStates; i++) {
         zeta[i] = 1;
     }
