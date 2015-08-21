@@ -15,15 +15,17 @@ public:
     
     std::vector<ViterbiDecodeResult_t> evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError) ;
     void reestimate(const MultiObsSequence & meas,const uint32_t numIter,const uint32_t priorWeightAsNumberOfSamples);
-    HmmDataVec_t getPi() const;
     HmmDataMatrix_t getAMatrix() const;
     MatrixMap_t getAlphabetMatrix() const;
     HmmDataMatrix_t getLogBMap(const MatrixMap_t & rawdataMap, const MatrixMap_t & alphabetProbsMap) const;
     HmmDataMatrix_t getLastConfusionMatrix() const;
     
+    const HmmDataVec_t & getPi() const;
     const HmmDataMatrix_t & getLogANumerator() const;
     const MatrixMap_t & getLogAlphabetNumerator() const;
     const HmmDataVec_t & getLogDenominator() const;
+    uint32_t getNumStates() const;
+    UIntVec_t getMinStatedDurations() const;
 
 private:
 

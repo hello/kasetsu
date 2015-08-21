@@ -192,6 +192,7 @@ int main(int argc , char ** argv) {
     
     if (!output_filename.empty()) {
         ModelFile::SaveFile(*phmm, output_filename);
+        ModelFile::SaveProtobuf(*phmm, output_filename + ".proto", "sleep");
     }
     
     delete phmm;

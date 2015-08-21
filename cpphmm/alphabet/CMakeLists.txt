@@ -21,11 +21,12 @@ set("CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS}  -Wall -Werror -std=c++11")
 
 FIND_PACKAGE(JsonCpp REQUIRED)
 FIND_PACKAGE(RapidJson REQUIRED)
-#FIND_PACKAGE(PLplot REQUIRED)
+FIND_PACKAGE(Protobuf REQUIRED)
 
 include_directories("../src/")
 include_directories(${JSONCPP_INCLUDE_DIRS})
 include_directories(${RAPIDJSON_INCLUDE_DIRS})
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 
 #compile algs
@@ -35,7 +36,8 @@ add_subdirectory("../src/" "${CMAKE_CURRENT_BINARY_DIR}/main")
 add_executable(alphabet
                main.cpp
                DataFile.cpp
-               ModelFile.cpp)
+               ModelFile.cpp
+               online_hmm.pb.cc)
 
-target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES})
+target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES} ${PROTOBUF_LIBRARY})
 

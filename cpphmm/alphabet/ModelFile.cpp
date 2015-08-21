@@ -5,6 +5,8 @@
 #include <rapidjson/writer.h>
 #include <fstream>
 #include <assert.h>
+#include "online_hmm.pb.h"
+
 
 #define LOG_A_NUMERATOR           "log_a_numerator"
 #define LOG_ALPHABET_NUMERATOR    "log_alphabet_numerator"
@@ -159,6 +161,68 @@ void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string
     
     
 
+}
+
+static hello::RealMatrix matrixFromMatrix(const HmmDataMatrix_t & mtx) {
+    hello::RealMatrix mtx2;
+    mtx2.set_num_rows(mtx.size());
+    mtx2.set_num_cols(mtx[0].size());
+    
+    for (int j = 0; j < mtx.size(); j++) {
+        for (int i = 0; i < mtx[0].size(); i++) {
+            mtx2.add_data(mtx[j][i]);
+        }
+    }
+    
+    return mtx2;
+}
+
+
+void ModelFile::SaveProtobuf(const MultiObsHiddenMarkovModel &hmm, const std::string &filename,const std::string & outputId) {
+    hello::AlphabetHmmPrior prior;
+    
+    
+    prior.set_id("default");
+    
+    if (outputId == "sleep") {
+        prior.set_output_id(hello::OutputId::SLEEP);
+    }
+    
+    if (outputId == "bed") {
+        prior.set_output_id(hello::OutputId::BED);
+    }
+
+    prior.set_date_created_utc(0);
+    prior.set_date_updated_utc(0);
+    
+    for (auto it = hmm.getLogAlphabetNumerator().begin(); it != hmm.getLogAlphabetNumerator().end(); it++) {
+        prior.add_log_observation_model_ids((*it).first);
+        *prior.add_log_observation_model_numerator() = matrixFromMatrix((*it).second); //hope this works
+    }
+
+    for (int i = 0; i < hmm.getLogDenominator().size(); i++) {
+        prior.add_log_denominator(hmm.getLogDenominator()[i]);
+    }
+    
+    for (int i = 0; i < hmm.getPi().size(); i++) {
+        prior.add_log_denominator(hmm.getPi()[i]);
+    }
+
+    prior.set_allocated_log_state_transition_numerator(new hello::RealMatrix(matrixFromMatrix(hmm.getLogANumerator())));
+    
+    prior.add_end_states(hmm.getNumStates());
+    
+    const UIntVec_t minDurations = hmm.getMinStatedDurations();
+
+    for (int i = 0; i < minDurations.size(); i++) {
+        prior.add_minimum_state_durations(minDurations[i]);
+    }
+    
+    std::ofstream outfile(filename);
+
+    if (outfile.is_open()) {
+        prior.SerializeToOstream(&outfile);
+    }
 }
 
 

@@ -406,7 +406,7 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLastConfusionMatrix() const {
     return _lastConfusionMatrix;
 }
 
-HmmDataVec_t MultiObsHiddenMarkovModel::getPi() const {
+const HmmDataVec_t & MultiObsHiddenMarkovModel::getPi() const {
     return _pi;
 }
 
@@ -421,6 +421,23 @@ const HmmDataMatrix_t & MultiObsHiddenMarkovModel::getLogANumerator() const {
     return _logANumerator;
 }
 
+uint32_t MultiObsHiddenMarkovModel::getNumStates() const {
+    return _numStates;
+}
+
+UIntVec_t MultiObsHiddenMarkovModel::getMinStatedDurations() const {
+    UIntVec_t minDurations;
+    minDurations.reserve(_numStates);
+    for (int i = 0; i < _numStates; i++) {
+        minDurations.push_back(1);
+    }
+    
+    minDurations[SLEEP_STATE] = SLEEP_STATE_MIN_DURATION;
+    
+    return minDurations;
+}
+
+
 
 
 std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError)  {
@@ -432,13 +449,8 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
     TransitionAtTime_t totalErrorCount;
     TransitionAtTime_t totalLabelCount;
     
-    UIntVec_t minDurations;
-    minDurations.reserve(_numStates);
-    for (int i = 0; i < _numStates; i++) {
-        minDurations.push_back(1);
-    }
-    
-    minDurations[SLEEP_STATE] = SLEEP_STATE_MIN_DURATION;
+    const UIntVec_t minDurations = getMinStatedDurations();
+   
     
     for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
