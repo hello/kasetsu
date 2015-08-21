@@ -7,7 +7,7 @@
 #include <assert.h>
 #include "online_hmm.pb.h"
 
-
+/*
 #define LOG_A_NUMERATOR           "log_a_numerator"
 #define LOG_ALPHABET_NUMERATOR    "log_alphabet_numerator"
 #define LOG_DENOMINATOR           "log_denominator"
@@ -67,7 +67,7 @@ static HmmDataMatrix_t decodeMatrix(Value::ConstValueIterator mtxbegin, Value::C
 
 
 
-MultiObsHiddenMarkovModel * ModelFile::LoadFile(const std::string & filename) {
+HmmMap_t * ModelFile::LoadFile(const std::string & filename) {
     std::ifstream file(filename.c_str());
     
     if (!file.is_open()) {
@@ -123,8 +123,10 @@ MultiObsHiddenMarkovModel * ModelFile::LoadFile(const std::string & filename) {
     
     return new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator);
 }
+ */
 
-void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string & filename) {
+/*
+void ModelFile::SaveFile(const HmmMap_t &hmms,const std::string & filename) {
     Document d;
     StringBuffer buffer;
     
@@ -159,9 +161,9 @@ void ModelFile::SaveFile(const MultiObsHiddenMarkovModel & hmm,const std::string
     
     outfile << buffer.GetString();
     
-    
 
 }
+ */
 
 static hello::RealMatrix matrixFromMatrix(const HmmDataMatrix_t & mtx) {
     hello::RealMatrix mtx2;
@@ -178,50 +180,176 @@ static hello::RealMatrix matrixFromMatrix(const HmmDataMatrix_t & mtx) {
 }
 
 
-void ModelFile::SaveProtobuf(const MultiObsHiddenMarkovModel &hmm, const std::string &filename,const std::string & outputId) {
-    hello::AlphabetHmmPrior prior;
+static HmmDataMatrix_t getMatFromRealMatrix(const hello::RealMatrix & realmat) {
+    HmmDataMatrix_t mtx;
+    mtx.resize(realmat.num_rows());
     
-    
-    prior.set_id("default");
-    
-    if (outputId == "sleep") {
-        prior.set_output_id(hello::OutputId::SLEEP);
+    int k = 0;
+    for (int j = 0; j < mtx.size(); j++) {
+        mtx[j].resize(realmat.num_cols());
+        
+        for (int i = 0; i < realmat.num_cols(); i++) {
+            mtx[j][i] = realmat.data(k++);
+        }
     }
     
-    if (outputId == "bed") {
-        prior.set_output_id(hello::OutputId::BED);
-    }
+    return mtx;
+}
 
-    prior.set_date_created_utc(0);
-    prior.set_date_updated_utc(0);
+static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior) {
+    /*
+    optional string id = 1;
+    optional OutputId output_id = 2;
+    optional int64 date_created_utc = 3;
+    optional int64 date_updated_utc = 4;
+    optional RealMatrix log_state_transition_numerator = 5;
+    repeated RealMatrix log_observation_model_numerator = 6;
+    repeated string log_observation_model_ids = 7;
+    repeated double log_denominator = 8;
+    repeated double pi = 9;
+    repeated int32 end_states = 10;
+    repeated int32 minimum_state_durations = 11;
+     
+     const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator,const HmmFloat_t scalingFactor = 1.0
+     */
     
-    for (auto it = hmm.getLogAlphabetNumerator().begin(); it != hmm.getLogAlphabetNumerator().end(); it++) {
-        prior.add_log_observation_model_ids((*it).first);
-        *prior.add_log_observation_model_numerator() = matrixFromMatrix((*it).second); //hope this works
+    
+    assert(prior.has_log_state_transition_numerator());
+    assert(prior.has_output_id());
+    assert(prior.log_denominator_size() > 0);
+    assert(prior.log_observation_model_ids_size() > 0);
+    assert(prior.log_observation_model_numerator_size() > 0);
+    
+    MatrixMap_t logAlphabetNumerator;
+    
+    for (int i = 0; i < prior.log_observation_model_ids_size(); i++) {
+        std::string modelId = prior.log_observation_model_ids(i);
+        hello::RealMatrix mtx = prior.log_observation_model_numerator(i);
+        logAlphabetNumerator.insert(std::make_pair(modelId,getMatFromRealMatrix(mtx)));
     }
-
-    for (int i = 0; i < hmm.getLogDenominator().size(); i++) {
-        prior.add_log_denominator(hmm.getLogDenominator()[i]);
+    
+    HmmDataMatrix_t logANumerator = getMatFromRealMatrix(prior.log_state_transition_numerator());
+    
+    HmmDataVec_t logDenominator;
+    logDenominator.reserve(prior.log_denominator_size());
+    
+    for (int i = 0; i < prior.log_denominator_size(); i++) {
+        logDenominator.push_back(prior.log_denominator(i));
     }
     
-    for (int i = 0; i < hmm.getPi().size(); i++) {
-        prior.add_log_denominator(hmm.getPi()[i]);
+    std::string outputId;
+    
+    switch (prior.output_id()) {
+        case hello::SLEEP:
+        {
+            outputId = "sleep";
+            break;
+        }
+            
+        case hello::BED:
+        {
+            outputId = "bed";
+            break;
+        }
+            
+        default:
+        {
+            assert(false && "NOT A VALID ENUMERATION FOR OUTPUT ID");
+        }
     }
-
-    prior.set_allocated_log_state_transition_numerator(new hello::RealMatrix(matrixFromMatrix(hmm.getLogANumerator())));
     
-    prior.add_end_states(hmm.getNumStates());
     
-    const UIntVec_t minDurations = hmm.getMinStatedDurations();
+    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator));
+    
+}
 
-    for (int i = 0; i < minDurations.size(); i++) {
-        prior.add_minimum_state_durations(minDurations[i]);
+HmmMap_t ModelFile::LoadFile(const std::string & filename) {
+    HmmMap_t hmms;
+    
+    std::ifstream file(filename.c_str());
+    
+    if (!file.is_open()) {
+        return hmms;
+    }
+    
+    file.seekg(0,std::ios::end);
+    std::string str;
+    str.reserve(file.tellg());
+    file.seekg(0, std::ios::beg);
+    
+    str.assign((std::istreambuf_iterator<char>(file)),
+               std::istreambuf_iterator<char>());
+
+    hello::AlphabetHmmUserModel protobuf;
+    protobuf.ParseFromString(str);
+    
+    for (int iModel = 0; iModel < protobuf.models_size(); iModel++) {
+        hello::AlphabetHmmPrior prior = protobuf.models(iModel);
+        
+        hmms.insert(hmmFromPrior(prior));
+        
+    }
+    
+    return hmms;
+}
+
+
+void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) {
+    
+    hello::AlphabetHmmUserModel model;
+    
+    for (auto hmmIterator = hmms.begin(); hmmIterator != hmms.end(); hmmIterator++) {
+        hello::AlphabetHmmPrior * prior = model.add_models();
+
+
+        const MultiObsHiddenMarkovModel & hmm = *((*hmmIterator).second);
+        const std::string & outputId = (*hmmIterator).first;
+        
+        prior->set_id("default");
+        
+        if (outputId == "sleep") {
+            prior->set_output_id(hello::OutputId::SLEEP);
+        }
+        else if (outputId == "bed") {
+            prior->set_output_id(hello::OutputId::BED);
+        }
+        else {
+            assert(false && "output id was not sleep or bed");
+        }
+        
+        prior->set_date_created_utc(0);
+        prior->set_date_updated_utc(0);
+        
+        for (auto it = hmm.getLogAlphabetNumerator().begin(); it != hmm.getLogAlphabetNumerator().end(); it++) {
+            prior->add_log_observation_model_ids((*it).first);
+            *(prior->add_log_observation_model_numerator()) = matrixFromMatrix((*it).second); //hope this works
+        }
+        
+        for (int i = 0; i < hmm.getLogDenominator().size(); i++) {
+            prior->add_log_denominator(hmm.getLogDenominator()[i]);
+        }
+        
+        for (int i = 0; i < hmm.getPi().size(); i++) {
+            prior->add_log_denominator(hmm.getPi()[i]);
+        }
+        
+        prior->set_allocated_log_state_transition_numerator(new hello::RealMatrix(matrixFromMatrix(hmm.getLogANumerator())));
+        
+        prior->add_end_states(hmm.getNumStates());
+        
+        const UIntVec_t minDurations = hmm.getMinStatedDurations();
+        
+        for (int i = 0; i < minDurations.size(); i++) {
+            prior->add_minimum_state_durations(minDurations[i]);
+        }
+        
+        
     }
     
     std::ofstream outfile(filename);
 
     if (outfile.is_open()) {
-        prior.SerializeToOstream(&outfile);
+        model.SerializeToOstream(&outfile);
     }
 }
 

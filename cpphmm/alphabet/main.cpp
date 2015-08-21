@@ -139,8 +139,7 @@ int main(int argc , char ** argv) {
     
     MultiObsSequence multiObsSequence = getMotionSequence(meas);
     
-    
-    MultiObsHiddenMarkovModel * phmm = NULL;
+    HmmMap_t hmms;
     
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
@@ -164,26 +163,32 @@ int main(int argc , char ** argv) {
         
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
 
-        phmm = new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A);
+        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A)));
     }
     else {
-        phmm = ModelFile::LoadFile(model_filename);
+        hmms = ModelFile::LoadFile(model_filename);
     }
 
-    if (!phmm) {
+    if (hmms.empty()) {
         std::cerr << "failed to create HMM" << std::endl;
         return 1;
     }
     
     
     if (action == "reestimate") {
-        phmm->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
-        phmm->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
-
-
+        
+        for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            std::cout << "ESTIMATING " << (*it).first << std::endl;
+            (*it).second->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
+            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+        }
+        
     }
     else if (action == "evaluate") {
-        phmm->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+        for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            std::cout << "EVALUATING " << (*it).first << std::endl;
+            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+        }
     }
     else {
         std::cerr << "needed to specify action reestimate or evaluate";
@@ -191,12 +196,12 @@ int main(int argc , char ** argv) {
     }
     
     if (!output_filename.empty()) {
-        ModelFile::SaveFile(*phmm, output_filename);
-        ModelFile::SaveProtobuf(*phmm, output_filename + ".proto", "sleep");
+        ModelFile::SaveProtobuf(hmms, output_filename);
     }
     
-    delete phmm;
-    phmm = NULL;
+    for (auto it = hmms.begin(); it != hmms.end(); it++) {
+        delete (*it).second;
+    }
 
     return 0;
 }
