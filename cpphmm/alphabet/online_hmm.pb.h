@@ -249,20 +249,35 @@ class Transition : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 to() const;
   inline void set_to(::google::protobuf::int32 value);
 
+  // optional string output_id = 3;
+  inline bool has_output_id() const;
+  inline void clear_output_id();
+  static const int kOutputIdFieldNumber = 3;
+  inline const ::std::string& output_id() const;
+  inline void set_output_id(const ::std::string& value);
+  inline void set_output_id(const char* value);
+  inline void set_output_id(const char* value, size_t size);
+  inline ::std::string* mutable_output_id();
+  inline ::std::string* release_output_id();
+  inline void set_allocated_output_id(::std::string* output_id);
+
   // @@protoc_insertion_point(class_scope:hello.Transition)
  private:
   inline void set_has_from();
   inline void clear_has_from();
   inline void set_has_to();
   inline void clear_has_to();
+  inline void set_has_output_id();
+  inline void clear_has_output_id();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::int32 from_;
   ::google::protobuf::int32 to_;
+  ::std::string* output_id_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
 
   friend void  protobuf_AddDesc_online_5fhmm_2eproto();
   friend void protobuf_AssignDesc_online_5fhmm_2eproto();
@@ -867,6 +882,76 @@ inline ::google::protobuf::int32 Transition::to() const {
 inline void Transition::set_to(::google::protobuf::int32 value) {
   set_has_to();
   to_ = value;
+}
+
+// optional string output_id = 3;
+inline bool Transition::has_output_id() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void Transition::set_has_output_id() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void Transition::clear_has_output_id() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void Transition::clear_output_id() {
+  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
+    output_id_->clear();
+  }
+  clear_has_output_id();
+}
+inline const ::std::string& Transition::output_id() const {
+  return *output_id_;
+}
+inline void Transition::set_output_id(const ::std::string& value) {
+  set_has_output_id();
+  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+    output_id_ = new ::std::string;
+  }
+  output_id_->assign(value);
+}
+inline void Transition::set_output_id(const char* value) {
+  set_has_output_id();
+  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+    output_id_ = new ::std::string;
+  }
+  output_id_->assign(value);
+}
+inline void Transition::set_output_id(const char* value, size_t size) {
+  set_has_output_id();
+  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+    output_id_ = new ::std::string;
+  }
+  output_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Transition::mutable_output_id() {
+  set_has_output_id();
+  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+    output_id_ = new ::std::string;
+  }
+  return output_id_;
+}
+inline ::std::string* Transition::release_output_id() {
+  clear_has_output_id();
+  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = output_id_;
+    output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
+}
+inline void Transition::set_allocated_output_id(::std::string* output_id) {
+  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
+    delete output_id_;
+  }
+  if (output_id) {
+    set_has_output_id();
+    output_id_ = output_id;
+  } else {
+    clear_has_output_id();
+    output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  }
 }
 
 // -------------------------------------------------------------------

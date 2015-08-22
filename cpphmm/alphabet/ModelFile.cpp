@@ -196,7 +196,7 @@ static HmmDataMatrix_t getMatFromRealMatrix(const hello::RealMatrix & realmat) {
     return mtx;
 }
 
-static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior) {
+static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior,const std::string & outputId, const TransitionVector_t & forbiddenMotiontransitions) {
     /*
     optional string id = 1;
     optional OutputId output_id = 2;
@@ -237,29 +237,9 @@ static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hel
         logDenominator.push_back(prior.log_denominator(i));
     }
     
-    std::string outputId;
-    
-    switch (prior.output_id()) {
-        case hello::SLEEP:
-        {
-            outputId = "sleep";
-            break;
-        }
-            
-        case hello::BED:
-        {
-            outputId = "bed";
-            break;
-        }
-            
-        default:
-        {
-            assert(false && "NOT A VALID ENUMERATION FOR OUTPUT ID");
-        }
-    }
     
     
-    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator));
+    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator,forbiddenMotiontransitions));
     
 }
 
@@ -286,9 +266,45 @@ HmmMap_t ModelFile::LoadFile(const std::string & filename) {
     for (int iModel = 0; iModel < protobuf.models_size(); iModel++) {
         hello::AlphabetHmmPrior prior = protobuf.models(iModel);
         
-        hmms.insert(hmmFromPrior(prior));
+        std::string outputId;
+        
+        switch (prior.output_id()) {
+            case hello::SLEEP:
+            {
+                outputId = "sleep";
+                break;
+            }
+                
+            case hello::BED:
+            {
+                outputId = "bed";
+                break;
+            }
+                
+            default:
+            {
+                assert(false && "NOT A VALID ENUMERATION FOR OUTPUT ID");
+            }
+        }
+        
+        TransitionVector_t forbiddenMotionTransitions;
+        
+        for (int i = 0; i < protobuf.forbiddeden_motion_transitions_size(); i++) {
+            hello::Transition transition = protobuf.forbiddeden_motion_transitions(i);
+            
+            if (transition.output_id() == outputId) {
+                StateIdxPair t(transition.from(),transition.to());
+                forbiddenMotionTransitions.push_back(t);
+            }
+            
+        }
+
+        
+        hmms.insert(hmmFromPrior(prior,outputId,forbiddenMotionTransitions));
         
     }
+    
+    
     
     return hmms;
 }
@@ -342,6 +358,14 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         for (int i = 0; i < minDurations.size(); i++) {
             prior->add_minimum_state_durations(minDurations[i]);
         }
+        
+        for (auto it = hmm.getForbiddenMotionTransitions().begin(); it != hmm.getForbiddenMotionTransitions().end(); it++) {
+            hello::Transition * transition = model.add_forbiddeden_motion_transitions();
+            transition->set_from((*it).from);
+            transition->set_to((*it).to);
+            transition->set_output_id(outputId);
+        }
+        
         
         
     }

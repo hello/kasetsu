@@ -65,9 +65,10 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(RealMatrix));
   Transition_descriptor_ = file->message_type(1);
-  static const int Transition_offsets_[2] = {
+  static const int Transition_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, from_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, to_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, output_id_),
   };
   Transition_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -186,25 +187,25 @@ void protobuf_AddDesc_online_5fhmm_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\020online_hmm.proto\022\005hello\"J\n\nRealMatrix\022"
     "\020\n\010num_rows\030\001 \002(\005\022\020\n\010num_cols\030\002 \002(\005\022\014\n\004d"
-    "ata\030\003 \003(\001\022\n\n\002id\030\004 \001(\t\"&\n\nTransition\022\014\n\004f"
-    "rom\030\001 \002(\005\022\n\n\002to\030\002 \002(\005\"\352\002\n\020AlphabetHmmPri"
-    "or\022\n\n\002id\030\001 \001(\t\022\"\n\toutput_id\030\002 \001(\0162\017.hell"
-    "o.OutputId\022\030\n\020date_created_utc\030\003 \001(\003\022\030\n\020"
-    "date_updated_utc\030\004 \001(\003\0229\n\036log_state_tran"
-    "sition_numerator\030\005 \001(\0132\021.hello.RealMatri"
-    "x\022:\n\037log_observation_model_numerator\030\006 \003"
-    "(\0132\021.hello.RealMatrix\022!\n\031log_observation"
-    "_model_ids\030\007 \003(\t\022\027\n\017log_denominator\030\010 \003("
-    "\001\022\n\n\002pi\030\t \003(\001\022\022\n\nend_states\030\n \003(\005\022\037\n\027min"
-    "imum_state_durations\030\013 \003(\005\"e\n\025AlphabetHm"
-    "mScratchPad\022\035\n\025last_date_updated_utc\030\001 \001"
-    "(\003\022-\n\014model_deltas\030\002 \003(\0132\027.hello.Alphabe"
-    "tHmmPrior\"z\n\024AlphabetHmmUserModel\022\'\n\006mod"
-    "els\030\001 \003(\0132\027.hello.AlphabetHmmPrior\0229\n\036fo"
-    "rbiddeden_motion_transitions\030\002 \003(\0132\021.hel"
-    "lo.Transition*\036\n\010OutputId\022\t\n\005SLEEP\020\000\022\007\n\003"
-    "BED\020\001B3\n com.hello.suripu.api.datascienc"
-    "eB\017OnlineHmmProtos", 818);
+    "ata\030\003 \003(\001\022\n\n\002id\030\004 \001(\t\"9\n\nTransition\022\014\n\004f"
+    "rom\030\001 \002(\005\022\n\n\002to\030\002 \002(\005\022\021\n\toutput_id\030\003 \001(\t"
+    "\"\352\002\n\020AlphabetHmmPrior\022\n\n\002id\030\001 \001(\t\022\"\n\tout"
+    "put_id\030\002 \001(\0162\017.hello.OutputId\022\030\n\020date_cr"
+    "eated_utc\030\003 \001(\003\022\030\n\020date_updated_utc\030\004 \001("
+    "\003\0229\n\036log_state_transition_numerator\030\005 \001("
+    "\0132\021.hello.RealMatrix\022:\n\037log_observation_"
+    "model_numerator\030\006 \003(\0132\021.hello.RealMatrix"
+    "\022!\n\031log_observation_model_ids\030\007 \003(\t\022\027\n\017l"
+    "og_denominator\030\010 \003(\001\022\n\n\002pi\030\t \003(\001\022\022\n\nend_"
+    "states\030\n \003(\005\022\037\n\027minimum_state_durations\030"
+    "\013 \003(\005\"e\n\025AlphabetHmmScratchPad\022\035\n\025last_d"
+    "ate_updated_utc\030\001 \001(\003\022-\n\014model_deltas\030\002 "
+    "\003(\0132\027.hello.AlphabetHmmPrior\"z\n\024Alphabet"
+    "HmmUserModel\022\'\n\006models\030\001 \003(\0132\027.hello.Alp"
+    "habetHmmPrior\0229\n\036forbiddeden_motion_tran"
+    "sitions\030\002 \003(\0132\021.hello.Transition*\036\n\010Outp"
+    "utId\022\t\n\005SLEEP\020\000\022\007\n\003BED\020\001B3\n com.hello.su"
+    "ripu.api.datascienceB\017OnlineHmmProtos", 837);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "online_hmm.proto", &protobuf_RegisterTypes);
   RealMatrix::default_instance_ = new RealMatrix();
@@ -597,6 +598,7 @@ void RealMatrix::Swap(RealMatrix* other) {
 #ifndef _MSC_VER
 const int Transition::kFromFieldNumber;
 const int Transition::kToFieldNumber;
+const int Transition::kOutputIdFieldNumber;
 #endif  // !_MSC_VER
 
 Transition::Transition()
@@ -617,6 +619,7 @@ void Transition::SharedCtor() {
   _cached_size_ = 0;
   from_ = 0;
   to_ = 0;
+  output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -625,6 +628,9 @@ Transition::~Transition() {
 }
 
 void Transition::SharedDtor() {
+  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
+    delete output_id_;
+  }
   if (this != default_instance_) {
   }
 }
@@ -654,6 +660,11 @@ void Transition::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     from_ = 0;
     to_ = 0;
+    if (has_output_id()) {
+      if (output_id_ != &::google::protobuf::internal::kEmptyString) {
+        output_id_->clear();
+      }
+    }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -692,6 +703,23 @@ bool Transition::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
+        if (input->ExpectTag(26)) goto parse_output_id;
+        break;
+      }
+
+      // optional string output_id = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_output_id:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_output_id()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->output_id().data(), this->output_id().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -724,6 +752,15 @@ void Transition::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->to(), output);
   }
 
+  // optional string output_id = 3;
+  if (has_output_id()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->output_id().data(), this->output_id().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      3, this->output_id(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -740,6 +777,16 @@ void Transition::SerializeWithCachedSizes(
   // required int32 to = 2;
   if (has_to()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->to(), target);
+  }
+
+  // optional string output_id = 3;
+  if (has_output_id()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->output_id().data(), this->output_id().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->output_id(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -765,6 +812,13 @@ int Transition::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->to());
+    }
+
+    // optional string output_id = 3;
+    if (has_output_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->output_id());
     }
 
   }
@@ -800,6 +854,9 @@ void Transition::MergeFrom(const Transition& from) {
     if (from.has_to()) {
       set_to(from.to());
     }
+    if (from.has_output_id()) {
+      set_output_id(from.output_id());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -826,6 +883,7 @@ void Transition::Swap(Transition* other) {
   if (other != this) {
     std::swap(from_, other->from_);
     std::swap(to_, other->to_);
+    std::swap(output_id_, other->output_id_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

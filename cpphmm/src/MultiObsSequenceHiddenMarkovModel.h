@@ -8,8 +8,8 @@
 
 class MultiObsHiddenMarkovModel {
 public:
-    MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A);
-    MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator,const HmmFloat_t scalingFactor = 1.0);
+    MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,const TransitionVector_t & forbiddenMotionTransitions);
+    MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator,const TransitionVector_t & forbiddenMotiontransitions,const HmmFloat_t scalingFactor = 1.0);
 
     ~MultiObsHiddenMarkovModel();
     
@@ -26,6 +26,7 @@ public:
     const HmmDataVec_t & getLogDenominator() const;
     uint32_t getNumStates() const;
     UIntVec_t getMinStatedDurations() const;
+    const TransitionVector_t & getForbiddenMotionTransitions() const;
 
 private:
 
@@ -41,6 +42,7 @@ private:
     
     uint32_t _numStates;
 
+    TransitionVector_t _forbiddenMotionTransitions; //misnomer, should be called forbidden transitions where there is no motion at all
     
 };
 

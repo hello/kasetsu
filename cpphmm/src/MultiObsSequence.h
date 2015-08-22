@@ -8,11 +8,18 @@
 class StateIdxPair {
 public:
     StateIdxPair(const uint32_t i1, const uint32_t i2) : from(i1),to(i2) {}
-    const uint32_t from;
-    const uint32_t to;
+    uint32_t from;
+    uint32_t to;
     
     bool operator == (const StateIdxPair & t) const {
         return from == t.from && to == t.to;
+    }
+    
+    StateIdxPair & operator = (const StateIdxPair & t) {
+        from = t.from;
+        to = t.to;
+        
+        return *this;
     }
 };
 
@@ -32,6 +39,7 @@ struct StateIdxPairHash {
 
 typedef UNORDERED_MAP<uint32_t,StateIdxPair> TransitionMap_t; //key is time index
 typedef UNORDERED_MAP<StateIdxPair,int32_t,StateIdxPairHash> TransitionAtTime_t; //key is time index
+typedef std::vector<StateIdxPair> TransitionVector_t;
 
 typedef UNORDERED_MULTIMAP<uint32_t,StateIdxPair> TransitionMultiMap_t; //key is time index
 typedef UNORDERED_MAP<uint32_t, uint32_t> LabelMap_t; //key is time index

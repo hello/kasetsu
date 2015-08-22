@@ -163,7 +163,11 @@ int main(int argc , char ** argv) {
         
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
 
-        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A)));
+        TransitionVector_t forbiddenMotionTransitions;
+        StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
+        forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
+        
+        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,forbiddenMotionTransitions)));
     }
     else {
         hmms = ModelFile::LoadFile(model_filename);

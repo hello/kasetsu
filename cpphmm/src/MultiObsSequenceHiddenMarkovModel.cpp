@@ -16,10 +16,11 @@
 #define SLEEP_STATE_MIN_DURATION (6)
 
 
-MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A) {
+MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,const TransitionVector_t & forbiddenMotionTransitions) {
     _A = A;
     _numStates = A.size();
     _logDenominator.reserve(_numStates);
+    _forbiddenMotionTransitions = forbiddenMotionTransitions;
     
     for (int i = 0; i < _numStates; i++) {
         _logDenominator.push_back(eln(PRIOR_STRENGTH));
@@ -42,8 +43,9 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initial
     
 }
 
-MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator, const HmmFloat_t scalingFactor) {
+MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator, const TransitionVector_t & forbiddenMotiontransitions,const HmmFloat_t scalingFactor) {
     
+    _forbiddenMotionTransitions = forbiddenMotiontransitions;
     _logANumerator = logANumerator;
     _numStates = _logANumerator.size();
 
@@ -437,6 +439,9 @@ UIntVec_t MultiObsHiddenMarkovModel::getMinStatedDurations() const {
     return minDurations;
 }
 
+const TransitionVector_t & MultiObsHiddenMarkovModel::getForbiddenMotionTransitions() const {
+    return _forbiddenMotionTransitions;
+}
 
 
 
