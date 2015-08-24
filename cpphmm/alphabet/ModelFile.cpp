@@ -353,6 +353,10 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         
         prior->add_end_states(hmm.getNumStates());
         
+        for (auto it = hmm.getPi().begin(); it != hmm.getPi().end(); it++) {
+            prior->add_pi(*it);
+        }
+        
         const UIntVec_t minDurations = hmm.getMinStatedDurations();
         
         for (int i = 0; i < minDurations.size(); i++) {
