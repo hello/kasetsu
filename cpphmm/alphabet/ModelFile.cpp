@@ -7,6 +7,9 @@
 #include <assert.h>
 #include "online_hmm.pb.h"
 
+#define SLEEP_ENUM  ("SLEEP")
+#define BED_ENUM    ("BED")
+
 /*
 #define LOG_A_NUMERATOR           "log_a_numerator"
 #define LOG_ALPHABET_NUMERATOR    "log_alphabet_numerator"
@@ -271,13 +274,13 @@ HmmMap_t ModelFile::LoadFile(const std::string & filename) {
         switch (prior.output_id()) {
             case hello::SLEEP:
             {
-                outputId = "sleep";
+                outputId = SLEEP_ENUM;
                 break;
             }
                 
             case hello::BED:
             {
-                outputId = "bed";
+                outputId = BED_ENUM;
                 break;
             }
                 
@@ -323,10 +326,10 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         
         prior->set_id("default");
         
-        if (outputId == "sleep") {
+        if (outputId == SLEEP_ENUM) {
             prior->set_output_id(hello::OutputId::SLEEP);
         }
-        else if (outputId == "bed") {
+        else if (outputId == BED_ENUM) {
             prior->set_output_id(hello::OutputId::BED);
         }
         else {
