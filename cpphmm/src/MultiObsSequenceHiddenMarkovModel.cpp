@@ -16,11 +16,10 @@
 #define SLEEP_STATE_MIN_DURATION (6)
 
 
-MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,const TransitionVector_t & forbiddenMotionTransitions) {
+MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,TransitionRestrictionVector_t forbiddenTransitions) {
     _A = A;
     _numStates = A.size();
     _logDenominator.reserve(_numStates);
-    _forbiddenMotionTransitions = forbiddenMotionTransitions;
     
     for (int i = 0; i < _numStates; i++) {
         _logDenominator.push_back(eln(PRIOR_STRENGTH));
@@ -41,11 +40,12 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initial
     
     printMat("original A", getAMatrix());
     
+    _forbiddenTransitions = forbiddenTransitions;
+    
 }
 
-MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator, const TransitionVector_t & forbiddenMotiontransitions,const HmmFloat_t scalingFactor) {
+MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator, TransitionRestrictionVector_t forbiddenTransitions,const HmmFloat_t scalingFactor) {
     
-    _forbiddenMotionTransitions = forbiddenMotiontransitions;
     _logANumerator = logANumerator;
     _numStates = _logANumerator.size();
 
@@ -61,12 +61,18 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlph
     
     _pi = getZeroedVec(_numStates);
     _pi[0] = 1.0;
+    
+    _forbiddenTransitions = forbiddenTransitions;
+
 
 }
 
 
 MultiObsHiddenMarkovModel::~MultiObsHiddenMarkovModel() {
-    
+    for (auto it = _forbiddenTransitions.begin(); it != _forbiddenTransitions.end(); it++) {
+        delete *it;
+    }
+
 }
 
 void MultiObsHiddenMarkovModel::scale(const HmmFloat_t scaleFactor) {
@@ -257,6 +263,7 @@ static void printTransitions(const ViterbiPath_t & path) {
     
     for (auto it = pt.begin(); it != pt.end(); it++) {
         StateIdxPair transition = (*it).first;
+        //std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
         int32_t t = (*it).second;
         t -= 1;
         int hour = t * 5.0 / 60.0;
@@ -329,7 +336,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
         for (iSequence = 0; iSequence < meas.size(); iSequence++) {
             const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
             const LabelMap_t & labels = meas.getLabels(iSequence);
-            const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
+            const TransitionMultiMap_t forbiddenTransitions = getForbiddenTransitions(rawdata);
             
             if (rawdata.empty()) {
                 continue;
@@ -439,8 +446,9 @@ UIntVec_t MultiObsHiddenMarkovModel::getMinStatedDurations() const {
     return minDurations;
 }
 
-const TransitionVector_t & MultiObsHiddenMarkovModel::getForbiddenMotionTransitions() const {
-    return _forbiddenMotionTransitions;
+
+const TransitionRestrictionVector_t & MultiObsHiddenMarkovModel::getTransitionRestrictions() const  {
+    return _forbiddenTransitions;
 }
 
 
@@ -460,7 +468,7 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
     for (uint32_t iSequence = 0; iSequence < meas.size(); iSequence++) {
         const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
         const LabelMap_t & labels = meas.getLabels(iSequence);
-        const TransitionMultiMap_t & forbiddenTransitions = meas.getForbiddenTransitions(iSequence);
+        const TransitionMultiMap_t forbiddenTransitions = getForbiddenTransitions(rawdata);
         const uint32_t numObs = (*rawdata.begin()).second[0].size();
 
         /*
@@ -545,4 +553,16 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
     return results;
 }
 
+TransitionMultiMap_t MultiObsHiddenMarkovModel::getForbiddenTransitions(const MatrixMap_t & measurements) const {
+    
+    TransitionMultiMap_t all;
+    
+    for (auto it = _forbiddenTransitions.begin(); it != _forbiddenTransitions.end(); it++) {
+        const  TransitionMultiMap_t forbiddenTransitions = (*it)->getTimeIndexedRestrictions(measurements);
+        all.insert(forbiddenTransitions.begin(), forbiddenTransitions.end());
+    }
+    
+    return all;
+    
+}
 

@@ -36,6 +36,7 @@ void protobuf_ShutdownFile_online_5fhmm_2eproto();
 
 class RealMatrix;
 class Transition;
+class MotionModelRestriction;
 class AlphabetHmmPrior;
 class AlphabetHmmScratchPad;
 class AlphabetHmmUserModel;
@@ -249,32 +250,130 @@ class Transition : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 to() const;
   inline void set_to(::google::protobuf::int32 value);
 
-  // optional string output_id = 3;
-  inline bool has_output_id() const;
-  inline void clear_output_id();
-  static const int kOutputIdFieldNumber = 3;
-  inline const ::std::string& output_id() const;
-  inline void set_output_id(const ::std::string& value);
-  inline void set_output_id(const char* value);
-  inline void set_output_id(const char* value, size_t size);
-  inline ::std::string* mutable_output_id();
-  inline ::std::string* release_output_id();
-  inline void set_allocated_output_id(::std::string* output_id);
-
   // @@protoc_insertion_point(class_scope:hello.Transition)
  private:
   inline void set_has_from();
   inline void clear_has_from();
   inline void set_has_to();
   inline void clear_has_to();
-  inline void set_has_output_id();
-  inline void clear_has_output_id();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::int32 from_;
   ::google::protobuf::int32 to_;
-  ::std::string* output_id_;
+
+  mutable int _cached_size_;
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+
+  friend void  protobuf_AddDesc_online_5fhmm_2eproto();
+  friend void protobuf_AssignDesc_online_5fhmm_2eproto();
+  friend void protobuf_ShutdownFile_online_5fhmm_2eproto();
+
+  void InitAsDefaultInstance();
+  static Transition* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class MotionModelRestriction : public ::google::protobuf::Message {
+ public:
+  MotionModelRestriction();
+  virtual ~MotionModelRestriction();
+
+  MotionModelRestriction(const MotionModelRestriction& from);
+
+  inline MotionModelRestriction& operator=(const MotionModelRestriction& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const MotionModelRestriction& default_instance();
+
+  void Swap(MotionModelRestriction* other);
+
+  // implements Message ----------------------------------------------
+
+  MotionModelRestriction* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const MotionModelRestriction& from);
+  void MergeFrom(const MotionModelRestriction& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // optional string motion_model_id = 1;
+  inline bool has_motion_model_id() const;
+  inline void clear_motion_model_id();
+  static const int kMotionModelIdFieldNumber = 1;
+  inline const ::std::string& motion_model_id() const;
+  inline void set_motion_model_id(const ::std::string& value);
+  inline void set_motion_model_id(const char* value);
+  inline void set_motion_model_id(const char* value, size_t size);
+  inline ::std::string* mutable_motion_model_id();
+  inline ::std::string* release_motion_model_id();
+  inline void set_allocated_motion_model_id(::std::string* motion_model_id);
+
+  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
+  inline int forbiddeden_motion_transitions_size() const;
+  inline void clear_forbiddeden_motion_transitions();
+  static const int kForbiddedenMotionTransitionsFieldNumber = 2;
+  inline const ::hello::Transition& forbiddeden_motion_transitions(int index) const;
+  inline ::hello::Transition* mutable_forbiddeden_motion_transitions(int index);
+  inline ::hello::Transition* add_forbiddeden_motion_transitions();
+  inline const ::google::protobuf::RepeatedPtrField< ::hello::Transition >&
+      forbiddeden_motion_transitions() const;
+  inline ::google::protobuf::RepeatedPtrField< ::hello::Transition >*
+      mutable_forbiddeden_motion_transitions();
+
+  // repeated int32 non_motion_states = 3;
+  inline int non_motion_states_size() const;
+  inline void clear_non_motion_states();
+  static const int kNonMotionStatesFieldNumber = 3;
+  inline ::google::protobuf::int32 non_motion_states(int index) const;
+  inline void set_non_motion_states(int index, ::google::protobuf::int32 value);
+  inline void add_non_motion_states(::google::protobuf::int32 value);
+  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+      non_motion_states() const;
+  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+      mutable_non_motion_states();
+
+  // @@protoc_insertion_point(class_scope:hello.MotionModelRestriction)
+ private:
+  inline void set_has_motion_model_id();
+  inline void clear_has_motion_model_id();
+
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+
+  ::std::string* motion_model_id_;
+  ::google::protobuf::RepeatedPtrField< ::hello::Transition > forbiddeden_motion_transitions_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > non_motion_states_;
 
   mutable int _cached_size_;
   ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
@@ -284,7 +383,7 @@ class Transition : public ::google::protobuf::Message {
   friend void protobuf_ShutdownFile_online_5fhmm_2eproto();
 
   void InitAsDefaultInstance();
-  static Transition* default_instance_;
+  static MotionModelRestriction* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -460,6 +559,15 @@ class AlphabetHmmPrior : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
       mutable_minimum_state_durations();
 
+  // optional .hello.MotionModelRestriction motion_model_restriction = 12;
+  inline bool has_motion_model_restriction() const;
+  inline void clear_motion_model_restriction();
+  static const int kMotionModelRestrictionFieldNumber = 12;
+  inline const ::hello::MotionModelRestriction& motion_model_restriction() const;
+  inline ::hello::MotionModelRestriction* mutable_motion_model_restriction();
+  inline ::hello::MotionModelRestriction* release_motion_model_restriction();
+  inline void set_allocated_motion_model_restriction(::hello::MotionModelRestriction* motion_model_restriction);
+
   // @@protoc_insertion_point(class_scope:hello.AlphabetHmmPrior)
  private:
   inline void set_has_id();
@@ -472,6 +580,8 @@ class AlphabetHmmPrior : public ::google::protobuf::Message {
   inline void clear_has_date_updated_utc();
   inline void set_has_log_state_transition_numerator();
   inline void clear_has_log_state_transition_numerator();
+  inline void set_has_motion_model_restriction();
+  inline void clear_has_motion_model_restriction();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -485,10 +595,11 @@ class AlphabetHmmPrior : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedField< double > pi_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > end_states_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > minimum_state_durations_;
+  ::hello::MotionModelRestriction* motion_model_restriction_;
   int output_id_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(11 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(12 + 31) / 32];
 
   friend void  protobuf_AddDesc_online_5fhmm_2eproto();
   friend void protobuf_AssignDesc_online_5fhmm_2eproto();
@@ -660,28 +771,15 @@ class AlphabetHmmUserModel : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::hello::AlphabetHmmPrior >*
       mutable_models();
 
-  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
-  inline int forbiddeden_motion_transitions_size() const;
-  inline void clear_forbiddeden_motion_transitions();
-  static const int kForbiddedenMotionTransitionsFieldNumber = 2;
-  inline const ::hello::Transition& forbiddeden_motion_transitions(int index) const;
-  inline ::hello::Transition* mutable_forbiddeden_motion_transitions(int index);
-  inline ::hello::Transition* add_forbiddeden_motion_transitions();
-  inline const ::google::protobuf::RepeatedPtrField< ::hello::Transition >&
-      forbiddeden_motion_transitions() const;
-  inline ::google::protobuf::RepeatedPtrField< ::hello::Transition >*
-      mutable_forbiddeden_motion_transitions();
-
   // @@protoc_insertion_point(class_scope:hello.AlphabetHmmUserModel)
  private:
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::RepeatedPtrField< ::hello::AlphabetHmmPrior > models_;
-  ::google::protobuf::RepeatedPtrField< ::hello::Transition > forbiddeden_motion_transitions_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(1 + 31) / 32];
 
   friend void  protobuf_AddDesc_online_5fhmm_2eproto();
   friend void protobuf_AssignDesc_online_5fhmm_2eproto();
@@ -884,74 +982,128 @@ inline void Transition::set_to(::google::protobuf::int32 value) {
   to_ = value;
 }
 
-// optional string output_id = 3;
-inline bool Transition::has_output_id() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+// -------------------------------------------------------------------
+
+// MotionModelRestriction
+
+// optional string motion_model_id = 1;
+inline bool MotionModelRestriction::has_motion_model_id() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
 }
-inline void Transition::set_has_output_id() {
-  _has_bits_[0] |= 0x00000004u;
+inline void MotionModelRestriction::set_has_motion_model_id() {
+  _has_bits_[0] |= 0x00000001u;
 }
-inline void Transition::clear_has_output_id() {
-  _has_bits_[0] &= ~0x00000004u;
+inline void MotionModelRestriction::clear_has_motion_model_id() {
+  _has_bits_[0] &= ~0x00000001u;
 }
-inline void Transition::clear_output_id() {
-  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
-    output_id_->clear();
+inline void MotionModelRestriction::clear_motion_model_id() {
+  if (motion_model_id_ != &::google::protobuf::internal::kEmptyString) {
+    motion_model_id_->clear();
   }
-  clear_has_output_id();
+  clear_has_motion_model_id();
 }
-inline const ::std::string& Transition::output_id() const {
-  return *output_id_;
+inline const ::std::string& MotionModelRestriction::motion_model_id() const {
+  return *motion_model_id_;
 }
-inline void Transition::set_output_id(const ::std::string& value) {
-  set_has_output_id();
-  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
-    output_id_ = new ::std::string;
+inline void MotionModelRestriction::set_motion_model_id(const ::std::string& value) {
+  set_has_motion_model_id();
+  if (motion_model_id_ == &::google::protobuf::internal::kEmptyString) {
+    motion_model_id_ = new ::std::string;
   }
-  output_id_->assign(value);
+  motion_model_id_->assign(value);
 }
-inline void Transition::set_output_id(const char* value) {
-  set_has_output_id();
-  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
-    output_id_ = new ::std::string;
+inline void MotionModelRestriction::set_motion_model_id(const char* value) {
+  set_has_motion_model_id();
+  if (motion_model_id_ == &::google::protobuf::internal::kEmptyString) {
+    motion_model_id_ = new ::std::string;
   }
-  output_id_->assign(value);
+  motion_model_id_->assign(value);
 }
-inline void Transition::set_output_id(const char* value, size_t size) {
-  set_has_output_id();
-  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
-    output_id_ = new ::std::string;
+inline void MotionModelRestriction::set_motion_model_id(const char* value, size_t size) {
+  set_has_motion_model_id();
+  if (motion_model_id_ == &::google::protobuf::internal::kEmptyString) {
+    motion_model_id_ = new ::std::string;
   }
-  output_id_->assign(reinterpret_cast<const char*>(value), size);
+  motion_model_id_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* Transition::mutable_output_id() {
-  set_has_output_id();
-  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
-    output_id_ = new ::std::string;
+inline ::std::string* MotionModelRestriction::mutable_motion_model_id() {
+  set_has_motion_model_id();
+  if (motion_model_id_ == &::google::protobuf::internal::kEmptyString) {
+    motion_model_id_ = new ::std::string;
   }
-  return output_id_;
+  return motion_model_id_;
 }
-inline ::std::string* Transition::release_output_id() {
-  clear_has_output_id();
-  if (output_id_ == &::google::protobuf::internal::kEmptyString) {
+inline ::std::string* MotionModelRestriction::release_motion_model_id() {
+  clear_has_motion_model_id();
+  if (motion_model_id_ == &::google::protobuf::internal::kEmptyString) {
     return NULL;
   } else {
-    ::std::string* temp = output_id_;
-    output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    ::std::string* temp = motion_model_id_;
+    motion_model_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
     return temp;
   }
 }
-inline void Transition::set_allocated_output_id(::std::string* output_id) {
-  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
-    delete output_id_;
+inline void MotionModelRestriction::set_allocated_motion_model_id(::std::string* motion_model_id) {
+  if (motion_model_id_ != &::google::protobuf::internal::kEmptyString) {
+    delete motion_model_id_;
   }
-  if (output_id) {
-    set_has_output_id();
-    output_id_ = output_id;
+  if (motion_model_id) {
+    set_has_motion_model_id();
+    motion_model_id_ = motion_model_id;
   } else {
-    clear_has_output_id();
-    output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    clear_has_motion_model_id();
+    motion_model_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
   }
+}
+
+// repeated .hello.Transition forbiddeden_motion_transitions = 2;
+inline int MotionModelRestriction::forbiddeden_motion_transitions_size() const {
+  return forbiddeden_motion_transitions_.size();
+}
+inline void MotionModelRestriction::clear_forbiddeden_motion_transitions() {
+  forbiddeden_motion_transitions_.Clear();
+}
+inline const ::hello::Transition& MotionModelRestriction::forbiddeden_motion_transitions(int index) const {
+  return forbiddeden_motion_transitions_.Get(index);
+}
+inline ::hello::Transition* MotionModelRestriction::mutable_forbiddeden_motion_transitions(int index) {
+  return forbiddeden_motion_transitions_.Mutable(index);
+}
+inline ::hello::Transition* MotionModelRestriction::add_forbiddeden_motion_transitions() {
+  return forbiddeden_motion_transitions_.Add();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::hello::Transition >&
+MotionModelRestriction::forbiddeden_motion_transitions() const {
+  return forbiddeden_motion_transitions_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::hello::Transition >*
+MotionModelRestriction::mutable_forbiddeden_motion_transitions() {
+  return &forbiddeden_motion_transitions_;
+}
+
+// repeated int32 non_motion_states = 3;
+inline int MotionModelRestriction::non_motion_states_size() const {
+  return non_motion_states_.size();
+}
+inline void MotionModelRestriction::clear_non_motion_states() {
+  non_motion_states_.Clear();
+}
+inline ::google::protobuf::int32 MotionModelRestriction::non_motion_states(int index) const {
+  return non_motion_states_.Get(index);
+}
+inline void MotionModelRestriction::set_non_motion_states(int index, ::google::protobuf::int32 value) {
+  non_motion_states_.Set(index, value);
+}
+inline void MotionModelRestriction::add_non_motion_states(::google::protobuf::int32 value) {
+  non_motion_states_.Add(value);
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+MotionModelRestriction::non_motion_states() const {
+  return non_motion_states_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+MotionModelRestriction::mutable_non_motion_states() {
+  return &non_motion_states_;
 }
 
 // -------------------------------------------------------------------
@@ -1302,6 +1454,44 @@ AlphabetHmmPrior::mutable_minimum_state_durations() {
   return &minimum_state_durations_;
 }
 
+// optional .hello.MotionModelRestriction motion_model_restriction = 12;
+inline bool AlphabetHmmPrior::has_motion_model_restriction() const {
+  return (_has_bits_[0] & 0x00000800u) != 0;
+}
+inline void AlphabetHmmPrior::set_has_motion_model_restriction() {
+  _has_bits_[0] |= 0x00000800u;
+}
+inline void AlphabetHmmPrior::clear_has_motion_model_restriction() {
+  _has_bits_[0] &= ~0x00000800u;
+}
+inline void AlphabetHmmPrior::clear_motion_model_restriction() {
+  if (motion_model_restriction_ != NULL) motion_model_restriction_->::hello::MotionModelRestriction::Clear();
+  clear_has_motion_model_restriction();
+}
+inline const ::hello::MotionModelRestriction& AlphabetHmmPrior::motion_model_restriction() const {
+  return motion_model_restriction_ != NULL ? *motion_model_restriction_ : *default_instance_->motion_model_restriction_;
+}
+inline ::hello::MotionModelRestriction* AlphabetHmmPrior::mutable_motion_model_restriction() {
+  set_has_motion_model_restriction();
+  if (motion_model_restriction_ == NULL) motion_model_restriction_ = new ::hello::MotionModelRestriction;
+  return motion_model_restriction_;
+}
+inline ::hello::MotionModelRestriction* AlphabetHmmPrior::release_motion_model_restriction() {
+  clear_has_motion_model_restriction();
+  ::hello::MotionModelRestriction* temp = motion_model_restriction_;
+  motion_model_restriction_ = NULL;
+  return temp;
+}
+inline void AlphabetHmmPrior::set_allocated_motion_model_restriction(::hello::MotionModelRestriction* motion_model_restriction) {
+  delete motion_model_restriction_;
+  motion_model_restriction_ = motion_model_restriction;
+  if (motion_model_restriction) {
+    set_has_motion_model_restriction();
+  } else {
+    clear_has_motion_model_restriction();
+  }
+}
+
 // -------------------------------------------------------------------
 
 // AlphabetHmmScratchPad
@@ -1380,31 +1570,6 @@ AlphabetHmmUserModel::models() const {
 inline ::google::protobuf::RepeatedPtrField< ::hello::AlphabetHmmPrior >*
 AlphabetHmmUserModel::mutable_models() {
   return &models_;
-}
-
-// repeated .hello.Transition forbiddeden_motion_transitions = 2;
-inline int AlphabetHmmUserModel::forbiddeden_motion_transitions_size() const {
-  return forbiddeden_motion_transitions_.size();
-}
-inline void AlphabetHmmUserModel::clear_forbiddeden_motion_transitions() {
-  forbiddeden_motion_transitions_.Clear();
-}
-inline const ::hello::Transition& AlphabetHmmUserModel::forbiddeden_motion_transitions(int index) const {
-  return forbiddeden_motion_transitions_.Get(index);
-}
-inline ::hello::Transition* AlphabetHmmUserModel::mutable_forbiddeden_motion_transitions(int index) {
-  return forbiddeden_motion_transitions_.Mutable(index);
-}
-inline ::hello::Transition* AlphabetHmmUserModel::add_forbiddeden_motion_transitions() {
-  return forbiddeden_motion_transitions_.Add();
-}
-inline const ::google::protobuf::RepeatedPtrField< ::hello::Transition >&
-AlphabetHmmUserModel::forbiddeden_motion_transitions() const {
-  return forbiddeden_motion_transitions_;
-}
-inline ::google::protobuf::RepeatedPtrField< ::hello::Transition >*
-AlphabetHmmUserModel::mutable_forbiddeden_motion_transitions() {
-  return &forbiddeden_motion_transitions_;
 }
 
 

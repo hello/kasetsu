@@ -37,6 +37,7 @@ add_executable(alphabet
                main.cpp
                DataFile.cpp
                ModelFile.cpp
+               MotionSequenceForbiddenTransitions.cpp
                online_hmm.pb.cc)
 
 target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES} ${PROTOBUF_LIBRARY})

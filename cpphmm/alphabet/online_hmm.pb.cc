@@ -26,6 +26,9 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* Transition_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Transition_reflection_ = NULL;
+const ::google::protobuf::Descriptor* MotionModelRestriction_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  MotionModelRestriction_reflection_ = NULL;
 const ::google::protobuf::Descriptor* AlphabetHmmPrior_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   AlphabetHmmPrior_reflection_ = NULL;
@@ -65,10 +68,9 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(RealMatrix));
   Transition_descriptor_ = file->message_type(1);
-  static const int Transition_offsets_[3] = {
+  static const int Transition_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, from_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, to_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Transition, output_id_),
   };
   Transition_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -81,8 +83,25 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Transition));
-  AlphabetHmmPrior_descriptor_ = file->message_type(2);
-  static const int AlphabetHmmPrior_offsets_[11] = {
+  MotionModelRestriction_descriptor_ = file->message_type(2);
+  static const int MotionModelRestriction_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MotionModelRestriction, motion_model_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MotionModelRestriction, forbiddeden_motion_transitions_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MotionModelRestriction, non_motion_states_),
+  };
+  MotionModelRestriction_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      MotionModelRestriction_descriptor_,
+      MotionModelRestriction::default_instance_,
+      MotionModelRestriction_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MotionModelRestriction, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MotionModelRestriction, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(MotionModelRestriction));
+  AlphabetHmmPrior_descriptor_ = file->message_type(3);
+  static const int AlphabetHmmPrior_offsets_[12] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, output_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, date_created_utc_),
@@ -94,6 +113,7 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, pi_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, end_states_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, minimum_state_durations_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmPrior, motion_model_restriction_),
   };
   AlphabetHmmPrior_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -106,7 +126,7 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(AlphabetHmmPrior));
-  AlphabetHmmScratchPad_descriptor_ = file->message_type(3);
+  AlphabetHmmScratchPad_descriptor_ = file->message_type(4);
   static const int AlphabetHmmScratchPad_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmScratchPad, last_date_updated_utc_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmScratchPad, model_deltas_),
@@ -122,10 +142,9 @@ void protobuf_AssignDesc_online_5fhmm_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(AlphabetHmmScratchPad));
-  AlphabetHmmUserModel_descriptor_ = file->message_type(4);
-  static const int AlphabetHmmUserModel_offsets_[2] = {
+  AlphabetHmmUserModel_descriptor_ = file->message_type(5);
+  static const int AlphabetHmmUserModel_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmUserModel, models_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AlphabetHmmUserModel, forbiddeden_motion_transitions_),
   };
   AlphabetHmmUserModel_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -156,6 +175,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     Transition_descriptor_, &Transition::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    MotionModelRestriction_descriptor_, &MotionModelRestriction::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     AlphabetHmmPrior_descriptor_, &AlphabetHmmPrior::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     AlphabetHmmScratchPad_descriptor_, &AlphabetHmmScratchPad::default_instance());
@@ -170,6 +191,8 @@ void protobuf_ShutdownFile_online_5fhmm_2eproto() {
   delete RealMatrix_reflection_;
   delete Transition::default_instance_;
   delete Transition_reflection_;
+  delete MotionModelRestriction::default_instance_;
+  delete MotionModelRestriction_reflection_;
   delete AlphabetHmmPrior::default_instance_;
   delete AlphabetHmmPrior_reflection_;
   delete AlphabetHmmScratchPad::default_instance_;
@@ -187,34 +210,40 @@ void protobuf_AddDesc_online_5fhmm_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\020online_hmm.proto\022\005hello\"J\n\nRealMatrix\022"
     "\020\n\010num_rows\030\001 \002(\005\022\020\n\010num_cols\030\002 \002(\005\022\014\n\004d"
-    "ata\030\003 \003(\001\022\n\n\002id\030\004 \001(\t\"9\n\nTransition\022\014\n\004f"
-    "rom\030\001 \002(\005\022\n\n\002to\030\002 \002(\005\022\021\n\toutput_id\030\003 \001(\t"
-    "\"\352\002\n\020AlphabetHmmPrior\022\n\n\002id\030\001 \001(\t\022\"\n\tout"
-    "put_id\030\002 \001(\0162\017.hello.OutputId\022\030\n\020date_cr"
-    "eated_utc\030\003 \001(\003\022\030\n\020date_updated_utc\030\004 \001("
-    "\003\0229\n\036log_state_transition_numerator\030\005 \001("
-    "\0132\021.hello.RealMatrix\022:\n\037log_observation_"
-    "model_numerator\030\006 \003(\0132\021.hello.RealMatrix"
-    "\022!\n\031log_observation_model_ids\030\007 \003(\t\022\027\n\017l"
-    "og_denominator\030\010 \003(\001\022\n\n\002pi\030\t \003(\001\022\022\n\nend_"
-    "states\030\n \003(\005\022\037\n\027minimum_state_durations\030"
-    "\013 \003(\005\"e\n\025AlphabetHmmScratchPad\022\035\n\025last_d"
-    "ate_updated_utc\030\001 \001(\003\022-\n\014model_deltas\030\002 "
-    "\003(\0132\027.hello.AlphabetHmmPrior\"z\n\024Alphabet"
-    "HmmUserModel\022\'\n\006models\030\001 \003(\0132\027.hello.Alp"
-    "habetHmmPrior\0229\n\036forbiddeden_motion_tran"
-    "sitions\030\002 \003(\0132\021.hello.Transition*\036\n\010Outp"
-    "utId\022\t\n\005SLEEP\020\000\022\007\n\003BED\020\001B3\n com.hello.su"
-    "ripu.api.datascienceB\017OnlineHmmProtos", 837);
+    "ata\030\003 \003(\001\022\n\n\002id\030\004 \001(\t\"&\n\nTransition\022\014\n\004f"
+    "rom\030\001 \002(\005\022\n\n\002to\030\002 \002(\005\"\207\001\n\026MotionModelRes"
+    "triction\022\027\n\017motion_model_id\030\001 \001(\t\0229\n\036for"
+    "biddeden_motion_transitions\030\002 \003(\0132\021.hell"
+    "o.Transition\022\031\n\021non_motion_states\030\003 \003(\005\""
+    "\253\003\n\020AlphabetHmmPrior\022\n\n\002id\030\001 \001(\t\022\"\n\toutp"
+    "ut_id\030\002 \001(\0162\017.hello.OutputId\022\030\n\020date_cre"
+    "ated_utc\030\003 \001(\003\022\030\n\020date_updated_utc\030\004 \001(\003"
+    "\0229\n\036log_state_transition_numerator\030\005 \001(\013"
+    "2\021.hello.RealMatrix\022:\n\037log_observation_m"
+    "odel_numerator\030\006 \003(\0132\021.hello.RealMatrix\022"
+    "!\n\031log_observation_model_ids\030\007 \003(\t\022\027\n\017lo"
+    "g_denominator\030\010 \003(\001\022\n\n\002pi\030\t \003(\001\022\022\n\nend_s"
+    "tates\030\n \003(\005\022\037\n\027minimum_state_durations\030\013"
+    " \003(\005\022\?\n\030motion_model_restriction\030\014 \001(\0132\035"
+    ".hello.MotionModelRestriction\"e\n\025Alphabe"
+    "tHmmScratchPad\022\035\n\025last_date_updated_utc\030"
+    "\001 \001(\003\022-\n\014model_deltas\030\002 \003(\0132\027.hello.Alph"
+    "abetHmmPrior\"\?\n\024AlphabetHmmUserModel\022\'\n\006"
+    "models\030\001 \003(\0132\027.hello.AlphabetHmmPrior*\036\n"
+    "\010OutputId\022\t\n\005SLEEP\020\000\022\007\n\003BED\020\001B3\n com.hel"
+    "lo.suripu.api.datascienceB\017OnlineHmmProt"
+    "os", 962);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "online_hmm.proto", &protobuf_RegisterTypes);
   RealMatrix::default_instance_ = new RealMatrix();
   Transition::default_instance_ = new Transition();
+  MotionModelRestriction::default_instance_ = new MotionModelRestriction();
   AlphabetHmmPrior::default_instance_ = new AlphabetHmmPrior();
   AlphabetHmmScratchPad::default_instance_ = new AlphabetHmmScratchPad();
   AlphabetHmmUserModel::default_instance_ = new AlphabetHmmUserModel();
   RealMatrix::default_instance_->InitAsDefaultInstance();
   Transition::default_instance_->InitAsDefaultInstance();
+  MotionModelRestriction::default_instance_->InitAsDefaultInstance();
   AlphabetHmmPrior::default_instance_->InitAsDefaultInstance();
   AlphabetHmmScratchPad::default_instance_->InitAsDefaultInstance();
   AlphabetHmmUserModel::default_instance_->InitAsDefaultInstance();
@@ -598,7 +627,6 @@ void RealMatrix::Swap(RealMatrix* other) {
 #ifndef _MSC_VER
 const int Transition::kFromFieldNumber;
 const int Transition::kToFieldNumber;
-const int Transition::kOutputIdFieldNumber;
 #endif  // !_MSC_VER
 
 Transition::Transition()
@@ -619,7 +647,6 @@ void Transition::SharedCtor() {
   _cached_size_ = 0;
   from_ = 0;
   to_ = 0;
-  output_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -628,9 +655,6 @@ Transition::~Transition() {
 }
 
 void Transition::SharedDtor() {
-  if (output_id_ != &::google::protobuf::internal::kEmptyString) {
-    delete output_id_;
-  }
   if (this != default_instance_) {
   }
 }
@@ -660,11 +684,6 @@ void Transition::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     from_ = 0;
     to_ = 0;
-    if (has_output_id()) {
-      if (output_id_ != &::google::protobuf::internal::kEmptyString) {
-        output_id_->clear();
-      }
-    }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -703,23 +722,6 @@ bool Transition::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(26)) goto parse_output_id;
-        break;
-      }
-
-      // optional string output_id = 3;
-      case 3: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-         parse_output_id:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_output_id()));
-          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
-            this->output_id().data(), this->output_id().length(),
-            ::google::protobuf::internal::WireFormat::PARSE);
-        } else {
-          goto handle_uninterpreted;
-        }
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -752,15 +754,6 @@ void Transition::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->to(), output);
   }
 
-  // optional string output_id = 3;
-  if (has_output_id()) {
-    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
-      this->output_id().data(), this->output_id().length(),
-      ::google::protobuf::internal::WireFormat::SERIALIZE);
-    ::google::protobuf::internal::WireFormatLite::WriteString(
-      3, this->output_id(), output);
-  }
-
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -777,16 +770,6 @@ void Transition::SerializeWithCachedSizes(
   // required int32 to = 2;
   if (has_to()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->to(), target);
-  }
-
-  // optional string output_id = 3;
-  if (has_output_id()) {
-    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
-      this->output_id().data(), this->output_id().length(),
-      ::google::protobuf::internal::WireFormat::SERIALIZE);
-    target =
-      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        3, this->output_id(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -812,13 +795,6 @@ int Transition::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->to());
-    }
-
-    // optional string output_id = 3;
-    if (has_output_id()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::StringSize(
-          this->output_id());
     }
 
   }
@@ -854,9 +830,6 @@ void Transition::MergeFrom(const Transition& from) {
     if (from.has_to()) {
       set_to(from.to());
     }
-    if (from.has_output_id()) {
-      set_output_id(from.output_id());
-    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -883,7 +856,6 @@ void Transition::Swap(Transition* other) {
   if (other != this) {
     std::swap(from_, other->from_);
     std::swap(to_, other->to_);
-    std::swap(output_id_, other->output_id_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -902,6 +874,322 @@ void Transition::Swap(Transition* other) {
 // ===================================================================
 
 #ifndef _MSC_VER
+const int MotionModelRestriction::kMotionModelIdFieldNumber;
+const int MotionModelRestriction::kForbiddedenMotionTransitionsFieldNumber;
+const int MotionModelRestriction::kNonMotionStatesFieldNumber;
+#endif  // !_MSC_VER
+
+MotionModelRestriction::MotionModelRestriction()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void MotionModelRestriction::InitAsDefaultInstance() {
+}
+
+MotionModelRestriction::MotionModelRestriction(const MotionModelRestriction& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void MotionModelRestriction::SharedCtor() {
+  _cached_size_ = 0;
+  motion_model_id_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+MotionModelRestriction::~MotionModelRestriction() {
+  SharedDtor();
+}
+
+void MotionModelRestriction::SharedDtor() {
+  if (motion_model_id_ != &::google::protobuf::internal::kEmptyString) {
+    delete motion_model_id_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void MotionModelRestriction::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* MotionModelRestriction::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return MotionModelRestriction_descriptor_;
+}
+
+const MotionModelRestriction& MotionModelRestriction::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_online_5fhmm_2eproto();
+  return *default_instance_;
+}
+
+MotionModelRestriction* MotionModelRestriction::default_instance_ = NULL;
+
+MotionModelRestriction* MotionModelRestriction::New() const {
+  return new MotionModelRestriction;
+}
+
+void MotionModelRestriction::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (has_motion_model_id()) {
+      if (motion_model_id_ != &::google::protobuf::internal::kEmptyString) {
+        motion_model_id_->clear();
+      }
+    }
+  }
+  forbiddeden_motion_transitions_.Clear();
+  non_motion_states_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool MotionModelRestriction::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // optional string motion_model_id = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_motion_model_id()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->motion_model_id().data(), this->motion_model_id().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_forbiddeden_motion_transitions;
+        break;
+      }
+
+      // repeated .hello.Transition forbiddeden_motion_transitions = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_forbiddeden_motion_transitions:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_forbiddeden_motion_transitions()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_forbiddeden_motion_transitions;
+        if (input->ExpectTag(24)) goto parse_non_motion_states;
+        break;
+      }
+
+      // repeated int32 non_motion_states = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_non_motion_states:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 1, 24, input, this->mutable_non_motion_states())));
+        } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
+                   == ::google::protobuf::internal::WireFormatLite::
+                      WIRETYPE_LENGTH_DELIMITED) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, this->mutable_non_motion_states())));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_non_motion_states;
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void MotionModelRestriction::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // optional string motion_model_id = 1;
+  if (has_motion_model_id()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->motion_model_id().data(), this->motion_model_id().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      1, this->motion_model_id(), output);
+  }
+
+  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
+  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, this->forbiddeden_motion_transitions(i), output);
+  }
+
+  // repeated int32 non_motion_states = 3;
+  for (int i = 0; i < this->non_motion_states_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(
+      3, this->non_motion_states(i), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* MotionModelRestriction::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // optional string motion_model_id = 1;
+  if (has_motion_model_id()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->motion_model_id().data(), this->motion_model_id().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        1, this->motion_model_id(), target);
+  }
+
+  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
+  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        2, this->forbiddeden_motion_transitions(i), target);
+  }
+
+  // repeated int32 non_motion_states = 3;
+  for (int i = 0; i < this->non_motion_states_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteInt32ToArray(3, this->non_motion_states(i), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int MotionModelRestriction::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // optional string motion_model_id = 1;
+    if (has_motion_model_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->motion_model_id());
+    }
+
+  }
+  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
+  total_size += 1 * this->forbiddeden_motion_transitions_size();
+  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->forbiddeden_motion_transitions(i));
+  }
+
+  // repeated int32 non_motion_states = 3;
+  {
+    int data_size = 0;
+    for (int i = 0; i < this->non_motion_states_size(); i++) {
+      data_size += ::google::protobuf::internal::WireFormatLite::
+        Int32Size(this->non_motion_states(i));
+    }
+    total_size += 1 * this->non_motion_states_size() + data_size;
+  }
+
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void MotionModelRestriction::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const MotionModelRestriction* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const MotionModelRestriction*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void MotionModelRestriction::MergeFrom(const MotionModelRestriction& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  forbiddeden_motion_transitions_.MergeFrom(from.forbiddeden_motion_transitions_);
+  non_motion_states_.MergeFrom(from.non_motion_states_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_motion_model_id()) {
+      set_motion_model_id(from.motion_model_id());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void MotionModelRestriction::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void MotionModelRestriction::CopyFrom(const MotionModelRestriction& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MotionModelRestriction::IsInitialized() const {
+
+  for (int i = 0; i < forbiddeden_motion_transitions_size(); i++) {
+    if (!this->forbiddeden_motion_transitions(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+void MotionModelRestriction::Swap(MotionModelRestriction* other) {
+  if (other != this) {
+    std::swap(motion_model_id_, other->motion_model_id_);
+    forbiddeden_motion_transitions_.Swap(&other->forbiddeden_motion_transitions_);
+    non_motion_states_.Swap(&other->non_motion_states_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata MotionModelRestriction::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = MotionModelRestriction_descriptor_;
+  metadata.reflection = MotionModelRestriction_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
 const int AlphabetHmmPrior::kIdFieldNumber;
 const int AlphabetHmmPrior::kOutputIdFieldNumber;
 const int AlphabetHmmPrior::kDateCreatedUtcFieldNumber;
@@ -913,6 +1201,7 @@ const int AlphabetHmmPrior::kLogDenominatorFieldNumber;
 const int AlphabetHmmPrior::kPiFieldNumber;
 const int AlphabetHmmPrior::kEndStatesFieldNumber;
 const int AlphabetHmmPrior::kMinimumStateDurationsFieldNumber;
+const int AlphabetHmmPrior::kMotionModelRestrictionFieldNumber;
 #endif  // !_MSC_VER
 
 AlphabetHmmPrior::AlphabetHmmPrior()
@@ -922,6 +1211,7 @@ AlphabetHmmPrior::AlphabetHmmPrior()
 
 void AlphabetHmmPrior::InitAsDefaultInstance() {
   log_state_transition_numerator_ = const_cast< ::hello::RealMatrix*>(&::hello::RealMatrix::default_instance());
+  motion_model_restriction_ = const_cast< ::hello::MotionModelRestriction*>(&::hello::MotionModelRestriction::default_instance());
 }
 
 AlphabetHmmPrior::AlphabetHmmPrior(const AlphabetHmmPrior& from)
@@ -937,6 +1227,7 @@ void AlphabetHmmPrior::SharedCtor() {
   date_created_utc_ = GOOGLE_LONGLONG(0);
   date_updated_utc_ = GOOGLE_LONGLONG(0);
   log_state_transition_numerator_ = NULL;
+  motion_model_restriction_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -950,6 +1241,7 @@ void AlphabetHmmPrior::SharedDtor() {
   }
   if (this != default_instance_) {
     delete log_state_transition_numerator_;
+    delete motion_model_restriction_;
   }
 }
 
@@ -986,6 +1278,11 @@ void AlphabetHmmPrior::Clear() {
     date_updated_utc_ = GOOGLE_LONGLONG(0);
     if (has_log_state_transition_numerator()) {
       if (log_state_transition_numerator_ != NULL) log_state_transition_numerator_->::hello::RealMatrix::Clear();
+    }
+  }
+  if (_has_bits_[11 / 32] & (0xffu << (11 % 32))) {
+    if (has_motion_model_restriction()) {
+      if (motion_model_restriction_ != NULL) motion_model_restriction_->::hello::MotionModelRestriction::Clear();
     }
   }
   log_observation_model_numerator_.Clear();
@@ -1205,6 +1502,20 @@ bool AlphabetHmmPrior::MergePartialFromCodedStream(
           goto handle_uninterpreted;
         }
         if (input->ExpectTag(88)) goto parse_minimum_state_durations;
+        if (input->ExpectTag(98)) goto parse_motion_model_restriction;
+        break;
+      }
+
+      // optional .hello.MotionModelRestriction motion_model_restriction = 12;
+      case 12: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_motion_model_restriction:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_motion_model_restriction()));
+        } else {
+          goto handle_uninterpreted;
+        }
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1297,6 +1608,12 @@ void AlphabetHmmPrior::SerializeWithCachedSizes(
       11, this->minimum_state_durations(i), output);
   }
 
+  // optional .hello.MotionModelRestriction motion_model_restriction = 12;
+  if (has_motion_model_restriction()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      12, this->motion_model_restriction(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1378,6 +1695,13 @@ void AlphabetHmmPrior::SerializeWithCachedSizes(
       WriteInt32ToArray(11, this->minimum_state_durations(i), target);
   }
 
+  // optional .hello.MotionModelRestriction motion_model_restriction = 12;
+  if (has_motion_model_restriction()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        12, this->motion_model_restriction(), target);
+  }
+
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -1421,6 +1745,15 @@ int AlphabetHmmPrior::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
           this->log_state_transition_numerator());
+    }
+
+  }
+  if (_has_bits_[11 / 32] & (0xffu << (11 % 32))) {
+    // optional .hello.MotionModelRestriction motion_model_restriction = 12;
+    if (has_motion_model_restriction()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->motion_model_restriction());
     }
 
   }
@@ -1521,6 +1854,11 @@ void AlphabetHmmPrior::MergeFrom(const AlphabetHmmPrior& from) {
       mutable_log_state_transition_numerator()->::hello::RealMatrix::MergeFrom(from.log_state_transition_numerator());
     }
   }
+  if (from._has_bits_[11 / 32] & (0xffu << (11 % 32))) {
+    if (from.has_motion_model_restriction()) {
+      mutable_motion_model_restriction()->::hello::MotionModelRestriction::MergeFrom(from.motion_model_restriction());
+    }
+  }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
@@ -1544,6 +1882,9 @@ bool AlphabetHmmPrior::IsInitialized() const {
   for (int i = 0; i < log_observation_model_numerator_size(); i++) {
     if (!this->log_observation_model_numerator(i).IsInitialized()) return false;
   }
+  if (has_motion_model_restriction()) {
+    if (!this->motion_model_restriction().IsInitialized()) return false;
+  }
   return true;
 }
 
@@ -1560,6 +1901,7 @@ void AlphabetHmmPrior::Swap(AlphabetHmmPrior* other) {
     pi_.Swap(&other->pi_);
     end_states_.Swap(&other->end_states_);
     minimum_state_durations_.Swap(&other->minimum_state_durations_);
+    std::swap(motion_model_restriction_, other->motion_model_restriction_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -1830,7 +2172,6 @@ void AlphabetHmmScratchPad::Swap(AlphabetHmmScratchPad* other) {
 
 #ifndef _MSC_VER
 const int AlphabetHmmUserModel::kModelsFieldNumber;
-const int AlphabetHmmUserModel::kForbiddedenMotionTransitionsFieldNumber;
 #endif  // !_MSC_VER
 
 AlphabetHmmUserModel::AlphabetHmmUserModel()
@@ -1884,7 +2225,6 @@ AlphabetHmmUserModel* AlphabetHmmUserModel::New() const {
 
 void AlphabetHmmUserModel::Clear() {
   models_.Clear();
-  forbiddeden_motion_transitions_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -1906,21 +2246,6 @@ bool AlphabetHmmUserModel::MergePartialFromCodedStream(
           goto handle_uninterpreted;
         }
         if (input->ExpectTag(10)) goto parse_models;
-        if (input->ExpectTag(18)) goto parse_forbiddeden_motion_transitions;
-        break;
-      }
-
-      // repeated .hello.Transition forbiddeden_motion_transitions = 2;
-      case 2: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-         parse_forbiddeden_motion_transitions:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-                input, add_forbiddeden_motion_transitions()));
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(18)) goto parse_forbiddeden_motion_transitions;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1949,12 +2274,6 @@ void AlphabetHmmUserModel::SerializeWithCachedSizes(
       1, this->models(i), output);
   }
 
-  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
-  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
-    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      2, this->forbiddeden_motion_transitions(i), output);
-  }
-
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1968,13 +2287,6 @@ void AlphabetHmmUserModel::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
         1, this->models(i), target);
-  }
-
-  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
-  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
-    target = ::google::protobuf::internal::WireFormatLite::
-      WriteMessageNoVirtualToArray(
-        2, this->forbiddeden_motion_transitions(i), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -1993,14 +2305,6 @@ int AlphabetHmmUserModel::ByteSize() const {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
         this->models(i));
-  }
-
-  // repeated .hello.Transition forbiddeden_motion_transitions = 2;
-  total_size += 1 * this->forbiddeden_motion_transitions_size();
-  for (int i = 0; i < this->forbiddeden_motion_transitions_size(); i++) {
-    total_size +=
-      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
-        this->forbiddeden_motion_transitions(i));
   }
 
   if (!unknown_fields().empty()) {
@@ -2029,7 +2333,6 @@ void AlphabetHmmUserModel::MergeFrom(const ::google::protobuf::Message& from) {
 void AlphabetHmmUserModel::MergeFrom(const AlphabetHmmUserModel& from) {
   GOOGLE_CHECK_NE(&from, this);
   models_.MergeFrom(from.models_);
-  forbiddeden_motion_transitions_.MergeFrom(from.forbiddeden_motion_transitions_);
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
@@ -2050,16 +2353,12 @@ bool AlphabetHmmUserModel::IsInitialized() const {
   for (int i = 0; i < models_size(); i++) {
     if (!this->models(i).IsInitialized()) return false;
   }
-  for (int i = 0; i < forbiddeden_motion_transitions_size(); i++) {
-    if (!this->forbiddeden_motion_transitions(i).IsInitialized()) return false;
-  }
   return true;
 }
 
 void AlphabetHmmUserModel::Swap(AlphabetHmmUserModel* other) {
   if (other != this) {
     models_.Swap(&other->models_);
-    forbiddeden_motion_transitions_.Swap(&other->forbiddeden_motion_transitions_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

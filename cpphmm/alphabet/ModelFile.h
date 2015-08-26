@@ -6,6 +6,10 @@
 #include "../src/HmmTypes.h"
 #include <map>
 
+
+#define SLEEP_ENUM_STRING  ("SLEEP")
+#define BED_ENUM_STRING    ("BED")
+
 typedef std::map<std::string,MultiObsHiddenMarkovModel *> HmmMap_t;
 
 class ModelFile {

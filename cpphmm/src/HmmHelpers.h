@@ -3,6 +3,7 @@
 
 #include "HmmPdfInterface.h"
 #include "MultiObsSequence.h"
+#include "TransitionRestrictionInterface.h"
 
 
 class ViterbiDecodeResult_t {

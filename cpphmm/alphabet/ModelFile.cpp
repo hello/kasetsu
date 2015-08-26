@@ -5,10 +5,9 @@
 #include <rapidjson/writer.h>
 #include <fstream>
 #include <assert.h>
+#include "MotionSequenceForbiddenTransitions.h"
 #include "online_hmm.pb.h"
 
-#define SLEEP_ENUM  ("SLEEP")
-#define BED_ENUM    ("BED")
 
 /*
 #define LOG_A_NUMERATOR           "log_a_numerator"
@@ -168,6 +167,48 @@ void ModelFile::SaveFile(const HmmMap_t &hmms,const std::string & filename) {
 }
  */
 
+static std::string outputIdToString(hello::OutputId outputId) {
+    std::string outputIdString;
+    
+    switch (outputId) {
+        case hello::SLEEP:
+        {
+            outputIdString = SLEEP_ENUM_STRING;
+            break;
+        }
+            
+        case hello::BED:
+        {
+            outputIdString = BED_ENUM_STRING;
+            break;
+        }
+            
+        default:
+        {
+            assert(false && "NOT A VALID ENUMERATION FOR OUTPUT ID");
+        }
+    }
+    
+    return outputIdString;
+
+}
+
+static hello::OutputId stringToOutputId(const std::string & outputIdString) {
+    if (outputIdString == SLEEP_ENUM_STRING) {
+        return hello::OutputId::SLEEP;
+    }
+    else if (outputIdString == BED_ENUM_STRING) {
+        return hello::OutputId::BED;
+    }
+    else {
+        assert(false && "output id was not sleep or bed");
+    }
+    
+    return hello::OutputId::SLEEP;
+
+    
+}
+
 static hello::RealMatrix matrixFromMatrix(const HmmDataMatrix_t & mtx) {
     hello::RealMatrix mtx2;
     mtx2.set_num_rows(mtx.size());
@@ -199,7 +240,7 @@ static HmmDataMatrix_t getMatFromRealMatrix(const hello::RealMatrix & realmat) {
     return mtx;
 }
 
-static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior,const std::string & outputId, const TransitionVector_t & forbiddenMotiontransitions) {
+static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior,const std::string & outputId,const TransitionRestrictionVector_t & transitionRestrictions) {
     /*
     optional string id = 1;
     optional OutputId output_id = 2;
@@ -242,7 +283,7 @@ static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hel
     
     
     
-    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator,forbiddenMotiontransitions));
+    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator,transitionRestrictions));
     
 }
 
@@ -269,41 +310,15 @@ HmmMap_t ModelFile::LoadFile(const std::string & filename) {
     for (int iModel = 0; iModel < protobuf.models_size(); iModel++) {
         hello::AlphabetHmmPrior prior = protobuf.models(iModel);
         
-        std::string outputId;
         
-        switch (prior.output_id()) {
-            case hello::SLEEP:
-            {
-                outputId = SLEEP_ENUM;
-                break;
-            }
-                
-            case hello::BED:
-            {
-                outputId = BED_ENUM;
-                break;
-            }
-                
-            default:
-            {
-                assert(false && "NOT A VALID ENUMERATION FOR OUTPUT ID");
-            }
+        TransitionRestrictionVector_t transitionRestrictions;
+        if (prior.has_motion_model_restriction()) {
+            TransitionRestrictionInterface * p = MotionSequenceForbiddenTransitions::createFromProtobuf(prior.motion_model_restriction());
+            transitionRestrictions.push_back(p);
         }
         
-        TransitionVector_t forbiddenMotionTransitions;
         
-        for (int i = 0; i < protobuf.forbiddeden_motion_transitions_size(); i++) {
-            hello::Transition transition = protobuf.forbiddeden_motion_transitions(i);
-            
-            if (transition.output_id() == outputId) {
-                StateIdxPair t(transition.from(),transition.to());
-                forbiddenMotionTransitions.push_back(t);
-            }
-            
-        }
-
-        
-        hmms.insert(hmmFromPrior(prior,outputId,forbiddenMotionTransitions));
+        hmms.insert(hmmFromPrior(prior,outputIdToString(prior.output_id()), transitionRestrictions));
         
     }
     
@@ -322,20 +337,11 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
 
 
         const MultiObsHiddenMarkovModel & hmm = *((*hmmIterator).second);
-        const std::string & outputId = (*hmmIterator).first;
+        const std::string & outputIdString = (*hmmIterator).first;
         
         prior->set_id("default");
         
-        if (outputId == SLEEP_ENUM) {
-            prior->set_output_id(hello::OutputId::SLEEP);
-        }
-        else if (outputId == BED_ENUM) {
-            prior->set_output_id(hello::OutputId::BED);
-        }
-        else {
-            assert(false && "output id was not sleep or bed");
-        }
-        
+        prior->set_output_id(stringToOutputId(outputIdString));
         prior->set_date_created_utc(0);
         prior->set_date_updated_utc(0);
         
@@ -354,7 +360,8 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         
         prior->set_allocated_log_state_transition_numerator(new hello::RealMatrix(matrixFromMatrix(hmm.getLogANumerator())));
         
-        prior->add_end_states(hmm.getNumStates());
+        //last state is the end state
+        prior->add_end_states(hmm.getNumStates() - 1);
         
         for (auto it = hmm.getPi().begin(); it != hmm.getPi().end(); it++) {
             prior->add_pi(*it);
@@ -366,11 +373,13 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
             prior->add_minimum_state_durations(minDurations[i]);
         }
         
-        for (auto it = hmm.getForbiddenMotionTransitions().begin(); it != hmm.getForbiddenMotionTransitions().end(); it++) {
-            hello::Transition * transition = model.add_forbiddeden_motion_transitions();
-            transition->set_from((*it).from);
-            transition->set_to((*it).to);
-            transition->set_output_id(outputId);
+        
+        for (auto it = hmm.getTransitionRestrictions().begin(); it != hmm.getTransitionRestrictions().end(); it++) {
+            const MotionSequenceForbiddenTransitions * const p = dynamic_cast<MotionSequenceForbiddenTransitions *>(*it);
+            
+            if (p) {
+                prior->set_allocated_motion_model_restriction(p->toProtobuf());
+            }
         }
         
         

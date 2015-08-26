@@ -4,12 +4,14 @@
 #include "HmmPdfInterface.h"
 #include "MultiObsSequence.h"
 #include "HmmHelpers.h"
+#include "TransitionRestrictionInterface.h"
+
 #include <vector>
 
 class MultiObsHiddenMarkovModel {
 public:
-    MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,const TransitionVector_t & forbiddenMotionTransitions);
-    MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator,const TransitionVector_t & forbiddenMotiontransitions,const HmmFloat_t scalingFactor = 1.0);
+    MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,TransitionRestrictionVector_t forbiddenTransitions);
+    MultiObsHiddenMarkovModel(const MatrixMap_t & logAlphabetNumerator,const HmmDataMatrix_t & logANumerator, const HmmDataVec_t & logDenominator,const TransitionRestrictionVector_t forbiddenTransitions,const HmmFloat_t scalingFactor = 1.0);
 
     ~MultiObsHiddenMarkovModel();
     
@@ -26,7 +28,8 @@ public:
     const HmmDataVec_t & getLogDenominator() const;
     uint32_t getNumStates() const;
     UIntVec_t getMinStatedDurations() const;
-    const TransitionVector_t & getForbiddenMotionTransitions() const;
+    
+    const TransitionRestrictionVector_t & getTransitionRestrictions() const ;
 
 private:
 
@@ -41,8 +44,12 @@ private:
     HmmDataMatrix_t _lastConfusionMatrix;
     
     uint32_t _numStates;
+    
+    TransitionRestrictionVector_t _forbiddenTransitions;
+    
+    TransitionMultiMap_t getForbiddenTransitions(const MatrixMap_t & measurements) const;
+      
 
-    TransitionVector_t _forbiddenMotionTransitions; //misnomer, should be called forbidden transitions where there is no motion at all
     
 };
 

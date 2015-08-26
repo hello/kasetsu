@@ -7,6 +7,7 @@
 
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
+#include "MotionSequenceForbiddenTransitions.h"
 
 static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
 static const int32_t priorScaleAsNumberOfSamples = 5;
@@ -21,9 +22,9 @@ static struct option long_options[] = {
 };
 
 
-static bool isMotion(const HmmDataVec_t & motion, uint32_t t) {
-    return ! (motion[t] == 0.0 || motion[t] == 6.0);
-}
+
+
+
 
 
 static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
@@ -33,25 +34,9 @@ static MultiObsSequence getMotionSequence(const MeasVec_t & meas) {
     for (auto it = meas.begin(); it != meas.end(); it++) {
         const MatrixMap_t & ref = (*it).rawdata;
         LabelMap_t labelsCopy = (*it).labels;
-        auto dataIterator = ref.find("motion");
-        
-        const HmmDataMatrix_t & mat = (*dataIterator).second;
-        const HmmDataVec_t & vec = mat[0];
-        
-        TransitionMultiMap_t forbiddenTransitions;
-        for (int t = 0; t < vec.size() - 1; t++) {
-            //need two consecutive motion events to have a wake
-            //I hypothessize that it improve things because it gets rid of bed-making events
-            if (  !( isMotion(vec, t) && isMotion(vec, t+1) ) )  {
-                forbiddenTransitions.insert(std::make_pair(t, StateIdxPair(LABEL_SLEEP,LABEL_POST_SLEEP)));
-            }
-        
-        }
-        
-        seq.addSequence(ref, forbiddenTransitions, labelsCopy);
-        
-        
+        seq.addSequence(ref, labelsCopy);
     }
+    
     
     return seq;
     
@@ -167,7 +152,14 @@ int main(int argc , char ** argv) {
         StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
         forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
         
-        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,forbiddenMotionTransitions)));
+        UIntSet_t noMotionStates;
+        noMotionStates.insert(0); //I just happen to know this
+        noMotionStates.insert(6);
+        
+        TransitionRestrictionVector_t restrictions;
+        restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
+        
+        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
     }
     else {
         hmms = ModelFile::LoadFile(model_filename);
