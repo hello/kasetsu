@@ -55,7 +55,7 @@ hello::MotionModelRestriction * MotionSequenceForbiddenTransitions::toProtobuf()
     for (auto it = _forbiddenMotionTransitions.begin(); it != _forbiddenMotionTransitions.end(); it++) {
         hello::Transition * transition = protobuf->add_forbiddeden_motion_transitions();
         transition->set_from((*it).from);
-        transition->set_from((*it).to);
+        transition->set_to((*it).to);
     }
     
     for (auto it = _noMotionStates.begin(); it != _noMotionStates.end(); it++) {

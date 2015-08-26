@@ -159,7 +159,7 @@ int main(int argc , char ** argv) {
         TransitionRestrictionVector_t restrictions;
         restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
         
-        hmms.insert(std::make_pair("sleep",new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+        hmms.insert(std::make_pair(SLEEP_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
     }
     else {
         hmms = ModelFile::LoadFile(model_filename);
