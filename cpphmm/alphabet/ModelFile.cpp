@@ -354,10 +354,6 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
             prior->add_log_denominator(hmm.getLogDenominator()[i]);
         }
         
-        for (int i = 0; i < hmm.getPi().size(); i++) {
-            prior->add_log_denominator(hmm.getPi()[i]);
-        }
-        
         prior->set_allocated_log_state_transition_numerator(new hello::RealMatrix(matrixFromMatrix(hmm.getLogANumerator())));
         
         //last state is the end state
