@@ -360,7 +360,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             const HmmDataMatrix_t logbmap = getLogBMap(rawdata,alphabetProbsMap);
             
-            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions,true);
+            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions,false);
             
             const HmmDataMatrix_t logANumerator = HmmHelpers::getLogANumerator(A,alphaBeta, logbmap, forbiddenTransitions, numObs, _numStates);
             

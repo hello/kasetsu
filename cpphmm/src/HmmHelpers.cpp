@@ -3,7 +3,7 @@
 #include "MatrixHelpers.h"
 #include <assert.h>
 
-#define FORBIDDEN_TRANSITION_PENALTY (-100000)
+#define FORBIDDEN_TRANSITION_PENALTY LOGZERO
 #define NON_LABEL_PENALTY LOGZERO
 
 template <typename T>
@@ -89,7 +89,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         HmmDataMatrix_t logAThisTimeStep = logA;
         
         if (useForbiddenTransitions) {
-            logA = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+            logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
         }
         
         for (j = 0; j < numStates; j++) {
@@ -110,7 +110,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         if (getLabel(label,t,labels)) {
             for (j = 0; j < numStates; j++) {
                 if (j != label) {
-                    logalpha[j][t] += NON_LABEL_PENALTY;
+                    logalpha[j][t] = NON_LABEL_PENALTY;
                 }
             }
         }
@@ -139,7 +139,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         HmmDataMatrix_t logAThisTimeStep = logA;
         
         if (useForbiddenTransitions) {
-            logA = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+            logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
         }
         
         for (i = 0; i < numStates; i++) {
@@ -159,7 +159,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         if (getLabel(label,t,labels)) {
             for (j = 0; j < numStates; j++) {
                 if (j != label) {
-                    logbeta[j][t] += NON_LABEL_PENALTY;
+                    logbeta[j][t] = NON_LABEL_PENALTY;
                 }
             }
         }
