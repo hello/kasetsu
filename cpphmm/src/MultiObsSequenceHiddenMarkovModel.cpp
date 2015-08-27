@@ -333,6 +333,9 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
     int iterationNumber,iSequence;
     
     for (iterationNumber = 0; iterationNumber < numIter; iterationNumber++) {
+        uint32_t numRecordsProcessed = 0;
+        uint32_t numFuckedRecords = 0;
+
         for (iSequence = 0; iSequence < meas.size(); iSequence++) {
             const MatrixMap_t & rawdata = meas.getMeasurements(iSequence);
             const LabelMap_t & labels = meas.getLabels(iSequence);
@@ -357,13 +360,24 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             const HmmDataMatrix_t logbmap = getLogBMap(rawdata,alphabetProbsMap);
             
-            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions);
+            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions,true);
             
             const HmmDataMatrix_t logANumerator = HmmHelpers::getLogANumerator(A,alphaBeta, logbmap, forbiddenTransitions, numObs, _numStates);
             
             const HmmDataVec_t logDenominator = HmmHelpers::getLogDenominator(alphaBeta, _numStates, numObs);
             
-         
+            bool isFucked = false;
+            for (auto it = logDenominator.begin(); it != logDenominator.end(); it++) {
+                if ((*it) == LOGZERO){
+                    isFucked = true;
+                }
+            }
+            
+            if (isFucked) {
+                numFuckedRecords++;
+                continue;
+            }
+            
             _logANumerator = HmmHelpers::elnAddMatrix(_logANumerator, logANumerator);
             _logDenominator = HmmHelpers::elnAddVector(_logDenominator, logDenominator);
           
@@ -388,11 +402,14 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 
                 
             }
+            
+            numRecordsProcessed++;
         }
     
+        std::cout << "SKIPPED " << numFuckedRecords << " RECORDS OUT OF " << numRecordsProcessed + numFuckedRecords << " TOTAL" << std::endl;
         
         if (priorWeightAsNumberOfSamples > 0) {
-            const HmmFloat_t scaleFactor = (HmmFloat_t)priorWeightAsNumberOfSamples / (HmmFloat_t)meas.size();
+            const HmmFloat_t scaleFactor = (HmmFloat_t)priorWeightAsNumberOfSamples / (HmmFloat_t)numRecordsProcessed;
             
             scale(scaleFactor);
         }
@@ -520,8 +537,10 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
             thesum += confusionMatrix[i][j];
         }
         
-        for (int j = 0; j < _numStates; j++) {
-            confusionMatrix[i][j] /= thesum;
+        if (thesum > 0) {
+            for (int j = 0; j < _numStates; j++) {
+                confusionMatrix[i][j] /= thesum;
+            }
         }
     }
     

@@ -3,8 +3,8 @@
 #include "MatrixHelpers.h"
 #include <assert.h>
 
-#define FORBIDDEN_TRANSITION_PENALTY (-100.0)
-
+#define FORBIDDEN_TRANSITION_PENALTY (-100000)
+#define NON_LABEL_PENALTY LOGZERO
 
 template <typename T>
 std::vector<size_t> sort_indexes(const std::vector<T> &v) {
@@ -50,7 +50,7 @@ static bool getLabel(uint32_t & label, const uint32_t t, const LabelMap_t & labe
     return true;
 }
 
-AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions) {
+AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions,bool useForbiddenTransitions) {
     (void)getLabel;
 
     /*
@@ -86,7 +86,11 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     
     for (t = 1; t < numObs; t++) {
         
-        HmmDataMatrix_t logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+        HmmDataMatrix_t logAThisTimeStep = logA;
+        
+        if (useForbiddenTransitions) {
+            logA = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+        }
         
         for (j = 0; j < numStates; j++) {
             temp = LOGZERO;
@@ -106,7 +110,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         if (getLabel(label,t,labels)) {
             for (j = 0; j < numStates; j++) {
                 if (j != label) {
-                    logalpha[j][t] = LOGZERO;
+                    logalpha[j][t] += NON_LABEL_PENALTY;
                 }
             }
         }
@@ -132,8 +136,12 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     
     for (t = numObs - 2; t >= 0; t--) {
         
-        HmmDataMatrix_t logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
-
+        HmmDataMatrix_t logAThisTimeStep = logA;
+        
+        if (useForbiddenTransitions) {
+            logA = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
+        }
+        
         for (i = 0; i < numStates; i++) {
             temp = LOGZERO;
             for (j = 0;  j < numStates; j++) {
@@ -151,7 +159,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
         if (getLabel(label,t,labels)) {
             for (j = 0; j < numStates; j++) {
                 if (j != label) {
-                    logbeta[j][t] = LOGZERO;
+                    logbeta[j][t] += NON_LABEL_PENALTY;
                 }
             }
         }
@@ -178,7 +186,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     LabelMap_t labels;
     TransitionMultiMap_t forbiddenTransitions;
     
-    return getAlphaAndBeta(numObs, pi, logbmap, A, numStates, labels, forbiddenTransitions);
+    return getAlphaAndBeta(numObs, pi, logbmap, A, numStates, labels, forbiddenTransitions,false);
     
 }
 
