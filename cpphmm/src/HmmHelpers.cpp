@@ -50,7 +50,7 @@ static bool getLabel(uint32_t & label, const uint32_t t, const LabelMap_t & labe
     return true;
 }
 
-AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions,bool useForbiddenTransitions) {
+AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t & pi, const HmmDataMatrix_t & logbmap, const HmmDataMatrix_t & A,const uint32_t numStates,const LabelMap_t & labels, const TransitionMultiMap_t & forbiddenTransitions) {
     (void)getLabel;
 
     /*
@@ -63,19 +63,21 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
      forbidden transitions means at that time index a transition is unavailable
      labels mean that you have to be in that time
      */
+    
     int t,j,i;
     HmmDataMatrix_t logalpha = getLogZeroedMatrix(numStates,numObs);
     HmmDataMatrix_t logbeta = getLogZeroedMatrix(numStates,numObs);
     HmmFloat_t temp;
-    HmmDataMatrix_t logA = A; //copy
+    HmmDataMatrix_t A2 = A; //copy
     
     //nominal A matrix
     for (j = 0; j < numStates; j++) {
         for (i = 0; i < numStates; i++) {
-            logA[j][i] = eln(logA[j][i]);
+            A2[j][i] = eln(A2[j][i]);
         }
     }
     
+    const HmmDataMatrix_t logA = A2;
     
     //init stage - alpha_1(x) = pi(x)b_x(O1)
     
@@ -86,18 +88,12 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     
     for (t = 1; t < numObs; t++) {
         
-        HmmDataMatrix_t logAThisTimeStep = logA;
-        
-        if (useForbiddenTransitions) {
-            logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
-        }
-        
         for (j = 0; j < numStates; j++) {
             temp = LOGZERO;
             
             for (i = 0; i < numStates; i++) {
                 //alpha[j][t] += alpha[i][t-1]*A[i][j];
-                const HmmFloat_t tempval = elnproduct(logalpha[i][t-1],logAThisTimeStep[i][j]);
+                const HmmFloat_t tempval = elnproduct(logalpha[i][t-1],logA[i][j]);
                 temp = elnsum(temp,tempval);
             }
             
@@ -136,17 +132,11 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     
     for (t = numObs - 2; t >= 0; t--) {
         
-        HmmDataMatrix_t logAThisTimeStep = logA;
-        
-        if (useForbiddenTransitions) {
-            logAThisTimeStep = getLogAWithForbiddenStates(logA,forbiddenTransitions,t);
-        }
-        
         for (i = 0; i < numStates; i++) {
             temp = LOGZERO;
             for (j = 0;  j < numStates; j++) {
                 const HmmFloat_t tempval  = elnproduct(logbmap[j][t+1], logbeta[j][t+1]);
-                const HmmFloat_t tempval2 = elnproduct(tempval, logAThisTimeStep[i][j]);
+                const HmmFloat_t tempval2 = elnproduct(tempval, logA[i][j]);
                 temp = elnsum(temp,tempval2);
                 //beta[i][t] += A[i][j]*bmap[j][t+1] * beta[j][t+1];
             }
@@ -186,7 +176,7 @@ AlphaBetaResult_t HmmHelpers::getAlphaAndBeta(int32_t numObs,const HmmDataVec_t 
     LabelMap_t labels;
     TransitionMultiMap_t forbiddenTransitions;
     
-    return getAlphaAndBeta(numObs, pi, logbmap, A, numStates, labels, forbiddenTransitions,false);
+    return getAlphaAndBeta(numObs, pi, logbmap, A, numStates, labels, forbiddenTransitions);
     
 }
 

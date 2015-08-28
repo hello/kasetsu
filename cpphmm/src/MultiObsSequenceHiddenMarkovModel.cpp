@@ -263,7 +263,7 @@ static void printTransitions(const ViterbiPath_t & path) {
     
     for (auto it = pt.begin(); it != pt.end(); it++) {
         StateIdxPair transition = (*it).first;
-        //std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
+        std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
         int32_t t = (*it).second;
         t -= 1;
         int hour = t * 5.0 / 60.0;
@@ -360,7 +360,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             
             const HmmDataMatrix_t logbmap = getLogBMap(rawdata,alphabetProbsMap);
             
-            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions,false);
+            const AlphaBetaResult_t alphaBeta = HmmHelpers::getAlphaAndBeta(numObs, _pi, logbmap, A, _numStates,labels,forbiddenTransitions);
             
             const HmmDataMatrix_t logANumerator = HmmHelpers::getLogANumerator(A,alphaBeta, logbmap, forbiddenTransitions, numObs, _numStates);
             
@@ -377,6 +377,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 numFuckedRecords++;
                 continue;
             }
+            
             
             _logANumerator = HmmHelpers::elnAddMatrix(_logANumerator, logANumerator);
             _logDenominator = HmmHelpers::elnAddVector(_logDenominator, logDenominator);

@@ -10,7 +10,7 @@
 #include "MotionSequenceForbiddenTransitions.h"
 
 static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
-static const int32_t priorScaleAsNumberOfSamples = 5;
+static const int32_t priorScaleAsNumberOfSamples = 1;
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },

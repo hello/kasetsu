@@ -19,7 +19,7 @@ typedef std::vector<uint32_t> ViterbiPath_t;
 typedef std::vector<uint32_t> UIntVec_t;
 typedef UNORDERED_SET<uint32_t> UIntSet_t;
 typedef UNORDERED_MAP<std::string,HmmDataMatrix_t> MatrixMap_t;
-typedef UNORDERED_MAP<uint32_t, uint32_t> LabelMap_t; //key is time index
+typedef std::map<uint32_t, uint32_t> LabelMap_t; //key is time index
 
 typedef std::vector<ViterbiPath_t> ViterbiPathMatrix_t;
 
