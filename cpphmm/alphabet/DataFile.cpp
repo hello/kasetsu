@@ -77,7 +77,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
     
     
-    /*
+    
     if (hasWake && hasSleep) {
         
         const int updated1 = (*sleep)["updated"].GetInt();
@@ -88,66 +88,79 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
         }
         
         for (int i = 0; i < updated1; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+            labelMap[i] = LABEL_PRE_SLEEP;
+
         }
         
-        for (int i = updated1; i <= updated2; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+        for (int i = updated1; i < updated2; i++) {
+            labelMap[i] = LABEL_SLEEP;
+
         }
         
         for (int i = updated2; i < alphabetLength; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+            labelMap[i] = LABEL_POST_SLEEP;
         }
+        
+        labelMap[updated1 - 1] = LABEL_PRE_IN_BED;
+        labelMap[updated2 - 1] = LABEL_POST_IN_BED;
 
-        
     }
-     */
+    else {
     
-    if (hasSleep) {
-        const int updated = (*sleep)["updated"].GetInt();
-        
-        for (int i = 0; i < updated; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
-        }
-        
-        for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-        }
-        
-    }
-    
-    if (hasWake) {
-        const int updated = (*wake)["updated"].GetInt();
-       
-        //wake time moved up -- labeling period as sleep
-        for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-        }
-        
-        //everything from wake afterwards is "wake"
-        for (int i = updated; i < alphabetLength; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+        if (hasSleep) {
+            const int updated = (*sleep)["updated"].GetInt();
+            
+            for (int i = 0; i < updated; i++) {
+                labelMap[i] = LABEL_PRE_SLEEP;
+            }
+            
+            
+            for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
+                labelMap[i] = LABEL_SLEEP;
+            }
+            
+            labelMap[updated - 1] = LABEL_PRE_IN_BED;
+
             
         }
-       
-    }
-    
-    
-    if (hasInBed) {
-        const int updated = (*inbed)["updated"].GetInt();
-        for (int i = 0; i < updated; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+        
+        if (hasWake) {
+            const int updated = (*wake)["updated"].GetInt();
+            
+            //wake time moved up -- labeling period as sleep
+            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
+                labelMap[i] = LABEL_SLEEP;
+            }
+            
+            
+            //everything from wake afterwards is "wake"
+            for (int i = updated; i < alphabetLength; i++) {
+                labelMap[i] = LABEL_POST_SLEEP;
+            }
+            
+            labelMap[updated - 1] = LABEL_POST_IN_BED;
         }
     }
     
-    if (hasOutOfBed) {
-        const int updated = (*outofbed)["updated"].GetInt();
-        for (int i = updated; i < alphabetLength; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+    
+    if (hasInBed && hasSleep) {
+        const int updatedInBed = (*inbed)["updated"].GetInt();
+        const int updatedSleep = (*sleep)["updated"].GetInt();
+        
+        for (int i = updatedInBed; i < updatedSleep; i++) {
+            labelMap[i] = LABEL_PRE_IN_BED;
+        }
+    }
+    
+    if (hasOutOfBed && hasWake) {
+        const int updatedOutOfBed = (*outofbed)["updated"].GetInt();
+        const int updatedWake = (*wake)["updated"].GetInt();
+
+        for (int i = updatedWake; i < updatedOutOfBed; i++) {
+            labelMap[i] = LABEL_POST_IN_BED;
         }
     }
  
-     
     
     return labelMap;
     

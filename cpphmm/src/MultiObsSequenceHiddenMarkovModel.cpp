@@ -12,7 +12,7 @@
 
 #define PRIOR_STRENGTH (1e-50)
 
-#define SLEEP_STATE (1) 
+#define SLEEP_STATE (2) 
 #define SLEEP_STATE_MIN_DURATION (6)
 
 
@@ -263,7 +263,7 @@ static void printTransitions(const ViterbiPath_t & path) {
     
     for (auto it = pt.begin(); it != pt.end(); it++) {
         StateIdxPair transition = (*it).first;
-        std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
+       // std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
         int32_t t = (*it).second;
         t -= 1;
         int hour = t * 5.0 / 60.0;
@@ -369,7 +369,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             bool isFucked = false;
             for (auto it = logDenominator.begin(); it != logDenominator.end(); it++) {
                 if ((*it) == LOGZERO){
-                    isFucked = true;
+                    //isFucked = true;
                 }
             }
             
