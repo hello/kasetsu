@@ -129,34 +129,29 @@ int main(int argc , char ** argv) {
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
 
-        /*
+        
         A.resize(3);
         A[0] << 0.9999,0.0001,0.0;
         A[1] << 0.00,0.9999,0.0001;
         A[2] << 0.00,0.00,1.0;
-        */
         
+        
+        /*
         A.resize(5);
-        A[0] << 0.9999,  0.0001,  0.0001,  0.0001, 0.00;
-        A[1] << 0.00,    0.9,     0.1,    0.00,   0.00;
-        A[2] << 0.00,    0.00,    0.9999, 0.0001, 0.0001;
-        A[3] << 0.00,    0.00,    0.0000, 0.90,   0.10;
-        A[4] << 0.00,    0.00,    0.0,    0.00,   1.0;
-
+        A[0] << 0.99,0.01,0.00,0.00,0.00;
+        A[1] << 0.00,0.99,0.01,0.00,0.00;
+        A[2] << 0.00,0.00,0.999,0.001,0.00;
+        A[3] << 0.00,0.00,0.00,0.99,0.01;
+        A[4] << 0.00,0.00,0.00,0.00,1.0;
+*/
+        
         
         MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
 
         TransitionVector_t forbiddenMotionTransitions;
-
         StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
-        StateIdxPair noWakeUntilTwoConsecutiveMotions2(LABEL_SLEEP,LABEL_POST_IN_BED);
-        StateIdxPair noWakeUntilTwoConsecutiveMotions3(LABEL_POST_IN_BED,LABEL_POST_SLEEP);
-
-        
         forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
-        forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions2);
-        forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions3);
-
+        
         UIntSet_t noMotionStates;
         noMotionStates.insert(0); //I just happen to know this
         noMotionStates.insert(6);
