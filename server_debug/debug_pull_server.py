@@ -6,8 +6,9 @@ import requests
 import numpy as np
 import time
 import json
-k_uri = 'http://127.0.0.1:9999/v1/timeline/'
 
+k_uri = 'http://127.0.0.1:9999/v2/timeline/'
+#k_uri = 'https://canary-api.hello.is/v2/timeline/'
 
 #num_days = 1
 #start_date_string = '2015-02-17'
@@ -28,7 +29,8 @@ my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171',
             }
 '''
 
-my_users = {'sp' : '4.4a4a066a56164203b0f2828096bcdc01'}
+my_users = {'bj' : '2.26d34270933b4d5e88e513b0805a0644'}
+#my_users = {'sp' : '4.4a4a066a56164203b0f2828096bcdc01'}
 #my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171' }
 #my_users = {'kik' : '4.9a1f7741f22a46959d7923a53f15776e'}
 #my_users={'am' : '3.2260a267c7b54ad093d765c63f066dcc'}
@@ -51,12 +53,11 @@ def pull_date(users_dict):
     
     
             if response.ok:
-                mylist = response.json()
-                mydict = mylist[0]
-                segs = mydict['segments']
+                mydict = response.json()
+                segs = mydict['events']
                 for seg in segs:
                     event_type = seg['event_type']
-                    timestr = get_time_as_string(seg['timestamp'],seg['offset_millis'])
+                    timestr = get_time_as_string(seg['timestamp'],seg['timezone_offset'])
                
                     if event_type != 'SLEEPING' and len(event_type) > 1:
                         print user, timestr,event_type
