@@ -101,8 +101,11 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
             labelMap[i] = LABEL_POST_SLEEP;
         }
         
-        labelMap[updated1 - 1] = LABEL_PRE_IN_BED;
-        labelMap[updated2 - 1] = LABEL_POST_IN_BED;
+       // labelMap.erase(updated1 - 1);
+      //  labelMap.erase(updated2 - 1);
+
+     //   labelMap[updated1 - 1] = LABEL_PRE_IN_BED;
+    //    labelMap[updated2 - 1] = LABEL_POST_IN_BED;
 
     }
     else {
@@ -119,7 +122,9 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
                 labelMap[i] = LABEL_SLEEP;
             }
             
-            labelMap[updated - 1] = LABEL_PRE_IN_BED;
+           // labelMap.erase(updated - 1);
+
+     //       labelMap[updated - 1] = LABEL_PRE_IN_BED;
 
             
         }
@@ -137,8 +142,10 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
             for (int i = updated; i < alphabetLength; i++) {
                 labelMap[i] = LABEL_POST_SLEEP;
             }
-            
-            labelMap[updated - 1] = LABEL_POST_IN_BED;
+
+            //labelMap.erase(updated - 1);
+
+    //        labelMap[updated - 1] = LABEL_POST_IN_BED;
         }
     }
     
@@ -147,18 +154,29 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
         const int updatedInBed = (*inbed)["updated"].GetInt();
         const int updatedSleep = (*sleep)["updated"].GetInt();
         
+        for (int i = 0; i < updatedInBed; i++) {
+            labelMap[i] = LABEL_PRE_SLEEP;
+        }
+        
         for (int i = updatedInBed; i < updatedSleep; i++) {
             labelMap[i] = LABEL_PRE_IN_BED;
         }
+        
     }
     
     if (hasOutOfBed && hasWake) {
         const int updatedOutOfBed = (*outofbed)["updated"].GetInt();
         const int updatedWake = (*wake)["updated"].GetInt();
 
+    
         for (int i = updatedWake; i < updatedOutOfBed; i++) {
             labelMap[i] = LABEL_POST_IN_BED;
         }
+        
+        for (int i = updatedOutOfBed; i < alphabetLength; i++) {
+            labelMap[i] = LABEL_POST_SLEEP;
+        }
+
     }
  
     
