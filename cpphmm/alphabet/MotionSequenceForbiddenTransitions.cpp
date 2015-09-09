@@ -23,7 +23,7 @@ TransitionMultiMap_t MotionSequenceForbiddenTransitions::getTimeIndexedRestricti
         //need two consecutive motion events to have a wake
         //I hypothessize that it improve things because it gets rid of bed-making events
         if (  !( isMotion(vec, t)
-                && isMotion(vec, t+1)
+        //        && isMotion(vec, t+1)
         ))  {
             
             for (auto itTransition = _forbiddenMotionTransitions.begin(); itTransition != _forbiddenMotionTransitions.end(); itTransition++) {
