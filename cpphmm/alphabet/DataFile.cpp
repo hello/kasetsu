@@ -1,6 +1,7 @@
 #include "DataFile.h"
 #include <fstream>
 #include <rapidjson/document.h>
+#include "CommonTypes.h"
 
 static const char * k_alphabets = "alphabets";
 static const char * k_labels = "feedback";
@@ -38,7 +39,7 @@ static bool hasString(Value::ConstMemberIterator begin,Value::ConstMemberIterato
 
 
 
-static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValueIterator end, uint32_t alphabetLength) {
+static LabelMap_t jsonToLabelsForSleep(Value::ConstValueIterator begin,Value::ConstValueIterator end, uint32_t alphabetLength) {
     
     Value::ConstValueIterator sleep;
     Value::ConstValueIterator wake;
@@ -77,7 +78,7 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
     
     
-    /*
+    
     if (hasWake && hasSleep) {
         
         const int updated1 = (*sleep)["updated"].GetInt();
@@ -101,35 +102,36 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
 
         
     }
-     */
-    
-    if (hasSleep) {
-        const int updated = (*sleep)["updated"].GetInt();
+    else {
         
-        for (int i = 0; i < updated; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
-        }
-        
-        for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-        }
-        
-    }
-    
-    if (hasWake) {
-        const int updated = (*wake)["updated"].GetInt();
-       
-        //wake time moved up -- labeling period as sleep
-        for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_SLEEP));
-        }
-        
-        //everything from wake afterwards is "wake"
-        for (int i = updated; i < alphabetLength; i++) {
-            labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+        if (hasSleep) {
+            const int updated = (*sleep)["updated"].GetInt();
+            
+            for (int i = 0; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_PRE_SLEEP));
+            }
+            
+            for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
             
         }
-       
+        
+        if (hasWake) {
+            const int updated = (*wake)["updated"].GetInt();
+            
+            //wake time moved up -- labeling period as sleep
+            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_SLEEP));
+            }
+            
+            //everything from wake afterwards is "wake"
+            for (int i = updated; i < alphabetLength; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_POST_SLEEP));
+                
+            }
+            
+        }
     }
     
     
@@ -153,6 +155,91 @@ static LabelMap_t jsonToLabels(Value::ConstValueIterator begin,Value::ConstValue
     
 }
 
+static LabelMap_t jsonToLabelsForBed(Value::ConstValueIterator begin,Value::ConstValueIterator end, uint32_t alphabetLength) {
+    
+
+    Value::ConstValueIterator inbed;
+    Value::ConstValueIterator outofbed;
+    
+    LabelMap_t labelMap;
+    bool hasInBed = false;
+    bool hasOutOfBed = false;
+    
+    for (auto it = begin; it != end; it++) {
+        
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","IN_BED")) {
+            inbed = it;
+            hasInBed = true;
+        }
+        
+        if (hasString(it->MemberBegin(),it->MemberEnd(),"type","OUT_OF_BED")) {
+            outofbed = it;
+            hasOutOfBed = true;
+        }
+    }
+    
+    
+    if (hasInBed && hasOutOfBed) {
+        
+        const int updated1 = (*inbed)["updated"].GetInt();
+        const int updated2 = (*outofbed)["updated"].GetInt();
+        
+        if (updated2 < updated1) {
+            return labelMap;
+        }
+        
+        for (int i = 0; i < updated1; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_PRE_BED));
+        }
+        
+        for (int i = updated1; i <= updated2; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_IN_BED));
+        }
+        
+        for (int i = updated2; i < alphabetLength; i++) {
+            labelMap.insert(std::make_pair(i, LABEL_POST_BED));
+        }
+        
+        
+    }
+    else {
+        
+        if (hasInBed) {
+            const int updated = (*inbed)["updated"].GetInt();
+            
+            for (int i = 0; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_PRE_BED));
+            }
+            
+            for (int i = updated + SLEEP_SPACING; i < updated + SLEEP_LABEL_PERIOD; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_IN_BED));
+            }
+            
+        }
+        
+        if (hasOutOfBed) {
+            const int updated = (*outofbed)["updated"].GetInt();
+            
+            //wake time moved up -- labeling period as sleep
+            for (int i = updated - SLEEP_LABEL_PERIOD; i < updated; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_IN_BED));
+            }
+            
+            //everything from wake afterwards is "wake"
+            for (int i = updated; i < alphabetLength; i++) {
+                labelMap.insert(std::make_pair(i, LABEL_POST_BED));
+                
+            }
+            
+        }
+    }
+    
+    
+    
+    return labelMap;
+    
+}
+
 
 static HmmDataVec_t jsonToVec(Value::ConstValueIterator begin, Value::ConstValueIterator end) {
     HmmDataVec_t vec;
@@ -165,7 +252,7 @@ static HmmDataVec_t jsonToVec(Value::ConstValueIterator begin, Value::ConstValue
     return vec;
 }
 
-MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphabetBegin,Value::ConstMemberIterator alphabetEnd,Value::ConstValueIterator labelsBegin, Value::ConstValueIterator labelsEnd) {
+static MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphabetBegin,Value::ConstMemberIterator alphabetEnd,Value::ConstValueIterator labelsBegin, Value::ConstValueIterator labelsEnd,bool isForSleep) {
     
     MeasAndLabels_t meas;
     uint32_t size = 0;
@@ -187,7 +274,12 @@ MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphabetBegin
         size = raw[0].size();
     }
     
-    meas.labels = jsonToLabels(labelsBegin,labelsEnd,size);
+    if (isForSleep) {
+        meas.labels = jsonToLabelsForSleep(labelsBegin,labelsEnd,size);
+    }
+    else {
+        meas.labels = jsonToLabelsForBed(labelsBegin,labelsEnd,size);
+    }
     
     return meas;
 }
@@ -238,18 +330,26 @@ bool DataFile::parse(const std::string & filename) {
     uint32_t count = 0;
     
     //loop through each entry
+    MeasVec_t sleepMeas;
+    MeasVec_t bedMeas;
+    
     for (Value::ConstValueIterator itr = document.Begin(); itr != document.End(); ++itr) {
         assert(itr->IsObject());
         
-        _measurements.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End()));
+        sleepMeas.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),true));
         
+        bedMeas.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),false));
+
         
-      
-        
+    
         updateStateSizes(_sizes,(*itr)[k_state_sizes].MemberBegin(),(*itr)[k_state_sizes].MemberEnd());
         
         count++;
     }
+    
+    _measurements[SLEEP_ENUM_STRING] = sleepMeas;
+    _measurements[BED_ENUM_STRING] = bedMeas;
+
 
     std::cout << "processed " << count << " items" << std::endl;
 
@@ -269,8 +369,17 @@ uint32_t DataFile::getNumStates(const std::string & modelName) const {
     return (*it).second;
 }
 
-const MeasVec_t & DataFile::getMeasurements() const {
-    return _measurements;
+MeasVec_t DataFile::getMeasurements(const std::string & type) const {
+    MeasVec_t measvec;
+    
+    auto it = _measurements.find(type);
+
+    if (it == _measurements.end()) {
+        return measvec;
+    }
+    
+    return (*it).second;
+        
 }
 
 

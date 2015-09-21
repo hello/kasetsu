@@ -17,7 +17,7 @@ static struct option long_options[] = {
     {"model",  required_argument,       0,  0},
     {"output",  required_argument, 0,  0},
     {"action",  required_argument, 0,  0},
-
+    {"verbose",  no_argument, 0,  0},
     {0,         0,                 0,  0 }
 };
 
@@ -54,8 +54,8 @@ static HmmDataMatrix_t getUniformAlphabetProbs(const uint32_t numStates, const u
     return alphabet;
 }
 
-static MatrixMap_t getUniformInitProbabilities(const DataFile & dataFile, const uint32_t numStates) {
-    const MeasVec_t & meas = dataFile.getMeasurements();
+static MatrixMap_t getUniformInitProbabilities(const DataFile & dataFile, const uint32_t numStates, const std::string & type) {
+    const MeasVec_t & meas = dataFile.getMeasurements(type);
     const MatrixMap_t & rawdata = (*meas.begin()).rawdata;
     MatrixMap_t initProbsMap;
     for (auto it = rawdata.begin(); it != rawdata.end(); it++) {
@@ -76,6 +76,7 @@ static bool isOption(uint32_t option_index, uint32_t idx) {
 int main(int argc , char ** argv) {
     
     int c;
+    bool verbose = false;
     
     std::string input_filename;
     std::string output_filename;
@@ -102,6 +103,9 @@ int main(int argc , char ** argv) {
             else if (isOption(option_index,3)) {
                 action.assign(optarg);
             }
+            else if (isOption(option_index,4)) {
+                verbose = true;
+            }
             
         }
     }
@@ -120,46 +124,67 @@ int main(int argc , char ** argv) {
         return 1;
     }
     
-    const MeasVec_t & meas = dataFile.getMeasurements();
-    
-    MultiObsSequence multiObsSequence = getMotionSequence(meas);
     
     HmmMap_t hmms;
     
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
 
-        
         A.resize(3);
         A[0] << 0.9999,0.0001,0.0;
         A[1] << 0.00,0.9999,0.0001;
         A[2] << 0.00,0.00,1.0;
         
         
-        /*
-        A.resize(5);
-        A[0] << 0.99,0.01,0.00,0.00,0.00;
-        A[1] << 0.00,0.99,0.01,0.00,0.00;
-        A[2] << 0.00,0.00,0.999,0.001,0.00;
-        A[3] << 0.00,0.00,0.00,0.99,0.01;
-        A[4] << 0.00,0.00,0.00,0.00,1.0;
-*/
+        //DO SLEEP MODEL
+        {
+            const MeasVec_t & meas = dataFile.getMeasurements(SLEEP_ENUM_STRING);
+            
+            MultiObsSequence multiObsSequence = getMotionSequence(meas);
+            
+            MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size(),SLEEP_ENUM_STRING);
+            
+            TransitionVector_t forbiddenMotionTransitions;
+            StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
+            forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
+            
+            UIntSet_t noMotionStates;
+            noMotionStates.insert(0); //I just happen to know this
+            noMotionStates.insert(6);
+            
+            TransitionRestrictionVector_t restrictions;
+            restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
+            
+            hmms.insert(std::make_pair(SLEEP_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+        }
+    
+        //DO BED MODEL
+        {
+            const MeasVec_t & meas = dataFile.getMeasurements(BED_ENUM_STRING);
+            
+            MultiObsSequence multiObsSequence = getMotionSequence(meas);
         
-        
-        MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size());
+            MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size(),BED_ENUM_STRING);
 
-        TransitionVector_t forbiddenMotionTransitions;
-        StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
-        forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
-        
-        UIntSet_t noMotionStates;
-        noMotionStates.insert(0); //I just happen to know this
-        noMotionStates.insert(6);
-        
-        TransitionRestrictionVector_t restrictions;
-        restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
-        
-        hmms.insert(std::make_pair(SLEEP_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+            TransitionRestrictionVector_t restrictions;
+
+            /*
+            TransitionVector_t forbiddenMotionTransitions;
+            StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_IN_BED,LABEL_POST_BED);
+            forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
+
+            
+            UIntSet_t noMotionStates;
+            noMotionStates.insert(0); //I just happen to know this
+            noMotionStates.insert(6);
+            noMotionStates.insert(7);
+
+            restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
+*/
+            hmms.insert(std::make_pair(BED_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+        }
+
+    
     }
     else {
         hmms = ModelFile::LoadFile(model_filename);
@@ -175,15 +200,23 @@ int main(int argc , char ** argv) {
         
         for (auto it = hmms.begin(); it != hmms.end(); it++) {
             std::cout << "ESTIMATING " << (*it).first << std::endl;
+            
+            const MeasVec_t & meas = dataFile.getMeasurements((*it).first);
+            MultiObsSequence multiObsSequence = getMotionSequence(meas);
+
             (*it).second->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
-            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods,verbose);
         }
         
     }
     else if (action == "evaluate") {
         for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            
+            const MeasVec_t & meas = dataFile.getMeasurements((*it).first);
+            MultiObsSequence multiObsSequence = getMotionSequence(meas);
+            
             std::cout << "EVALUATING " << (*it).first << std::endl;
-            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods);
+            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods,verbose);
         }
     }
     else {

@@ -471,7 +471,7 @@ const TransitionRestrictionVector_t & MultiObsHiddenMarkovModel::getTransitionRe
 
 
 
-std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError)  {
+std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError,bool verbose)  {
     uint32_t failCount = 0;
     uint32_t successCount = 0;
     std::vector<ViterbiDecodeResult_t> results;
@@ -497,8 +497,10 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         
         ViterbiDecodeResult_t result = HmmHelpers::decodeWithMinimumDurationConstraints(getAMatrix(), getLogBMap(rawdata, getAlphabetMatrix()), _pi, forbiddenTransitions,minDurations, _numStates, numObs);
         
-        std::cout << "COST: " << result.getCost() << std::endl;
-        printTransitions(result.getPath());
+        if (verbose) {
+            std::cout << "COST: " << result.getCost() << std::endl;
+            printTransitions(result.getPath());
+        }
         
         updateConfusionCount(labels, result.getPath(), confusionMatrix);
         
