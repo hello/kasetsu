@@ -2,6 +2,7 @@
 #include <iostream>
 #include "DataFile.h"
 #include "ModelFile.h"
+#include <set>
 
 
 #include <getopt.h>
@@ -218,14 +219,32 @@ int main(int argc , char ** argv) {
         
     }
     else if (action == "evaluate") {
+        std::set<std::string> keys;
         for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            keys.insert((*it).first);
+        }
+        
+        for (auto itKey = keys.begin(); itKey != keys.end(); itKey++) {
             
-            const MeasVec_t meas = dataFile.getMeasurements((*it).first);
+            std::cout << "EVALUATING " << (*itKey) << std::endl;
+
+            const MeasVec_t meas = dataFile.getMeasurements(*itKey);
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
             
-            std::cout << "EVALUATING " << (*it).first << std::endl;
-            (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods,verbose);
+            auto range = hmms.equal_range(*itKey);
+            
+            HmmVec_t hmms;
+            for (auto it = range.first; it != range.second; it++) {
+                hmms.push_back((*it).second);
+            }
+            
+            Ensemble ensemble(hmms);
+
+            
+            ensemble.evaluate(multiObsSequence);
+            
         }
+        
     }
     else if (action == "grow") {
         HmmMap_t grownHmms;

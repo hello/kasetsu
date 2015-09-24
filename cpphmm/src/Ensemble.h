@@ -7,11 +7,15 @@
 class Ensemble {
 public:
     Ensemble(const MultiObsHiddenMarkovModel & seed);
+    Ensemble(const HmmVec_t & hmms);
+
     ~Ensemble();
     
     TransitionAtTimeVec_t evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError, bool verbose) const;
     
     void grow(const MultiObsSequence & meas, uint32_t n);
+    
+    void evaluate(const MultiObsSequence & meas);
     
     HmmVec_t getModelPointers() const ;
     

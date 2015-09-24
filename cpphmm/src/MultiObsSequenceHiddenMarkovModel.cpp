@@ -403,6 +403,7 @@ EvaluationResult_t MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequen
         results.push_back(result);
     }
     
+    const HmmDataMatrix_t confusionCount = confusionMatrix;
     for (int i = 0; i < _numStates; i++) {
         HmmFloat_t thesum = 0.0;
         for (int j = 0; j < _numStates; j++) {
@@ -441,6 +442,7 @@ EvaluationResult_t MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequen
     EvaluationResult_t evaluationResult;
     evaluationResult.paths = results;
     evaluationResult.confusionMatrix = confusionMatrix;
+    evaluationResult.confusionCount = confusionCount;
     
     return evaluationResult;
 }

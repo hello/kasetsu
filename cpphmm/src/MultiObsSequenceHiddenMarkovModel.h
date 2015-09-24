@@ -18,6 +18,7 @@ typedef std::vector<MultiObsHmmSharedPtr_t> HmmVec_t;
 typedef struct {
     ViterbiResultVec_t paths;
     HmmDataMatrix_t confusionMatrix;
+    HmmDataMatrix_t confusionCount;
 } EvaluationResult_t;
 
 class MultiObsHiddenMarkovModel {

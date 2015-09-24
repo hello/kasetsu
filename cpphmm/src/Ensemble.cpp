@@ -1,12 +1,17 @@
 #include "Ensemble.h"
 #include "LogMath.h"
 #include "RandomHelpers.h"
+#include "MatrixHelpers.h"
 
 typedef UNORDERED_MAP<StateIdxPair,HmmFloat_t,StateIdxPairHash> TransitionAtTimeF_t; //key is time index
 
 
 Ensemble::Ensemble(const MultiObsHiddenMarkovModel & seed) {
     _models.push_back(MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(seed)));
+}
+
+Ensemble::Ensemble(const HmmVec_t & hmms) {
+    _models.insert(_models.begin(), hmms.begin(),hmms.end());
 }
 
 Ensemble::~Ensemble() {
@@ -26,8 +31,18 @@ static TransitionAtTimeF_t getTransitions(const ViterbiPath_t & path) {
     return transitions;
 }
 
-static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiObsSequence & multiObsSequence) {
+static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiObsSequence & multiObsSequence,bool verbose) {
     HmmFloat_t scoreSum = 0.0;
+    
+    if (ensemble.empty()) {
+        std::cerr << "ENSEMBLE SIZE IS ZERO" << __FILE__ << ":" << __LINE__ << std::endl;
+        return 0.0;
+    }
+    
+    const uint32_t numStates = ensemble[0]->getNumStates();
+    
+    HmmDataMatrix_t confusionCount = getZeroedMatrix(numStates, numStates);
+    
     for (int iMeas = 0; iMeas < multiObsSequence.size(); iMeas++) {
         
         const MultiObsSequence thisMeas = multiObsSequence.cloneOne(iMeas);
@@ -61,15 +76,33 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
         }
         
         //add up diags of confusion matrix to get score
-        HmmDataMatrix_t bestScoringConfusionMatrix = (*bestResult).confusionMatrix;
+        const HmmDataMatrix_t bestScoringConfusionMatrix = (*bestResult).confusionMatrix;
+
         for (int i = 0; i < bestScoringConfusionMatrix.size(); i++) {
             scoreSum += bestScoringConfusionMatrix[i][i];
         }
+
+        //add counts
+        const HmmDataMatrix_t bestScoringConfusionCount = (*bestResult).confusionCount;
         
+        for (int j = 0; j < numStates; j++) {
+            for (int i = 0; i < numStates; i++) {
+                confusionCount[j][i] += bestScoringConfusionCount[j][i];
+            }
+        }
     }
 
+    if (verbose) {
+        printMat("confusion count", confusionCount);
+    }
+    
     return scoreSum;
 }
+
+void Ensemble::evaluate(const MultiObsSequence & meas) {
+    evaluateEnsembleOnData(_models,meas,true);
+}
+
 
 void Ensemble::grow(const MultiObsSequence & meas, uint32_t n) {
     
@@ -106,7 +139,7 @@ void Ensemble::grow(const MultiObsSequence & meas, uint32_t n) {
             testEnsemble.insert(testEnsemble.begin(),_models.begin(),_models.end());
             testEnsemble.push_back(*itCandidateModel);
             
-            const HmmFloat_t score = evaluateEnsembleOnData(testEnsemble,meas);
+            const HmmFloat_t score = evaluateEnsembleOnData(testEnsemble,meas,false);
             
             std::cout << score << "," << std::flush;
             
