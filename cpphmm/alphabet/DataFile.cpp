@@ -265,6 +265,7 @@ static MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphab
             continue;
         }
          
+         
         
         HmmDataMatrix_t raw;
         raw.resize(1);
@@ -336,12 +337,18 @@ bool DataFile::parse(const std::string & filename) {
     for (Value::ConstValueIterator itr = document.Begin(); itr != document.End(); ++itr) {
         assert(itr->IsObject());
         
-        sleepMeas.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),true));
+        MeasAndLabels_t meas1 = alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),true);
         
-        bedMeas.push_back(alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),false));
-
+        if (!meas1.labels.empty()) {
+            sleepMeas.push_back(meas1);
+        }
         
-    
+        MeasAndLabels_t meas2 = alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),false);
+        
+        if (!meas2.labels.empty()) {
+            bedMeas.push_back(meas2);
+        }
+        
         updateStateSizes(_sizes,(*itr)[k_state_sizes].MemberBegin(),(*itr)[k_state_sizes].MemberEnd());
         
         count++;
