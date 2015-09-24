@@ -22,6 +22,7 @@ static struct option long_options[] = {
     {"output",  required_argument, 0,  0},
     {"action",  required_argument, 0,  0},
     {"verbose",  no_argument, 0,  0},
+    {"iter",  required_argument, 0,  0},
     {0,         0,                 0,  0 }
 };
 
@@ -86,7 +87,10 @@ int main(int argc , char ** argv) {
     std::string output_filename;
     std::string model_filename;
     std::string action = "reestimate";
+    
+    srand (time(NULL));
 
+    int iter = k_num_iters_for_growing;
     while (1) {
         int option_index = 0;
         
@@ -113,7 +117,12 @@ int main(int argc , char ** argv) {
             else if (isOption(option_index,4)) {
                 verbose = true;
             }
-            
+            else if (isOption(option_index,5)) {
+                std::string value;
+                value.assign(optarg);
+                
+                iter = atoi(value.c_str());
+            }
         }
     }
     
@@ -233,12 +242,12 @@ int main(int argc , char ** argv) {
             
             auto range = hmms.equal_range(*itKey);
             
-            HmmVec_t hmms;
+            HmmVec_t hmmsForKey;
             for (auto it = range.first; it != range.second; it++) {
-                hmms.push_back((*it).second);
+                hmmsForKey.push_back((*it).second);
             }
             
-            Ensemble ensemble(hmms);
+            Ensemble ensemble(hmmsForKey);
 
             
             ensemble.evaluate(multiObsSequence);
@@ -257,7 +266,7 @@ int main(int argc , char ** argv) {
             
             //grow ensemble
             Ensemble ensemble(*(*it).second);
-            ensemble.grow(multiObsSequence,k_num_iters_for_growing);
+            ensemble.grow(multiObsSequence,iter);
             
             
             const HmmVec_t ptrs = ensemble.getModelPointers();

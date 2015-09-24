@@ -200,7 +200,7 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLogBMap(const MatrixMap_t & rawdat
 
 
 
-void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter, const uint32_t priorWeightAsNumberOfSamples) {
+void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter, const HmmFloat_t priorWeightAsNumberOfSamples) {
     int iterationNumber,iSequence;
     
     for (iterationNumber = 0; iterationNumber < numIter; iterationNumber++) {
@@ -220,7 +220,7 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
                 continue;
             }
             
-            if (iSequence % 100 == 0)
+            if (iSequence - 1 % 100 == 0)
                 std::cout << "SEQUENCE " <<iSequence << std::endl;
             
             const uint32_t numObs = (*rawdata.begin()).second[0].size();
@@ -278,7 +278,9 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             numRecordsProcessed++;
         }
     
-        std::cout << "SKIPPED " << numFuckedRecords << " RECORDS OUT OF " << numRecordsProcessed + numFuckedRecords << " TOTAL" << std::endl;
+        if (numFuckedRecords > 0) {
+            std::cout << "SKIPPED " << numFuckedRecords << " RECORDS OUT OF " << numRecordsProcessed + numFuckedRecords << " TOTAL" << std::endl;
+        }
         
         if (priorWeightAsNumberOfSamples > 0) {
             const HmmFloat_t scaleFactor = (HmmFloat_t)priorWeightAsNumberOfSamples / (HmmFloat_t)numRecordsProcessed;

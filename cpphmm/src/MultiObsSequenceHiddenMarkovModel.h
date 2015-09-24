@@ -29,7 +29,7 @@ public:
     ~MultiObsHiddenMarkovModel();
     
     EvaluationResult_t evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError = 4, bool verbose = false) const;
-    void reestimate(const MultiObsSequence & meas,const uint32_t numIter,const uint32_t priorWeightAsNumberOfSamples);
+    void reestimate(const MultiObsSequence & meas,const uint32_t numIter,const HmmFloat_t priorWeightAsNumberOfSamples);
     HmmDataMatrix_t getAMatrix() const;
     MatrixMap_t getAlphabetMatrix() const;
     HmmDataMatrix_t getLogBMap(const MatrixMap_t & rawdataMap, const MatrixMap_t & alphabetProbsMap) const;

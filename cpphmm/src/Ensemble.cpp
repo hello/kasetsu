@@ -3,6 +3,8 @@
 #include "RandomHelpers.h"
 #include "MatrixHelpers.h"
 
+#define PRIOR_WEIGHT (3.0)
+
 typedef UNORDERED_MAP<StateIdxPair,HmmFloat_t,StateIdxPairHash> TransitionAtTimeF_t; //key is time index
 
 
@@ -33,6 +35,7 @@ static TransitionAtTimeF_t getTransitions(const ViterbiPath_t & path) {
 
 static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiObsSequence & multiObsSequence,bool verbose) {
     HmmFloat_t scoreSum = 0.0;
+    uint32_t scoreCount = 0;
     
     if (ensemble.empty()) {
         std::cerr << "ENSEMBLE SIZE IS ZERO" << __FILE__ << ":" << __LINE__ << std::endl;
@@ -80,6 +83,7 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
 
         for (int i = 0; i < bestScoringConfusionMatrix.size(); i++) {
             scoreSum += bestScoringConfusionMatrix[i][i];
+            scoreCount++;
         }
 
         //add counts
@@ -91,12 +95,28 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
             }
         }
     }
+    
+    for (int j = 0; j < numStates; j++) {
+        HmmFloat_t sum = 0.0;
+        for (int i = 0; i < numStates; i++) {
+            sum += confusionCount[j][i];
+        }
+        
+        if (sum <= 0.0) {
+            continue;
+        }
+        
+        for (int i = 0; i < numStates; i++) {
+            confusionCount[j][i] /= sum;
+        }
+
+    }
 
     if (verbose) {
-        printMat("confusion count", confusionCount);
+        printMat("confusion mtx", confusionCount);
     }
     
-    return scoreSum;
+    return scoreSum / (HmmFloat_t) scoreCount;
 }
 
 void Ensemble::evaluate(const MultiObsSequence & meas) {
@@ -121,7 +141,7 @@ void Ensemble::grow(const MultiObsSequence & meas, uint32_t n) {
             const MultiObsSequence seq = meas.cloneOne(measIndices[idx]);
             //choose measurement updates randomly
             
-            pcopy->reestimate(seq, 1, 1.0);
+            pcopy->reestimate(seq, 1, PRIOR_WEIGHT);
             
             candidateModels.push_back(pcopy);
             
