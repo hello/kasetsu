@@ -6,9 +6,10 @@ import calendar
 import datetime
 import json
 
+print 'GOT_IN_BED, FELL_ASLEEP, WOKE_UP, GOT_OUT_OF_BED'
 k_url = 'http://127.0.0.1:9999/v2/timeline/{}/events/{}/{}'
-k_auth = '4.749bff8cb91847119385bf9c85abb131' #some random user in local database
-
+#k_auth = '2.26d34270933b4d5e88e513b0805a0644' #some random user in local database
+k_auth = '2.26d34270933b4d5e88e513b0805a0644'
 
 
 

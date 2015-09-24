@@ -82,10 +82,22 @@ public:
 
     static HmmDataVec_t elnVectorScalarProduct(const HmmDataVec_t & m1, const HmmFloat_t a);
     
+    
     static ViterbiDecodeResult_t decodeWithoutLabels(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const uint32_t numStates,const uint32_t numObs);
     
     static ViterbiDecodeResult_t decodeWithMinimumDurationConstraints(const HmmDataMatrix_t & A, const HmmDataMatrix_t & logbmap, const HmmDataVec_t & pi, const TransitionMultiMap_t & forbiddenTransitions,const UIntVec_t & durationMinimums,const uint32_t numStates,const uint32_t numObs);
 
+    static UIntVec_t getVecFromLabels(const LabelMap_t & labels, const uint32_t end,const uint32_t nolabellabel);
+    
+    static void updateConfusionCount(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix);
+        
+    static TransitionAtTime_t evalLabels(TransitionAtTime_t & counts, const LabelMap_t & labels, const ViterbiPath_t & path);
+    
+    static void printTransitions(const ViterbiPath_t & path);
+    
+    static TransitionAtTime_t getLabelTransitions(const LabelMap_t & labels, const uint32_t end);
+    
+    static TransitionAtTime_t getPathTransitions(const ViterbiPath_t & path);
 
 
 };

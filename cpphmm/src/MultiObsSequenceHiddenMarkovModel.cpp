@@ -35,8 +35,6 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initial
     _pi = getZeroedVec(_numStates);
     _pi[0] = 1.0;
     
-    _lastConfusionMatrix = getZeroedMatrix(_numStates, _numStates);
-    
     
     printMat("original A", getAMatrix());
     
@@ -54,9 +52,7 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlph
     
     
     scale(scalingFactor);
-    
-    _lastConfusionMatrix = getZeroedMatrix(_numStates, _numStates);
-    
+        
     _A = getAMatrix();
     
     _pi = getZeroedVec(_numStates);
@@ -69,10 +65,7 @@ MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & logAlph
 
 
 MultiObsHiddenMarkovModel::~MultiObsHiddenMarkovModel() {
-    for (auto it = _forbiddenTransitions.begin(); it != _forbiddenTransitions.end(); it++) {
-        delete *it;
-    }
-
+   
 }
 
 void MultiObsHiddenMarkovModel::scale(const HmmFloat_t scaleFactor) {
@@ -204,129 +197,7 @@ HmmDataMatrix_t MultiObsHiddenMarkovModel::getLogBMap(const MatrixMap_t & rawdat
     return logbmap;
 }
 
-/*
-static UIntVec_t getVecFromLabels(const LabelMap_t & labels, const uint32_t end,const uint32_t nolabellabel) {
-    UIntVec_t vec;
-    vec.reserve(end);
-    for (uint32_t t = 0; t < end; t++) {
-        LabelMap_t::const_iterator it = labels.find(t);
-        
-        if (it != labels.end()) {
-            vec.push_back((*it).second);
-        }
-        else {
-            vec.push_back(nolabellabel);
-        }
-    }
-    
-    return vec;
-}
-*/
 
-
-static TransitionAtTime_t getPathTransitions(const ViterbiPath_t & path) {
-    TransitionAtTime_t results;
-    for (int t = 1; t < path.size(); t++) {
-        if (path[t] != path[t - 1]) {
-            results.insert(std::make_pair (StateIdxPair(path[t - 1],path[t]),t));
-        }
-    }
-    
-    return results;
-}
-
-static TransitionAtTime_t getLabelTransitions(const LabelMap_t & labels, const uint32_t end) {
-    uint32_t prev = 0xFFFFFFFF;
-    TransitionAtTime_t results;
-    for (uint32_t t = 0; t < end; t++) {
-        LabelMap_t::const_iterator it = labels.find(t);
-        
-        if (it != labels.end()) {
-            const uint32_t current  = (*it).second;
-            
-            if (current != prev && prev != 0xFFFFFFFF) {
-                results.insert(std::make_pair (StateIdxPair(prev,current),t));
-            }
-            
-            prev = (*it).second;
-        }
-        else {
-            prev = 0xFFFFFFFF;
-        }
-    }
-    
-    return results;
-}
-
-static void printTransitions(const ViterbiPath_t & path) {
-    const TransitionAtTime_t pt = getPathTransitions(path);
-    
-    for (auto it = pt.begin(); it != pt.end(); it++) {
-        StateIdxPair transition = (*it).first;
-        std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
-        int32_t t = (*it).second;
-        t -= 1;
-        int hour = t * 5.0 / 60.0;
-        int min = t * 5.0 - hour * 60.0;
-        hour += 20;
-        
-        if (hour >= 24) {
-            hour -= 24;
-        }
-        
-        
-        char buf[16];
-        snprintf(buf, 16, "%02d:%02d",hour,min);
-        
-        std::cout << transition.from << " ---> " << transition.to << " at time " << buf << std::endl;
-    }
-    
-    std::cout << "----------" << std::endl;
-}
-
-static TransitionAtTime_t evalLabels(TransitionAtTime_t & counts, const LabelMap_t & labels, const ViterbiPath_t & path) {
-    const TransitionAtTime_t lt = getLabelTransitions(labels,path.size());
-    const TransitionAtTime_t pt = getPathTransitions(path);
-    TransitionAtTime_t results;
-    
-    for (auto it = lt.begin(); it != lt.end(); it++) {
-        auto it2 = pt.find((*it).first);
-        auto itCounts = counts.find((*it).first);
-        
-        if (itCounts == counts.end()) {
-            counts.insert(std::make_pair((*it).first,0));
-        }
-        
-        counts[(*it).first]++;
-        
-        if (it2 == pt.end()) {
-            continue;
-        }
-        
-        const int32_t dt = (*it2).second - (*it).second;
-        
-        results.insert(std::make_pair((*it).first,dt));
-    }
-    
-    return results;
-    
-}
-
-
-
-static void updateConfusionCount(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix) {
-    
-    for (uint32_t t = 0; t < path.size(); t++) {
-        LabelMap_t::const_iterator it = labels.find(t);
-        
-        if (it != labels.end()) {
-            uint32_t label = (*it).second;
-            uint32_t prediction = path[t];
-            
-            confusionMatrix[prediction][label] += 1.0;
-        }
-    }
-}
 
 
 void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const uint32_t numIter, const uint32_t priorWeightAsNumberOfSamples) {
@@ -415,9 +286,10 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             scale(scaleFactor);
         }
         
-        
+        /*
         printMat("A", getAMatrix(),2);
         std::cout << std::endl;
+        
         
         const MatrixMap_t alphabetProbsMap = getAlphabetMatrix();
         
@@ -425,13 +297,10 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             printMat((*it).first, (*it).second);
             std::cout << std::endl;
         }
-        
+        */
     }
 }
 
-HmmDataMatrix_t MultiObsHiddenMarkovModel::getLastConfusionMatrix() const {
-    return _lastConfusionMatrix;
-}
 
 const HmmDataVec_t & MultiObsHiddenMarkovModel::getPi() const {
     return _pi;
@@ -471,10 +340,10 @@ const TransitionRestrictionVector_t & MultiObsHiddenMarkovModel::getTransitionRe
 
 
 
-std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError,bool verbose)  {
+EvaluationResult_t MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError,bool verbose)  const {
     uint32_t failCount = 0;
     uint32_t successCount = 0;
-    std::vector<ViterbiDecodeResult_t> results;
+    ViterbiResultVec_t results;
     HmmDataMatrix_t confusionMatrix = getZeroedMatrix(_numStates,_numStates);
 
     TransitionAtTime_t totalErrorCount;
@@ -499,12 +368,12 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         
         if (verbose) {
             std::cout << "COST: " << result.getCost() << std::endl;
-            printTransitions(result.getPath());
+            HmmHelpers::printTransitions(result.getPath());
         }
         
-        updateConfusionCount(labels, result.getPath(), confusionMatrix);
+        HmmHelpers::updateConfusionCount(labels, result.getPath(), confusionMatrix);
         
-        const TransitionAtTime_t matchedTransitions = evalLabels(totalLabelCount,labels,result.getPath());
+        const TransitionAtTime_t matchedTransitions = HmmHelpers::evalLabels(totalLabelCount,labels,result.getPath());
         
         
         
@@ -547,32 +416,33 @@ std::vector<ViterbiDecodeResult_t> MultiObsHiddenMarkovModel::evaluatePaths(cons
         }
     }
     
-    
-    std::cout << "THERE ARE " << successCount << " SUCCESSFUL LABELS OUT OF " << successCount + failCount << " TOTAL"<< std::endl;
-    std::cout << std::endl;
-    if (!totalErrorCount.empty()) {
-        std::cout << "HERE ARE THE BAD PREDICTIONS" << std::endl;
-        for (auto it = totalErrorCount.begin(); it != totalErrorCount.end(); it++) {
-            const uint32_t fromState = (*it).first.from;
-            const uint32_t toState = (*it).first.to;
-            const int32_t errorCount = (*it).second;
-            const int32_t labelCount = totalLabelCount[(*it).first];
-            std::cout << "transition: " << fromState << " --> " << toState
-            << ", errors: " << errorCount
-            << ", out of #labels: " << labelCount
-            << ", success frac = " << 1.0 - (float)errorCount / (float) labelCount
-            << std::endl << std::endl;
-            
-            
+    if (verbose) {
+        std::cout << "THERE ARE " << successCount << " SUCCESSFUL LABELS OUT OF " << successCount + failCount << " TOTAL"<< std::endl;
+        std::cout << std::endl;
+        if (!totalErrorCount.empty()) {
+            std::cout << "HERE ARE THE BAD PREDICTIONS" << std::endl;
+            for (auto it = totalErrorCount.begin(); it != totalErrorCount.end(); it++) {
+                const uint32_t fromState = (*it).first.from;
+                const uint32_t toState = (*it).first.to;
+                const int32_t errorCount = (*it).second;
+                const int32_t labelCount = totalLabelCount[(*it).first];
+                std::cout << "transition: " << fromState << " --> " << toState
+                << ", errors: " << errorCount
+                << ", out of #labels: " << labelCount
+                << ", success frac = " << 1.0 - (float)errorCount / (float) labelCount
+                << std::endl << std::endl;
+                
+                
+            }
         }
+        
+        printMat("CONFUSION (BY PERIODS)", confusionMatrix);
     }
+    EvaluationResult_t evaluationResult;
+    evaluationResult.paths = results;
+    evaluationResult.confusionMatrix = confusionMatrix;
     
-    printMat("CONFUSION (BY PERIODS)", confusionMatrix);
-    
-    _lastConfusionMatrix = confusionMatrix;
-
-    
-    return results;
+    return evaluationResult;
 }
 
 TransitionMultiMap_t MultiObsHiddenMarkovModel::getForbiddenTransitions(const MatrixMap_t & measurements) const {

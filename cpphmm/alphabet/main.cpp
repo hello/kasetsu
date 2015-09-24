@@ -3,14 +3,17 @@
 #include "DataFile.h"
 #include "ModelFile.h"
 
+
 #include <getopt.h>
 
 #include "../src/MultiObsSequenceHiddenMarkovModel.h"
 #include "../src/MatrixHelpers.h"
+#include "../src/Ensemble.h"
 #include "MotionSequenceForbiddenTransitions.h"
 
 static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
 static const int32_t priorScaleAsNumberOfSamples = 1;
+static const int32_t k_num_iters_for_growing = 10;
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },
@@ -55,7 +58,7 @@ static HmmDataMatrix_t getUniformAlphabetProbs(const uint32_t numStates, const u
 }
 
 static MatrixMap_t getUniformInitProbabilities(const DataFile & dataFile, const uint32_t numStates, const std::string & type) {
-    const MeasVec_t & meas = dataFile.getMeasurements(type);
+    const MeasVec_t meas = dataFile.getMeasurements(type);
     const MatrixMap_t & rawdata = (*meas.begin()).rawdata;
     MatrixMap_t initProbsMap;
     for (auto it = rawdata.begin(); it != rawdata.end(); it++) {
@@ -102,6 +105,9 @@ int main(int argc , char ** argv) {
             }
             else if (isOption(option_index,3)) {
                 action.assign(optarg);
+                if (action == "evaluate") {
+                    verbose = true;
+                }
             }
             else if (isOption(option_index,4)) {
                 verbose = true;
@@ -138,7 +144,7 @@ int main(int argc , char ** argv) {
         
         //DO SLEEP MODEL
         {
-            const MeasVec_t & meas = dataFile.getMeasurements(SLEEP_ENUM_STRING);
+            const MeasVec_t meas = dataFile.getMeasurements(SLEEP_ENUM_STRING);
             
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
             
@@ -153,14 +159,15 @@ int main(int argc , char ** argv) {
             noMotionStates.insert(6);
             
             TransitionRestrictionVector_t restrictions;
-            restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
+            restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
             
-            hmms.insert(std::make_pair(SLEEP_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+            hmms.insert(std::make_pair(SLEEP_ENUM_STRING,
+                                       MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions))));
         }
     
         //DO BED MODEL
         {
-            const MeasVec_t & meas = dataFile.getMeasurements(BED_ENUM_STRING);
+            const MeasVec_t meas = dataFile.getMeasurements(BED_ENUM_STRING);
             
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
         
@@ -181,7 +188,8 @@ int main(int argc , char ** argv) {
 
             restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
 */
-            hmms.insert(std::make_pair(BED_ENUM_STRING,new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions)));
+            hmms.insert(std::make_pair(BED_ENUM_STRING,
+                                       MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions))));
         }
 
     
@@ -201,7 +209,7 @@ int main(int argc , char ** argv) {
         for (auto it = hmms.begin(); it != hmms.end(); it++) {
             std::cout << "ESTIMATING " << (*it).first << std::endl;
             
-            const MeasVec_t & meas = dataFile.getMeasurements((*it).first);
+            const MeasVec_t meas = dataFile.getMeasurements((*it).first);
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
 
             (*it).second->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
@@ -212,12 +220,35 @@ int main(int argc , char ** argv) {
     else if (action == "evaluate") {
         for (auto it = hmms.begin(); it != hmms.end(); it++) {
             
-            const MeasVec_t & meas = dataFile.getMeasurements((*it).first);
+            const MeasVec_t meas = dataFile.getMeasurements((*it).first);
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
             
             std::cout << "EVALUATING " << (*it).first << std::endl;
             (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods,verbose);
         }
+    }
+    else if (action == "grow") {
+        HmmMap_t grownHmms;
+        for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            //get seed model
+            const MeasVec_t meas = dataFile.getMeasurements((*it).first);
+            MultiObsSequence multiObsSequence = getMotionSequence(meas);
+            
+            (*it).second->reestimate(multiObsSequence, 1, priorScaleAsNumberOfSamples);
+            
+            //grow ensemble
+            Ensemble ensemble(*(*it).second);
+            ensemble.grow(multiObsSequence,k_num_iters_for_growing);
+            
+            
+            const HmmVec_t ptrs = ensemble.getModelPointers();
+            
+            for (auto itEnsemble = ptrs.begin(); itEnsemble != ptrs.end(); itEnsemble++) {
+                grownHmms.insert(std::make_pair((*it).first,*itEnsemble));
+            }
+        }
+
+        hmms = grownHmms;
     }
     else {
         std::cerr << "needed to specify action reestimate or evaluate";
@@ -228,9 +259,5 @@ int main(int argc , char ** argv) {
         ModelFile::SaveProtobuf(hmms, output_filename);
     }
     
-    for (auto it = hmms.begin(); it != hmms.end(); it++) {
-        delete (*it).second;
-    }
-
     return 0;
 }

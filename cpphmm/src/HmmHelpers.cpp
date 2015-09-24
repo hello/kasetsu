@@ -683,3 +683,128 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithMinimumDurationConstraints(const Hmm
 
 
 
+UIntVec_t HmmHelpers::getVecFromLabels(const LabelMap_t & labels, const uint32_t end,const uint32_t nolabellabel) {
+    UIntVec_t vec;
+    vec.reserve(end);
+    for (uint32_t t = 0; t < end; t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            vec.push_back((*it).second);
+        }
+        else {
+            vec.push_back(nolabellabel);
+        }
+    }
+    
+    return vec;
+}
+
+
+
+TransitionAtTime_t HmmHelpers::getPathTransitions(const ViterbiPath_t & path) {
+    TransitionAtTime_t results;
+    for (int t = 1; t < path.size(); t++) {
+        if (path[t] != path[t - 1]) {
+            results.insert(std::make_pair (StateIdxPair(path[t - 1],path[t]),t));
+        }
+    }
+    
+    return results;
+}
+
+TransitionAtTime_t HmmHelpers::getLabelTransitions(const LabelMap_t & labels, const uint32_t end) {
+    uint32_t prev = 0xFFFFFFFF;
+    TransitionAtTime_t results;
+    for (uint32_t t = 0; t < end; t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            const uint32_t current  = (*it).second;
+            
+            if (current != prev && prev != 0xFFFFFFFF) {
+                results.insert(std::make_pair (StateIdxPair(prev,current),t));
+            }
+            
+            prev = (*it).second;
+        }
+        else {
+            prev = 0xFFFFFFFF;
+        }
+    }
+    
+    return results;
+}
+
+void HmmHelpers::printTransitions(const ViterbiPath_t & path) {
+    const TransitionAtTime_t pt = getPathTransitions(path);
+    
+    for (auto it = pt.begin(); it != pt.end(); it++) {
+        StateIdxPair transition = (*it).first;
+        std::cout << "PAIR: " << transition.from << "," << transition.to << "," << (*it).second << std::endl;
+        int32_t t = (*it).second;
+        t -= 1;
+        int hour = t * 5.0 / 60.0;
+        int min = t * 5.0 - hour * 60.0;
+        hour += 20;
+        
+        if (hour >= 24) {
+            hour -= 24;
+        }
+        
+        
+        char buf[16];
+        snprintf(buf, 16, "%02d:%02d",hour,min);
+        
+        std::cout << transition.from << " ---> " << transition.to << " at time " << buf << std::endl;
+    }
+    
+    std::cout << "----------" << std::endl;
+}
+
+
+TransitionAtTime_t HmmHelpers::evalLabels(TransitionAtTime_t & counts, const LabelMap_t & labels, const ViterbiPath_t & path) {
+    const TransitionAtTime_t lt = getLabelTransitions(labels,path.size());
+    const TransitionAtTime_t pt = getPathTransitions(path);
+    TransitionAtTime_t results;
+    
+    for (auto it = lt.begin(); it != lt.end(); it++) {
+        auto it2 = pt.find((*it).first);
+        auto itCounts = counts.find((*it).first);
+        
+        if (itCounts == counts.end()) {
+            counts.insert(std::make_pair((*it).first,0));
+        }
+        
+        counts[(*it).first]++;
+        
+        if (it2 == pt.end()) {
+            continue;
+        }
+        
+        const int32_t dt = (*it2).second - (*it).second;
+        
+        results.insert(std::make_pair((*it).first,dt));
+    }
+    
+    return results;
+    
+}
+
+
+
+void HmmHelpers::updateConfusionCount(const LabelMap_t & labels,const ViterbiPath_t & path,HmmDataMatrix_t & confusionMatrix) {
+    
+    for (uint32_t t = 0; t < path.size(); t++) {
+        LabelMap_t::const_iterator it = labels.find(t);
+        
+        if (it != labels.end()) {
+            uint32_t label = (*it).second;
+            uint32_t prediction = path[t];
+            
+            confusionMatrix[prediction][label] += 1.0;
+        }
+    }
+}
+
+

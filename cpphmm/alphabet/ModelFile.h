@@ -10,7 +10,7 @@
 
 
 
-typedef std::map<std::string,MultiObsHiddenMarkovModel *> HmmMap_t;
+typedef std::multimap<std::string,MultiObsHmmSharedPtr_t> HmmMap_t;
 
 class ModelFile {
 public:

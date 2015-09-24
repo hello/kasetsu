@@ -19,6 +19,9 @@ public:
         
     const LabelMap_t & getLabels(const uint32_t sequenceNumber) const;
     
+    MultiObsSequence cloneOne(const uint32_t idx) const;
+
+    
     size_t size() const;
     
 private:

@@ -7,6 +7,8 @@
 #include <assert.h>
 #include "MotionSequenceForbiddenTransitions.h"
 #include "online_hmm.pb.h"
+#include <sstream>
+
 
 
 /*
@@ -240,7 +242,7 @@ static HmmDataMatrix_t getMatFromRealMatrix(const hello::RealMatrix & realmat) {
     return mtx;
 }
 
-static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hello::AlphabetHmmPrior & prior,const std::string & outputId,const TransitionRestrictionVector_t & transitionRestrictions) {
+static std::pair<std::string,MultiObsHmmSharedPtr_t> hmmFromPrior(const hello::AlphabetHmmPrior & prior,const std::string & outputId,const TransitionRestrictionVector_t & transitionRestrictions) {
     /*
     optional string id = 1;
     optional OutputId output_id = 2;
@@ -283,7 +285,7 @@ static std::pair<std::string,MultiObsHiddenMarkovModel *> hmmFromPrior(const hel
     
     
     
-    return std::make_pair(outputId,new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator,transitionRestrictions));
+    return std::make_pair(outputId,MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(logAlphabetNumerator,logANumerator,logDenominator,transitionRestrictions)));
     
 }
 
@@ -314,7 +316,7 @@ HmmMap_t ModelFile::LoadFile(const std::string & filename) {
         TransitionRestrictionVector_t transitionRestrictions;
         if (prior.has_motion_model_restriction()) {
             TransitionRestrictionInterface * p = MotionSequenceForbiddenTransitions::createFromProtobuf(prior.motion_model_restriction());
-            transitionRestrictions.push_back(p);
+            transitionRestrictions.push_back(TransitionRestrictionSharedPtr_t(p));
         }
         
         
@@ -331,7 +333,7 @@ HmmMap_t ModelFile::LoadFile(const std::string & filename) {
 void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) {
     
     hello::AlphabetHmmUserModel model;
-    
+    int count = 0;
     for (auto hmmIterator = hmms.begin(); hmmIterator != hmms.end(); hmmIterator++) {
         hello::AlphabetHmmPrior * prior = model.add_models();
 
@@ -339,7 +341,9 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         const MultiObsHiddenMarkovModel & hmm = *((*hmmIterator).second);
         const std::string & outputIdString = (*hmmIterator).first;
         
-        prior->set_id("default");
+        std::stringstream ss;
+        ss << hmmIterator->first << "-" << count;
+        prior->set_id(ss.str().c_str());
         
         prior->set_output_id(stringToOutputId(outputIdString));
         prior->set_date_created_utc(0);
@@ -371,7 +375,7 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         
         
         for (auto it = hmm.getTransitionRestrictions().begin(); it != hmm.getTransitionRestrictions().end(); it++) {
-            const MotionSequenceForbiddenTransitions * const p = dynamic_cast<MotionSequenceForbiddenTransitions *>(*it);
+            const MotionSequenceForbiddenTransitions * const p = dynamic_cast<MotionSequenceForbiddenTransitions *>((*it).get());
             
             if (p) {
                 prior->set_allocated_motion_model_restriction(p->toProtobuf());

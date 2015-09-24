@@ -8,6 +8,18 @@
 
 #include <vector>
 
+class MultiObsHiddenMarkovModel;
+
+typedef std::vector<ViterbiDecodeResult_t> ViterbiResultVec_t;
+typedef SHARED_PTR<MultiObsHiddenMarkovModel> MultiObsHmmSharedPtr_t;
+typedef std::vector<MultiObsHmmSharedPtr_t> HmmVec_t;
+
+
+typedef struct {
+    ViterbiResultVec_t paths;
+    HmmDataMatrix_t confusionMatrix;
+} EvaluationResult_t;
+
 class MultiObsHiddenMarkovModel {
 public:
     MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,TransitionRestrictionVector_t forbiddenTransitions);
@@ -15,12 +27,11 @@ public:
 
     ~MultiObsHiddenMarkovModel();
     
-    std::vector<ViterbiDecodeResult_t> evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError, bool verbose) ;
+    EvaluationResult_t evaluatePaths(const MultiObsSequence & meas, const int32_t toleranceForError = 4, bool verbose = false) const;
     void reestimate(const MultiObsSequence & meas,const uint32_t numIter,const uint32_t priorWeightAsNumberOfSamples);
     HmmDataMatrix_t getAMatrix() const;
     MatrixMap_t getAlphabetMatrix() const;
     HmmDataMatrix_t getLogBMap(const MatrixMap_t & rawdataMap, const MatrixMap_t & alphabetProbsMap) const;
-    HmmDataMatrix_t getLastConfusionMatrix() const;
     
     const HmmDataVec_t & getPi() const;
     const HmmDataMatrix_t & getLogANumerator() const;
@@ -41,7 +52,6 @@ private:
     MatrixMap_t _logAlphabetNumerator;
     HmmDataVec_t _logDenominator;
     HmmDataVec_t _pi;
-    HmmDataMatrix_t _lastConfusionMatrix;
     
     uint32_t _numStates;
     

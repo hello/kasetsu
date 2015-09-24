@@ -38,6 +38,7 @@ RandomHelpers.cpp
 MultiObsSequenceHiddenMarkovModel.cpp
 HmmHelpers.cpp
 MultiObsSequence.cpp
+Ensemble.cpp
 )
 
 target_link_libraries(cpphmm pthread ${GSL_LIBRARIES})
