@@ -13,7 +13,7 @@
 #define PRIOR_STRENGTH (1e-50)
 
 #define SLEEP_STATE (1) 
-#define SLEEP_STATE_MIN_DURATION (6)
+#define SLEEP_STATE_MIN_DURATION (1)
 
 
 MultiObsHiddenMarkovModel::MultiObsHiddenMarkovModel(const MatrixMap_t & initialAlphabetProbs,const HmmDataMatrix_t & A,TransitionRestrictionVector_t forbiddenTransitions) {
@@ -363,6 +363,12 @@ EvaluationResult_t MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequen
         /*
         if (iSequence != 1) {
             continue;
+        }
+         */
+        
+        /*
+        for (auto it = rawdata.begin(); it != rawdata.end(); it++) {
+            printVec((*it).first, (*it).second[0]);
         }
          */
         

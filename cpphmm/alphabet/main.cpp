@@ -82,6 +82,7 @@ int main(int argc , char ** argv) {
     
     int c;
     bool verbose = false;
+    bool useAllSequences = false;
     
     std::string input_filename;
     std::string output_filename;
@@ -111,7 +112,7 @@ int main(int argc , char ** argv) {
             else if (isOption(option_index,3)) {
                 action.assign(optarg);
                 if (action == "evaluate") {
-                    verbose = true;
+                    useAllSequences = true;
                 }
             }
             else if (isOption(option_index,4)) {
@@ -135,7 +136,7 @@ int main(int argc , char ** argv) {
     
     std::cout << "PARSING MEASUREMENTS FROM " << input_filename << std::endl;
 
-    if (!dataFile.parse(input_filename)) {
+    if (!dataFile.parse(input_filename,useAllSequences)) {
         std::cerr << "FAILED TO PARSE " << input_filename << std::endl;
         return 1;
     }
@@ -183,21 +184,23 @@ int main(int argc , char ** argv) {
         
             MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size(),BED_ENUM_STRING);
 
-            TransitionRestrictionVector_t restrictions;
 
-            /*
+            
             TransitionVector_t forbiddenMotionTransitions;
-            StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_IN_BED,LABEL_POST_BED);
-            forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
+            StateIdxPair noOutOfBed(LABEL_IN_BED,LABEL_POST_BED);
+            StateIdxPair noInBed(LABEL_PRE_BED,LABEL_IN_BED);
+
+            forbiddenMotionTransitions.push_back(noOutOfBed);
+            forbiddenMotionTransitions.push_back(noInBed);
 
             
             UIntSet_t noMotionStates;
             noMotionStates.insert(0); //I just happen to know this
             noMotionStates.insert(6);
-            noMotionStates.insert(7);
 
-            restrictions.push_back(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions));
-*/
+            TransitionRestrictionVector_t restrictions;
+            restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
+
             hmms.insert(std::make_pair(BED_ENUM_STRING,
                                        MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions))));
         }
@@ -250,7 +253,7 @@ int main(int argc , char ** argv) {
             Ensemble ensemble(hmmsForKey);
 
             
-            ensemble.evaluate(multiObsSequence);
+            ensemble.evaluate(multiObsSequence,verbose);
             
         }
         

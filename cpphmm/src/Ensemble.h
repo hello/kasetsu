@@ -15,7 +15,7 @@ public:
     
     void grow(const MultiObsSequence & meas, uint32_t n);
     
-    void evaluate(const MultiObsSequence & meas);
+    void evaluate(const MultiObsSequence & meas,bool verbose);
     
     HmmVec_t getModelPointers() const ;
     

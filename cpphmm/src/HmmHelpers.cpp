@@ -630,19 +630,46 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithMinimumDurationConstraints(const Hmm
                 costs[i] = elnproduct(costs[i], phi[i][t-1]);
             }
             
+            int32_t maxidx = j;
+            HmmFloat_t maxval = costs[j];
             
-            auto indices = sort_indexes(costs);
-            uint32_t maxii = numStates - 1; //sorted ascending
-            /*
+            if (j == 1 && t == 61) {
+                int foo = 3;
+                foo++;
+            }
+            
             if (j == 1) {
                 int foo = 3;
                 foo++;
-                std::cout << zeta[j] << std::endl;
             }
-            */
-            int32_t maxidx = indices[maxii];
-            HmmFloat_t maxval = costs[maxidx];
-
+            
+            if (j == 2) {
+                int foo = 3;
+                foo++;
+            }
+            
+            if (zeta[j] >= durationMinimums[maxidx]) {
+                //sorted ascending
+                auto indices = sort_indexes(costs);
+                bool worked = false;
+                for (int32_t maxii = numStates - 1; maxii >= 0; maxii--) {
+                    maxidx = indices[maxii];
+                    maxval = costs[maxidx];
+                    
+                    //have we been in the old state long enough to switch?
+                    if (zeta[maxidx] >= durationMinimums[maxidx] && maxval > LOGZERO) {
+                        worked = true;
+                        break;
+                    }
+                }
+                
+                if (!worked) {
+                    maxidx = j;
+                    maxval = costs[j];
+                }
+            }
+            
+            
             //best path is to stay?  increment zeta.
             if (maxidx == j) {
                 zeta[j] += 1;
@@ -651,25 +678,8 @@ ViterbiDecodeResult_t HmmHelpers::decodeWithMinimumDurationConstraints(const Hmm
                 zeta[j] = 1;
             }
             
-            //if zeta of the state I'm coming FROM is above min durations,
-            //I'll let the transition happen.  Otherwise, pick the next best state.
-            
-            if (zeta[maxidx] >= durationMinimums[maxidx]) {
-                phi[j][t] = maxval;
-                vindices[j][t] = maxidx;
-            }
-            else {
-                //next best.... so in theory we should check if this violates the second best state's constraints
-                //TODO check everything
-                maxii--;
-                maxidx = indices[maxii];
-                maxval = costs[maxidx];
-                
-                phi[j][t] = maxval;
-                vindices[j][t] = maxidx;
-            }
-            
-            
+            phi[j][t] = maxval;
+            vindices[j][t] = maxidx;
         }
     }
     

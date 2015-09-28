@@ -3,7 +3,8 @@
 #include "RandomHelpers.h"
 #include "MatrixHelpers.h"
 
-#define PRIOR_WEIGHT (3.0)
+#define PRIOR_WEIGHT (2.0)
+#define MARGIN_OF_IMPROVEMENT (0.0001)
 
 typedef UNORDERED_MAP<StateIdxPair,HmmFloat_t,StateIdxPairHash> TransitionAtTimeF_t; //key is time index
 
@@ -57,29 +58,36 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
         
         //find the best model for this measurement
         HmmFloat_t bestScore = LOGZERO;
-        auto bestResult = results.end();
-        for (auto it = results.begin(); it != results.end(); it++) {
-            const EvaluationResult_t & ref = *it;
+        auto bestResult = results.size();
+        std::cout << "scores: " << std::flush;
+        for (int idxResult = 0; idxResult < results.size(); idxResult++) {
+
+            const EvaluationResult_t & ref = results[idxResult];
             
             if (ref.paths.empty()) {
                 continue;
             }
             
             const HmmFloat_t score = ref.paths[0].getCost();
-            
+            std::cout << score << "," << std::flush;
             if (score > bestScore) {
                 bestScore = score;
-                bestResult = it;
+                bestResult = idxResult;
             }
         }
+        std::cout << std::endl;
         
-        if (bestResult == results.end()) {
+        
+        if (bestResult == results.size()) {
             //wat?
             continue;
         }
         
+        //to print
+        ensemble[bestResult]->evaluatePaths(thisMeas,4,verbose);
+        
         //add up diags of confusion matrix to get score
-        const HmmDataMatrix_t bestScoringConfusionMatrix = (*bestResult).confusionMatrix;
+        const HmmDataMatrix_t bestScoringConfusionMatrix = results[bestResult].confusionMatrix;
 
         for (int i = 0; i < bestScoringConfusionMatrix.size(); i++) {
             scoreSum += bestScoringConfusionMatrix[i][i];
@@ -87,7 +95,7 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
         }
 
         //add counts
-        const HmmDataMatrix_t bestScoringConfusionCount = (*bestResult).confusionCount;
+        const HmmDataMatrix_t bestScoringConfusionCount = results[bestResult].confusionCount;
         
         for (int j = 0; j < numStates; j++) {
             for (int i = 0; i < numStates; i++) {
@@ -119,8 +127,8 @@ static HmmFloat_t evaluateEnsembleOnData(const HmmVec_t & ensemble,const MultiOb
     return scoreSum / (HmmFloat_t) scoreCount;
 }
 
-void Ensemble::evaluate(const MultiObsSequence & meas) {
-    evaluateEnsembleOnData(_models,meas,true);
+void Ensemble::evaluate(const MultiObsSequence & meas, bool verbose) {
+    evaluateEnsembleOnData(_models,meas,verbose);
 }
 
 
@@ -163,7 +171,7 @@ void Ensemble::grow(const MultiObsSequence & meas, uint32_t n) {
             
             std::cout << score << "," << std::flush;
             
-            if (score > lastBestScore) {
+            if (score > lastBestScore + MARGIN_OF_IMPROVEMENT) {
                 lastBestScore = score;
                 bestCandidate = itCandidateModel;
             }

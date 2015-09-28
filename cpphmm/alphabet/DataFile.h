@@ -29,7 +29,7 @@ public:
     DataFile();
     ~DataFile();
     
-    bool parse(const std::string & filename);
+    bool parse(const std::string & filename,bool useAllSequences = false);
     
     MeasVec_t getMeasurements(const std::string & type) const;
     uint32_t getNumStates(const std::string & modelName) const;

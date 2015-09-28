@@ -307,7 +307,7 @@ DataFile::~DataFile() {
     
 }
 
-bool DataFile::parse(const std::string & filename) {
+bool DataFile::parse(const std::string & filename,bool useAllSequences) {
     std::ifstream file(filename);
     
     if (!file.is_open()) {
@@ -339,13 +339,13 @@ bool DataFile::parse(const std::string & filename) {
         
         MeasAndLabels_t meas1 = alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),true);
         
-        if (!meas1.labels.empty()) {
+        if (!meas1.labels.empty() || useAllSequences) {
             sleepMeas.push_back(meas1);
         }
         
         MeasAndLabels_t meas2 = alphabetToMeasAndLabels((*itr)[k_alphabets].MemberBegin(),(*itr)[k_alphabets].MemberEnd(),(*itr)[k_labels].Begin(),(*itr)[k_labels].End(),false);
         
-        if (!meas2.labels.empty()) {
+        if (!meas2.labels.empty() || useAllSequences) {
             bedMeas.push_back(meas2);
         }
         
