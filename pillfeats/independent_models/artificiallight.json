@@ -1,0 +1,14 @@
+{"default" : {"A" : 
+[[0.25,0.25,0.25,0.25],
+[0.25,0.25,0.25,0.25],
+[0.25,0.25,0.25,0.25],
+[0.25,0.25,0.25,0.25]
+]
+,"models" : [
+[{"model_type" : "gamma", "model_data": {"obs_num": 0, "stddev": 0.500000, "mean": 0.1,"weight": 1.000000}}],
+[{"model_type" : "gamma", "model_data": {"obs_num": 0, "stddev": 0.500000, "mean": 1.5,"weight": 1.000000}}],
+[{"model_type" : "gamma", "model_data": {"obs_num": 0, "stddev": 1.000000, "mean": 3.0,"weight": 1.000000}}],
+[{"model_type" : "gamma", "model_data": {"obs_num": 0, "stddev": 2.000000, "mean": 6.0,"weight": 1.000000}}]
+],
+"pi" : [0.04,0.04,0.04,0.04],"params": {"natural_light_filter_start_hour": 16, "on_bed_states": 
+[], "users": "", "num_model_params":100, "natural_light_filter_stop_hour": 4, "pill_magnitude_disturbance_threshold_lsb": 15000, "sleep_states":[], "enable_interval_search": true, "obs_map": ["light","duration","pill_disturbance","natlight","sound"], "model_name": "artificiallight", "audio_disturbance_threshold_db": 70.0,"meas_period_minutes" : 5,"num_measurements_for_prior" : 5.0}}}
