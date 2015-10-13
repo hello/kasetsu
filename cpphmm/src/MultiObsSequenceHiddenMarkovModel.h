@@ -42,6 +42,9 @@ public:
     UIntVec_t getMinStatedDurations() const;
     
     const TransitionRestrictionVector_t & getTransitionRestrictions() const ;
+    
+    //remove all obs models but the models in this set
+    void filterModels(const StringSet_t & filterKeys);
 
 private:
 

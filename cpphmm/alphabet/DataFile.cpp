@@ -260,10 +260,11 @@ static MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphab
         
         const std::string key = it->name.GetString();
         
-        
+        /*
         if (key == "disturbances") {
             continue;
         }
+         */
          
          
         
@@ -273,6 +274,14 @@ static MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphab
         
         meas.rawdata.insert( std::make_pair(key,raw));
         size = raw[0].size();
+        
+        if (key == "motion") {
+            for (int t = 0; t < raw[0].size(); t++) {
+                if (raw[0][t] == 6.0) {
+                    raw[0][t] = 0.0;
+                }
+            }
+        }
     }
     
     if (isForSleep) {

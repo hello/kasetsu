@@ -20,7 +20,7 @@ typedef std::vector<uint32_t> UIntVec_t;
 typedef UNORDERED_SET<uint32_t> UIntSet_t;
 typedef UNORDERED_MAP<std::string,HmmDataMatrix_t> MatrixMap_t;
 typedef std::map<uint32_t, uint32_t> LabelMap_t; //key is time index
-
+typedef UNORDERED_SET<std::string> StringSet_t;
 typedef std::vector<ViterbiPath_t> ViterbiPathMatrix_t;
 
 #define  EPSILON (std::numeric_limits<HmmFloat_t>::epsilon())

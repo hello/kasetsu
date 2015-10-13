@@ -258,13 +258,9 @@ void MultiObsHiddenMarkovModel::reestimate(const MultiObsSequence & meas,const u
             for (MatrixMap_t::const_iterator it = rawdata.begin(); it != rawdata.end(); it++) {
                 const std::string & key = (*it).first;
 
-               /*
-                if (key != "motion") {
+                if(_logAlphabetNumerator.find(key) == _logAlphabetNumerator.end()) {
                     continue;
                 }
-                */
-                
-                assert(_logAlphabetNumerator.find(key) != _logAlphabetNumerator.end());
                 
                 const uint32_t alphabetSize = _logAlphabetNumerator[key][0].size();
                 const HmmDataMatrix_t logAlphabetNumerator = HmmHelpers::getLogAlphabetNumerator(alphaBeta, (*it).second[0], _numStates, numObs, alphabetSize);
@@ -467,4 +463,20 @@ TransitionMultiMap_t MultiObsHiddenMarkovModel::getForbiddenTransitions(const Ma
     return all;
     
 }
+
+void MultiObsHiddenMarkovModel::filterModels(const StringSet_t & filterKeys) {
+    MatrixMap_t keptModels;
+    
+    for (auto it = _logAlphabetNumerator.begin(); it != _logAlphabetNumerator.end(); it++) {
+        if  ( filterKeys.find((*it).first) == filterKeys.end()) {
+            continue;
+        }
+        
+        //found a keeper
+        keptModels.insert(std::make_pair((*it).first,(*it).second));
+    }
+    
+    _logAlphabetNumerator = keptModels;
+}
+
 

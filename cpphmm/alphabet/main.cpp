@@ -167,7 +167,7 @@ int main(int argc , char ** argv) {
             
             UIntSet_t noMotionStates;
             noMotionStates.insert(0); //I just happen to know this
-            noMotionStates.insert(6);
+            noMotionStates.insert(1);
             
             TransitionRestrictionVector_t restrictions;
             restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
@@ -196,13 +196,16 @@ int main(int argc , char ** argv) {
             
             UIntSet_t noMotionStates;
             noMotionStates.insert(0); //I just happen to know this
-            noMotionStates.insert(6);
+            noMotionStates.insert(1);
 
             TransitionRestrictionVector_t restrictions;
             restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
 
-            hmms.insert(std::make_pair(BED_ENUM_STRING,
-                                       MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions))));
+            MultiObsHiddenMarkovModel * pModel = new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions);
+            StringSet_t motionOnly;
+            motionOnly.insert("motion");
+            pModel->filterModels(motionOnly);
+            hmms.insert(std::make_pair(BED_ENUM_STRING,MultiObsHmmSharedPtr_t(pModel)));
         }
 
     

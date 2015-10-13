@@ -342,7 +342,7 @@ void ModelFile::SaveProtobuf(const HmmMap_t &hmms, const std::string &filename) 
         const std::string & outputIdString = (*hmmIterator).first;
         
         std::stringstream ss;
-        ss << hmmIterator->first << "-" << count;
+        ss << hmmIterator->first << "-" << count++;
         prior->set_id(ss.str().c_str());
         
         prior->set_output_id(stringToOutputId(outputIdString));
