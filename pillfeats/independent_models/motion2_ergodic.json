@@ -1,0 +1,25 @@
+{"default" : {"A" : [
+[0.965,0.005,0.005,0.005,0.005,0.005,0.005,0.005],
+[0.02,0.86,0.02,0.02,0.02,0.02,0.02,0.02],
+[0.03,0.03,0.79,0.03,0.03,0.03,0.03,0.03],
+[0.10,0.10,0.10,0.30,0.10,0.10,0.10,0.10],
+[0.03,0.03,0.03,0.03,0.79,0.03,0.03,0.03],
+[0.10,0.10,0.10,0.10,0.10,0.30,0.10,0.10],
+[0.10,0.10,0.10,0.10,0.10,0.10,0.30,0.10],
+[0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.30]
+],
+"models" : [
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.01,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.01,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 3.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 3.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 6.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 6.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 18.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 36.0,"weight": 1.000000}}]
+
+],
+"pi" : [0.9,0.01,0.01,0.01,0.01,0.01,0.01,0.01],
+"params": {"natural_light_filter_start_hour": 16, "on_bed_states": [], "users": "", "num_model_params":25, "natural_light_filter_stop_hour": 4, "pill_magnitude_disturbance_threshold_lsb": 15000, 
+ "obs_map": ["light","duration","pill_disturbance","sound","natlight"] , "enable_interval_search": true, "model_name": "motion", "audio_disturbance_threshold_db": 90.0 , "meas_period_minutes" : 5
+}}}
