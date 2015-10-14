@@ -13,7 +13,7 @@
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.1,"weight": 1.000000}}]
 
 ],
-"pi" : [0.9999,0.00001,0.0001,0.0001,0.0001],
+"pi" : [1.0,1e-20,1e-20,1e-20,1e-20],
 "params": {"natural_light_filter_start_hour": 16, "on_bed_states": [], "users": "", "num_model_params":25, "natural_light_filter_stop_hour": 4, "pill_magnitude_disturbance_threshold_lsb": 15000, 
- "obs_map": ["light","duration","pill_disturbance","sound","natlight"] , "enable_interval_search": true, "model_name": "motion", "audio_disturbance_threshold_db": 90.0 , "meas_period_minutes" : 5
+ "obs_map": ["light","duration","pill_disturbance","sound","natlight"] , "enable_interval_search": true, "model_name": "motion2", "audio_disturbance_threshold_db": 90.0 , "meas_period_minutes" : 5
 }}}
