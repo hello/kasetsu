@@ -4,7 +4,7 @@
 #include "MatrixHelpers.h"
 
 #define PRIOR_WEIGHT (2.0)
-#define MARGIN_OF_IMPROVEMENT (1e-8)
+#define MARGIN_OF_IMPROVEMENT (-10)
 
 typedef UNORDERED_MAP<StateIdxPair,HmmFloat_t,StateIdxPairHash> TransitionAtTimeF_t; //key is time index
 

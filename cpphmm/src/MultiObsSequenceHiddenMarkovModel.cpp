@@ -379,7 +379,13 @@ EvaluationResult_t MultiObsHiddenMarkovModel::evaluatePaths(const MultiObsSequen
         
         const TransitionAtTime_t matchedTransitions = HmmHelpers::evalLabels(totalLabelCount,labels,result.getPath());
         
+        const TransitionMap_t transitions = HmmHelpers::getPathTransitionsByTime(result.getPath());
         
+        if (verbose) {
+            for (auto it = transitions.begin(); it != transitions.end(); it++) {
+                std::cout << "t=" << (*it).first << "," << (*it).second.from << " ---> " << (*it).second.to << std::endl;
+            }
+        }
         
         for (auto it = matchedTransitions.begin(); it != matchedTransitions.end(); it++) {
             const int32_t error = (*it).second;
@@ -468,12 +474,17 @@ void MultiObsHiddenMarkovModel::filterModels(const StringSet_t & filterKeys) {
     MatrixMap_t keptModels;
     
     for (auto it = _logAlphabetNumerator.begin(); it != _logAlphabetNumerator.end(); it++) {
-        if  ( filterKeys.find((*it).first) == filterKeys.end()) {
-            continue;
-        }
+        const std::string modelname = (*it).first;
         
-        //found a keeper
-        keptModels.insert(std::make_pair((*it).first,(*it).second));
+        for (auto itFilter = filterKeys.begin(); itFilter != filterKeys.end(); itFilter++) {
+            const std::string filter = *itFilter;
+            
+            //if no match, then skip
+            if (modelname.find(filter) != std::string::npos) {
+                //found a keeper
+                keptModels.insert(std::make_pair((*it).first,(*it).second));
+            }
+        }
     }
     
     _logAlphabetNumerator = keptModels;

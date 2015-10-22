@@ -723,6 +723,17 @@ TransitionAtTime_t HmmHelpers::getPathTransitions(const ViterbiPath_t & path) {
     return results;
 }
 
+TransitionMap_t HmmHelpers::getPathTransitionsByTime(const ViterbiPath_t & path) {
+    TransitionMap_t results;
+    for (int t = 1; t < path.size(); t++) {
+        if (path[t] != path[t - 1]) {
+            results.insert(std::make_pair (t,StateIdxPair(path[t - 1],path[t])));
+        }
+    }
+    
+    return results;
+}
+
 TransitionAtTime_t HmmHelpers::getLabelTransitions(const LabelMap_t & labels, const uint32_t end) {
     uint32_t prev = 0xFFFFFFFF;
     TransitionAtTime_t results;

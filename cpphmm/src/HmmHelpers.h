@@ -99,6 +99,7 @@ public:
     
     static TransitionAtTime_t getPathTransitions(const ViterbiPath_t & path);
 
+    static TransitionMap_t getPathTransitionsByTime(const ViterbiPath_t & path);
 
 };
 

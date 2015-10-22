@@ -15,6 +15,7 @@
 static const int32_t k_error_threshold_in_periods = 4; //each period is 5 minutes
 static const int32_t priorScaleAsNumberOfSamples = 1;
 static const int32_t k_num_iters_for_growing = 10;
+static const int32_t k_num_iters_for_em_learning = 10;
 
 static struct option long_options[] = {
     {"input", required_argument, 0,  0 },
@@ -147,11 +148,18 @@ int main(int argc , char ** argv) {
     if (model_filename.empty()) {
         HmmDataMatrix_t A;
 
+        
         A.resize(3);
         A[0] << 0.9999,0.0001,0.0;
         A[1] << 0.00,0.9999,0.0001;
         A[2] << 0.00,0.00,1.0;
+         
         
+        /*
+        A.resize(2);
+        A[0] << 0.50,0.50;
+        A[1] << 0.50,0.50;
+        */
         
         //DO SLEEP MODEL
         {
@@ -160,7 +168,7 @@ int main(int argc , char ** argv) {
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
             
             MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size(),SLEEP_ENUM_STRING);
-            
+            /*
             TransitionVector_t forbiddenMotionTransitions;
             StateIdxPair noWakeUntilTwoConsecutiveMotions(LABEL_SLEEP,LABEL_POST_SLEEP);
             forbiddenMotionTransitions.push_back(noWakeUntilTwoConsecutiveMotions);
@@ -168,10 +176,14 @@ int main(int argc , char ** argv) {
             UIntSet_t noMotionStates;
             noMotionStates.insert(0); //I just happen to know this
             noMotionStates.insert(1);
+            */
             
             TransitionRestrictionVector_t restrictions;
+
+            /*
+            TransitionRestrictionVector_t restrictions;
             restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
-            
+            */
             hmms.insert(std::make_pair(SLEEP_ENUM_STRING,
                                        MultiObsHmmSharedPtr_t(new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions))));
         }
@@ -185,7 +197,7 @@ int main(int argc , char ** argv) {
             MatrixMap_t initAlphabetProbabilities = getUniformInitProbabilities(dataFile,A.size(),BED_ENUM_STRING);
 
 
-            
+/*
             TransitionVector_t forbiddenMotionTransitions;
             StateIdxPair noOutOfBed(LABEL_IN_BED,LABEL_POST_BED);
             StateIdxPair noInBed(LABEL_PRE_BED,LABEL_IN_BED);
@@ -200,11 +212,15 @@ int main(int argc , char ** argv) {
 
             TransitionRestrictionVector_t restrictions;
             restrictions.push_back(TransitionRestrictionSharedPtr_t(new MotionSequenceForbiddenTransitions("motion",noMotionStates,forbiddenMotionTransitions)));
+*/
+            TransitionRestrictionVector_t restrictions;
 
             MultiObsHiddenMarkovModel * pModel = new MultiObsHiddenMarkovModel(initAlphabetProbabilities,A,restrictions);
+            
             StringSet_t motionOnly;
             motionOnly.insert("motion");
             pModel->filterModels(motionOnly);
+             
             hmms.insert(std::make_pair(BED_ENUM_STRING,MultiObsHmmSharedPtr_t(pModel)));
         }
 
@@ -228,7 +244,7 @@ int main(int argc , char ** argv) {
             const MeasVec_t meas = dataFile.getMeasurements((*it).first);
             MultiObsSequence multiObsSequence = getMotionSequence(meas);
 
-            (*it).second->reestimate(multiObsSequence, 1,priorScaleAsNumberOfSamples);
+            (*it).second->reestimate(multiObsSequence, k_num_iters_for_em_learning,priorScaleAsNumberOfSamples);
             (*it).second->evaluatePaths(multiObsSequence,k_error_threshold_in_periods,verbose);
         }
         
@@ -291,6 +307,14 @@ int main(int argc , char ** argv) {
     
     if (!output_filename.empty()) {
         ModelFile::SaveProtobuf(hmms, output_filename);
+        
+        for (auto it = hmms.begin(); it != hmms.end(); it++) {
+            MatrixMap_t mats = (*it).second->getAlphabetMatrix();
+            
+            for (auto imat = mats.begin(); imat != mats.end(); imat++) {
+                printMat((*imat).first, (*imat).second);
+            }
+        }
     }
     
     return 0;

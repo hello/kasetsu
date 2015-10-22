@@ -35,8 +35,10 @@ struct StateIdxPairHash {
 };
 
 
-typedef UNORDERED_MAP<uint32_t,StateIdxPair> TransitionMap_t; //key is time index
+typedef std::map<uint32_t,StateIdxPair> TransitionMap_t; //key is time index
 typedef UNORDERED_MAP<StateIdxPair,int32_t,StateIdxPairHash> TransitionAtTime_t; //key is time index
+typedef UNORDERED_MAP<StateIdxPair,int32_t,StateIdxPairHash> TransitionAtTime_t; //key is time index
+
 typedef std::vector<TransitionAtTime_t> TransitionAtTimeVec_t;
 typedef std::vector<StateIdxPair> TransitionVector_t;
 typedef UNORDERED_MULTIMAP<uint32_t,StateIdxPair> TransitionMultiMap_t; //key is time index
