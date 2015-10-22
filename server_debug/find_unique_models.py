@@ -64,6 +64,16 @@ def models_to_dict(models):
     return mymodels
         
 
+def save_models(models_list):
+    protobuf = online_hmm_pb2.AlphabetHmmUserModel()
+    for model in models_list:
+        newmodel = protobuf.models.add()
+        newmodel.MergeFrom(model)
+
+    print 'saving to independent.model'
+    f = open('independent.model','w')
+    f.write(protobuf.SerializeToString())
+    f.close()
 
 
 def load_models(filename):
@@ -113,6 +123,9 @@ def main():
     models = models_to_dict(protobuf_models)
 
     print '\n'
+
+    models_list = []
+    
     for output_id in models:
         models_for_this_output = models[output_id]
 
@@ -178,13 +191,20 @@ def main():
             group_keys[groups[i]].append(keys[i])
 
 
+        independent_items = []
         for item_key in group_keys:
             item = group_keys[item_key]
             if len(item) > 0:
-                print item[0]
-        
+                independent_items.append(item[0])
 
+        print independent_items
+                
+        for m in protobuf_models:
+            if m.id in independent_items:
+                print m.id
+                models_list.append(m)
 
+    save_models(models_list)
 
 if __name__ == '__main__':
     main()
