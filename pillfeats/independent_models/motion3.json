@@ -1,6 +1,6 @@
 {"default" : {"A" : [
 [0.99,0.01,0.00,0.00,0.00,0.00,0.00,0.00,0.00],
-[0.05,0.92,0.01,0.01,0.01,0.00,0.00,0.00,0.00],
+[0.00,0.97,0.01,0.01,0.01,0.00,0.00,0.00,0.00],
 [0.00,0.00,0.80,0.05,0.05,0.05,0.05,0.00,0.00],
 [0.00,0.00,0.01,0.97,0.01,0.01,0.01,0.00,0.00],
 [0.00,0.00,0.05,0.05,0.90,0.01,0.01,0.00,0.00],
@@ -13,7 +13,7 @@
 "models" : [
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.10,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 20.0,"weight": 1.000000}}],
-[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 5.0,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 3.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 1.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.01,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 20.0,"weight": 1.000000}}],
