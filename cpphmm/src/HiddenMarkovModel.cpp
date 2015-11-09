@@ -655,30 +655,6 @@ ReestimationResult_t HiddenMarkovModel::reestimateViterbi(const HmmDataMatrix_t 
     return ReestimationResult_t(res.getCost());
 }
 
-/*
-static void getMeanObsFromSegments(const StateSegmentVec_t & segs, const HmmDataMatrix_t & meas) {
-    for (StateSegmentVec_t::const_iterator it = segs.begin(); it != segs.end(); it++) {
-        const StateSegment_t & seg = *it;
-        
-        HmmDataVec_t mean = getZeroedVec(meas.size());
-        const int len = seg.timeIndices.second - seg.timeIndices.first + 1;
-        for (int t = seg.timeIndices.first; t <= seg.timeIndices.second; t++) {
-            for (int i = 0; i < meas.size(); i++) {
-                mean[i] += meas[i][t];
-            }
-        }
-        
-        for (int i = 0; i < meas.size(); i++) {
-            mean[i] /= len;
-        }
-    
-        
-        int foo = 3;
-        foo++;
-    }
-    
-}
-*/
 
 bool HiddenMarkovModel::reestimateViterbiSplitState(uint32_t s1, uint32_t s2,const ViterbiPath_t & originalViterbi,const HmmDataMatrix_t & meas, bool reestimateMeas) {
     
@@ -1246,72 +1222,6 @@ void  HiddenMarkovModel::enlargeWithVSTACS(const HmmDataMatrix_t & meas, uint32_
     
 }
 
-
-void  HiddenMarkovModel::enlargeRandomly(const HmmDataMatrix_t & meas, uint32_t numToGrow) {
-
-    int32_t numStates = _numStates;
-    HmmVec_t hmms;
-    HmmDataVec_t scores;
-    HmmFloat_t lastScore = -INFINITY;
-    bool worked = true;
-    
-    
-    HmmSharedPtr_t best = HmmSharedPtr_t(new HiddenMarkovModel(*this));
-    
-    for (int iter = 0; iter < numToGrow; iter++) {
-        std::cout << "Beginning iteration " << iter + 1 << " of " << _numStates + numToGrow <<std::endl;
-        scores.clear();
-        
-        //split each state
-        for (int imodel = 0; imodel < numStates; imodel++) {
-            hmms.push_back(HmmSharedPtr_t(best->splitState(imodel,true,true)));
-        }
-        
-        //train each state
-        for (int imodel = 0; imodel < numStates; imodel++) {
-            std::cout << "Training model " << imodel + 1 << " of " << numStates << std::endl;
-            scores.push_back(train(hmms[imodel],meas,true,false));
-        }
-        
-        //get best one
-        
-        std::cout << "SCORES: " << scores << std::endl;
-        const int bestIdx = getArgMaxInVec(scores);
-        const HmmFloat_t bestScore = scores[bestIdx];
-        
-        if (lastScore < bestScore) {
-            
-            best = hmms[bestIdx];
-            
-            std::cout << "picked model " << bestIdx + 1 << std::endl;
-            std::cout << "BEST SCORE: " <<  scores[bestIdx] << std::endl;
-
-        }
-        else {
-            std::cout << "TERMINATING BECAUSE MODEL DID NOT IMPROVE" << std::endl;
-            worked = false;
-        }
-        
-        lastScore = bestScore;
-        
-        
-        
-       
-        
-        numStates++;
-        
-        hmms.clear();
-        
-        if (!worked) {
-            break;
-        }
-        
-    }
-    
-    *this = *best.get();
-    
-    
-}
 
 
 

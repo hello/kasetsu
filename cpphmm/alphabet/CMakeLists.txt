@@ -24,7 +24,6 @@ FIND_PACKAGE(RapidJson REQUIRED)
 FIND_PACKAGE(Protobuf REQUIRED)
 
 include_directories("../src/")
-include_directories(${JSONCPP_INCLUDE_DIRS})
 include_directories(${RAPIDJSON_INCLUDE_DIRS})
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
@@ -40,5 +39,5 @@ add_executable(alphabet
                MotionSequenceForbiddenTransitions.cpp
                online_hmm.pb.cc)
 
-target_link_libraries(alphabet cpphmm ${JSONCPP_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_link_libraries(alphabet cpphmm ${PROTOBUF_LIBRARY})
 
