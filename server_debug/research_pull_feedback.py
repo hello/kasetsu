@@ -15,7 +15,10 @@ normiesB = [36615,39952,40666,43478,32498,29772,30453,43054,38862,26275,23195,32
 problemA = [23214,40541,27975,21638,42845,39151,32312,20946,25579,31962,19600,22373,40399,27882,41445,19905,15854,34392,42967,16214,22036,20604,42284,44339,30440,43648,38046,29507,25153,16435,28559,19865,30853,41150,32057,41245,18120,36546,19247,32305,42572,39993,19617,35833,41652,32539,38925,30177,23060,17790,41371,41425,39764,32686,17486,26632,43375,33818,28741,25947,38298,30906,26424,23317,31276,33311,22362,25243,16950,19256,34919,43541,32050,24396,40927,21077,22723,1817,42457,28822,20840,21385,21125,23566,22375,24639,31199,17239,1465,21911,42873,17095,28501,41695,33414]
 problemB = [39167,42567,23615,29888,30124,15891,15116,37840,1086,34497,17195,41106,29982,38594,39172,25815,38749,42405,32238,31492,39078,18091,41473,42765,30055,18128,30060,41230,39765,30872,24117,30744,31520,34753,31671,1006,35467,24225,23068,27838,29802,38238,37693,25578,32071,16994,30606,30273,40736,34678,31648,26910,33453,16954,17984,27191,33199,17110,37830,24228,22984,40854,23624,38120,21469,33226,18858,16610,28762,20411,31140,23128,35300,41968,36052,30912,18383,1479,30358,42527,36662,41601,37335,23747,33461,41503,36591,19447,35144,43391,15073,39168,30394,41976,26276]
 
-k_accounts_list = problemA
+#k_accounts_map = {'normiesA' : normiesA, 'normiesB' : normiesB, 'problemA' : problemA, 'problemB' : problemB}
+#k_accounts_map = {'problemA' : problemA, 'problemB' : problemB}
+k_accounts_map = {'normiesA' : normiesA, 'normiesB' : normiesB}
+
 k_min_date = '2015-11-16'
 k_event_types = ['WAKE_UP','SLEEP']
 k_fail_threshold = 30
@@ -25,7 +28,7 @@ def pull_data(account_id):
     
     params = {'min_date' : k_min_date}
     url = k_url.format(account_id)
-    print url
+    #print url
     response = requests.get(url,params=params,headers=k_headers)
         
     if not response.ok:
@@ -36,12 +39,11 @@ def pull_data(account_id):
         
     return data
        
-def process_data(data,threshold,event_types):
+def process_data(key,data,threshold,event_types):
     complaint_count = 0
     total_count = 0
-    
+    event_count = 0
     for item in data:
-        #print item['event_type']
         if item['event_type'] not in event_types:
             continue
 
@@ -50,21 +52,28 @@ def process_data(data,threshold,event_types):
 
         if abs(delta) > threshold:
             complaint_count += 1
+            print key,delta,item['event_type'],item['account_id']
 
         total_count += 1
 
     return complaint_count,total_count
         
 if __name__ == '__main__':
-    complaint_count = 0
-    total_count = 0
     
-    for account_id in k_accounts_list:
-        data = pull_data(account_id)
-        cc,tc = process_data(data,k_fail_threshold,k_event_types)
-        complaint_count +=  cc
-        total_count += tc
+    for key in k_accounts_map:
+        accounts_list = k_accounts_map[key]
 
-    print complaint_count,total_count
+        complaint_count = 0
+        total_count = 0
+
+        for account_id in accounts_list:
+	    data = pull_data(account_id)
+	    cc,tc = process_data(key,data,k_fail_threshold,k_event_types)
+            if tc > 0:
+	        total_count += 1
+                complaint_fraction  = cc / float(tc)
+	        complaint_count += complaint_fraction
+
+        print key,complaint_count,total_count
  
 
