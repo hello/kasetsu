@@ -1,58 +1,155 @@
 #!/usr/bin/python
-import serverdata
-import argparse
+import os.path
+import json
+from numpy import *
+from matplotlib.pyplot import *
+import sklearn.mixture
+import sys
+from time import strftime
+import datetime
 import csv
-import numpy
+import argparse
+import copy
+import data_windows
+import serverdata
+import os.path
+import initial_models
+import matplotlib.dates as mdates
+import matplotlib as mpl
+from hmm.continuous.CompositeModelHMM import CompositeModelHMM
 
 
-k_user_list = [22531, 28676, 30727, 22538, 30731, 22542, 31056, 26640, 30737, 30738, 28692, 22551, 30744, 30746, 20404, 30750, 17413, 22560, 30754, 31409, 22573, 30766, 30773, 30774, 20535, 26683, 24642, 23222, 18505, 30794, 28749, 16465, 24658, 30734, 27322, 20575, 28769, 26722, 20579, 20583, 20587, 24594, 22640, 26738, 24255, 30847, 26752, 24709, 20614, 24711, 20619, 22668, 22674, 26774, 24732, 30879, 22896, 28835, 18602, 30892, 30893, 30897, 25971, 30902, 28858, 20667, 30909, 22729, 26827, 30924, 20686, 24784, 30929, 20693, 26839, 30937, 30938, 22748, 26849, 28901, 30951, 24811, 28913, 28915, 30964, 21783, 20729, 24829, 30976, 25111, 30980, 20741, 25985, 30984, 30985, 30986, 26893, 24621, 30993, 26901, 24281, 22808, 23940, 22811, 31005, 22817, 28969, 20781, 28980, 28981, 31030, 24969, 31032, 26942, 20802, 21558, 31048, 29002, 31799, 29004, 22862, 18768, 31061, 22871, 31065, 31586, 28389, 16738, 20835, 31076, 31077, 20808, 31084, 18224, 31088, 24952, 27006, 27010, 31107, 29065, 24971, 20879, 24976, 29073, 24978, 31127, 27034, 31131, 20892, 28741, 31136, 20897, 29091, 31141, 27046, 26351, 27052, 31149, 27055, 27056, 22962, 31155, 26014, 29769, 29123, 29124, 22984, 31177, 31178, 31188, 25046, 20406, 31192, 31823, 31196, 20957, 31199, 17488, 16871, 31208, 30120, 23028, 17270, 29179, 26026, 16894, 20994, 29187, 20996, 31237, 18430, 31242, 23053, 31246, 23055, 31250, 27155, 23061, 23063, 21017, 31258, 23068, 21023, 25120, 15451, 25124, 23077, 18982, 29225, 23083, 31276, 31277, 21038, 16948, 29237, 21046, 23096, 23097, 16954, 30815, 27196, 25153, 23107, 21060, 30817, 23113, 31307, 23116, 29821, 25168, 21075, 25172, 27221, 25176, 23133, 31327, 31329, 31330, 29292, 31343, 1129, 21113, 19068, 31357, 29310, 31362, 31363, 21125, 21126, 31367, 23176, 22526, 32194, 17038, 27281, 25235, 21150, 31392, 31395, 31403, 19116, 30834, 21168, 21169, 31410, 21171, 29364, 29365, 27318, 27320, 23226, 22986, 1141, 21187, 21190, 31433, 31434, 22306, 21198, 23249, 31442, 31443, 21208, 29818, 31454, 17123, 17124, 29413, 31462, 31469, 27374, 21231, 27377, 27387, 21290, 25342, 29824, 27395, 19205, 31500, 23341, 31505, 19219, 31510, 23319, 27418, 27420, 23400, 21281, 31524, 31526, 26417, 21289, 17194, 16519, 23340, 29485, 27438, 27439, 29488, 27442, 21300, 21302, 31543, 31545, 31551, 21312, 17547, 31556, 29511, 21323, 31564, 21986, 23374, 25425, 25426, 25428, 25401, 31576, 25435, 31581, 31582, 29536, 23393, 27490, 25444, 31589, 31889, 17256, 23401, 27501, 27504, 19313, 25462, 29559, 25407, 31613, 27518, 31536, 29568, 29570, 31619, 29572, 23429, 18241, 29576, 19340, 29583, 19345, 29586, 23445, 29590, 31639, 31647, 27991, 30876, 29610, 29611, 27567, 25522, 29619, 31670, 31220, 17339, 29631, 23490, 31683, 24054, 31687, 31688, 17911, 25549, 31699, 29653, 29655, 31704, 29657, 30543, 29660, 21469, 31471, 21472, 26448, 20987, 31716, 20305, 27624, 1006, 17391, 27636, 31230, 29687, 29689, 23546, 31741, 27649, 31746, 29700, 23557, 19462, 19463, 17239, 29186, 29710, 25617, 17426, 28163, 31764]
+# Set the default color cycle
+mpl.rcParams['axes.color_cycle'] = ['b', 'g', 'r','c','m','y','k','grey']
 
-def pull_data(user_list,params, date, num_days,skip_unpartnered): 
- 
-    print 'querying DB'  
+
+
+
+k_natural_light_filter_start_time = 16 #hour in 24 hours
+k_natural_light_filter_stop_time = 4 #hour in 24 hours
+k_sound_disturbance_threshold = 90.0
+k_energy_disturbance_threshold = 18000
+k_enable_interval_search = True
+k_raw_light_to_lux = 1.0
+
+
+def get_unix_time_as_datetime(unix_time):
+    return datetime.datetime.utcfromtimestamp(unix_time)
     
-    min_date = date
+def get_unix_time_as_string(unix_time): 
+    return get_unix_time_as_datetime(unix_time).isoformat(' ')   
+
+
+def join_segments(sleep_segments):
+    segs = []
+    N = len(sleep_segments)
+    t = 0
+
+    if N == 0:
+        return []
+
+    seg1 = sleep_segments[0]
+
+    if len(seg1) == 1:
+        return []
+
+    
+    last_joined = False
+
+    while True:
+
+        if t + 1 < N:
+            seg2 = sleep_segments[t + 1]
+
+        if len(seg2) == 1:
+            break
+            
+            diff = seg2[0] - seg1[1]
+
+            if diff < k_max_gap:
+                seg1[1] = seg2[1]
+                last_joined = True
+            else:
+                segs.append(copy.deepcopy(seg1))
+                last_joined = False
+                seg1 = seg2
+
+        else:
+
+            if not last_joined:
+                segs.append(copy.deepcopy(seg1))
+
+            break
         
+        t += 1
+
+    return segs
+
+                        
+
+def pull_data(params, user_list, date,num_days): 
+             
     a = serverdata.BinnedDataGetter(user_list,params)
-    data = a.get_all_binned_data(min_date,num_days,skip_unpartnered)
+
+    data = a.get_all_binned_data(date,num_days)
     
-    #flatten
-    flatdata = []
-    for key in data:
-        flatdata.extend(data[key]['data'])
-    
-    flatdata = numpy.array(flatdata).transpose().tolist()
-    
-    return flatdata
+    #only save if no date specified
+    if date == None:
+        f = open(save_filename, 'w')
+        json.dump(data, f)
+        f.close()
+
+
+    return data
+
+
+
 
 if __name__ == '__main__':
-    params = {
-    'pill_magnitude_disturbance_threshold_lsb' : 18000, 
-    'audio_disturbance_threshold_db' : 90.0, 
-    'natural_light_filter_start_hour' : 16.0, 
-    'natural_light_filter_stop_hour' : 4.0,
-    'meas_period_minutes' : 5}
-
+    set_printoptions(precision=3, suppress=True, threshold=nan)
     parser = argparse.ArgumentParser()
     parser.add_argument('--date', help = 'target date', required=True)
     parser.add_argument('-n','--numdays',default=1, help = 'num days to retrieve')
     parser.add_argument('-o','--outfile', required=True)
     parser.add_argument('-u','--user',default=None)
     parser.add_argument('--skipunpartnered',action='store_true',default=False,help='skip users that do not have a partner')
-
+    parser.add_argument('--userlistfile',help='list of user account ids where the first column is the account_id')
     args = parser.parse_args()
 
-    if args.user == None:
-        args.user = k_user_list
+    if (args.userlistfile == None and args.user == None) or (args.userlistfile and args.user):
+        print 'you must specify either a user list file or a user'
+        sys.exit(0)
+
+
+    params = {}
+
+    params['natural_light_filter_start_hour'] = k_natural_light_filter_start_time
+    params['natural_light_filter_stop_hour'] = k_natural_light_filter_stop_time
+    params['audio_disturbance_threshold_db'] = k_sound_disturbance_threshold
+    params['pill_magnitude_disturbance_threshold_lsb'] = k_energy_disturbance_threshold
+    params['users'] = '-1'
+    params['enable_interval_search'] = k_enable_interval_search
+    params['meas_period_minutes'] = 5
+
+    user_list = []
+
+    if args.userlistfile != None:
+        with open(args.userlistfile, 'rb') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+
+            for row in reader:
+                user_list.append(row[0])
+
     else:
-        args.user = [args.user]
-
-    args.user = set(args.user)
-
-    data = pull_data(args.user,params,args.date, args.numdays,args.skipunpartnered)
+        user_list = [args.user]
         
-    with open(args.outfile, 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',')
-        for row in data:
-            writer.writerow(row)
+    
+    data = pull_data(params, user_list, args.date,args.numdays)
+  
+    f = open(args.outfile,'wb')
+    json.dump(data,f)
+    f.close()
+
+    print 'wrote to %s' % (args.outfile) 
+        
     
