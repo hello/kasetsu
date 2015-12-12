@@ -41,7 +41,7 @@ def pull_data(mytuple):
     response = requests.get(url,params={},headers = k_headers)
     
     if not response.ok:
-        print 'fail with %d on %s ' % (response.status_code,datestring)
+        print 'fail with %d on %s ' % (response.status_code,start_date_string)
         return None
     
     data = response.json()

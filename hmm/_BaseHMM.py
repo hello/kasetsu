@@ -57,7 +57,7 @@ class _BaseHMM(object):
             self._mapB(observations)
         
         alpha, c = self._calcalpha(observations)
-        return numpy.sum(-numpy.log(c +  1e-15))
+        return numpy.sum(-numpy.log(c +  1e-100))
     
     def _calcalpha(self,observations):
         '''
@@ -125,7 +125,7 @@ class _BaseHMM(object):
         self._mapB(observations)
         p = numpy.zeros((numobs, ))
         
-        p[0] = -numpy.log(self.B_map[path[0]][0] + 1e-15)
+        p[0] = -numpy.log(self.B_map[path[0]][0] + 1e-100)
         
         for t in xrange(1, numobs):
             istate = path[t-1]
@@ -134,7 +134,7 @@ class _BaseHMM(object):
             pobs = self.B_map[path[t]][t]
             
             #p[t] = p[t - 1] - numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
-            p[t] = -numpy.log(ptransition + 1e-15) - numpy.log(pobs + 1e-15)
+            p[t] = -numpy.log(ptransition + 1e-100) - numpy.log(pobs + 1e-100)
             #p[t] = -numpy.log(pobs + 1e-15)
         return p
 
@@ -209,9 +209,12 @@ class _BaseHMM(object):
         
         # init 
         for i in xrange(self.n):
-            phi[i][:] = -numpy.log(self.pi[i]+1e-15) - numpy.log(self.B_map[i][0] + 1e-15)
-      
-      
+            phi[i][:] = -numpy.log(self.pi[i]+1e-100) - numpy.log(self.B_map[i][0] + 1e-100)
+     
+
+        qqqq = numpy.log(numpy.array(self.B_map)) 
+
+        numpy.savetxt("bmap2.csv", qqqq, delimiter=",") 
         #do viterbi
         cost = numpy.zeros((self.n, ))
         pathcost = numpy.zeros((numobs, ))
@@ -219,7 +222,7 @@ class _BaseHMM(object):
         
         for t in xrange(1, numobs):
             for j in xrange(self.n): #"j" mean THIS (the jth) hidden state
-                obscost = -numpy.log(self.B_map[j][t] + 1e-15)
+                obscost = -numpy.log(self.B_map[j][t] + 1e-100)
                 
                 for i in xrange(self.n): #i means the incoming from ith hidden state
                     #compute incoming costs

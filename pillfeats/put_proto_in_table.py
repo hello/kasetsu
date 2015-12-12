@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-
 import boto
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.items import Item
@@ -12,6 +10,7 @@ import sys
 import argparse
 import base64
 from boto.dynamodb.types import Binary
+from boto.dynamodb.types import Dynamizer
 import calendar
 import datetime
 from time import strftime
@@ -27,7 +26,7 @@ def get_date_string_as_time(datestr):
     mydate = datetime.datetime.strptime(datestr, '%Y-%m-%d')
     return get_as_unix_time(mydate)
 
-class SleepHmmDynamoDB(object):
+class MyTypicalDynamoDbTableForProtobufs(object):
     def __init__(self, tablestr):
         self.tablestr = tablestr
         self.conn = self.get_conn()
@@ -48,10 +47,9 @@ class SleepHmmDynamoDB(object):
         print 'got table for ', self.tablestr
         return table
         
-    def update_latest_item(self, id, blob,unixtime = None):
+    def update_latest_item(self, account_id, blob,unixtime = None):
         table = self.get_table()
-        res = table.scan(account_id__eq=id)
-        
+        res = table.scan(account_id__eq=account_id)
         max_date = 0
         for r in res:
             d = r['create_date']
@@ -61,8 +59,9 @@ class SleepHmmDynamoDB(object):
         if unixtime != None:
             max_date = unixtime
 
+        dyn = Dynamizer()
         print 'max date was ', max_date
-        table.put_item(data={'account_id' : id,  'create_date' : max_date,  'model' : Binary(blob)}, overwrite=True)
+        table.put_item(data={'account_id' : int(account_id),  'create_date' : max_date,  'model' : Binary(blob)}, overwrite=True)
         
     def close(self):
         self.conn.close()
@@ -75,17 +74,17 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument("-f",  "--file", help="protobuf file in base64", required=False, default=None, type=str)
-    parser.add_argument("--db", help="which database table in dynamo", default='sleephmm', type=str)
-    parser.add_argument("-u",  "--user",  help='which user id to write to', required=True, type=int)
+    parser.add_argument("--db", help="which database table in dynamo", default='feature_extraction_models', type=str)
+    parser.add_argument("-u",  "--user",  help='which user id to write to', required=True, type=str)
     parser.add_argument("--date",default='1970-01-01',help='date of at which this thing was created',required=False,type=str)
     args = parser.parse_args()
     
-    unixtime = get_date_string_as_time(args.date)
+    #unixtime = get_date_string_as_time(args.date)
 
     protofile = args.file
     user = args.user
     
-    db = SleepHmmDynamoDB(args.db)
+    db = MyTypicalDynamoDbTableForProtobufs(args.db)
     
     f = open(protofile, 'r')
     protodata = f.read()
@@ -93,5 +92,5 @@ if __name__ == '__main__':
     
     bindata = base64.b64decode(protodata)
     
-    db.update_latest_item(user, bindata,unixtime)
+    db.update_latest_item(user, bindata,args.date)
     

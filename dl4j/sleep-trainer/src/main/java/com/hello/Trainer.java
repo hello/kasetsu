@@ -1,5 +1,6 @@
 package com.hello;
 
+import com.google.common.base.Optional;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -10,14 +11,29 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Created by benjo on 12/8/15.
  */
 public class Trainer {
 
-    static void main(String [] args) throws Exception {
+    final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
+    public static void main(String [] args) throws Exception {
+
+        final Map<String,JsonRawDataSource.Item> data = JsonRawDataSource.createFromFile("/Users/benjo/dev/Kasetsu/dl4j/sleep-trainer/data/normiesAraw.json");
+
+
+        if (data.isEmpty()) {
+            return;
+        }
+
+
+/*
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                 .learningRate(0.1)
@@ -44,5 +60,7 @@ public class Trainer {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
+*/
     }
+
 }

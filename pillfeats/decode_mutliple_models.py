@@ -364,7 +364,6 @@ if __name__ == '__main__':
         t = data[key]['times']
         
         flat_seg.extend(binnedata)
-        
         indiv_user_sensor_data[key] = t, array(binnedata)
 
         count += 1
@@ -393,31 +392,23 @@ if __name__ == '__main__':
             #print hmm.A
             print hmm.get_status()
             #print seg.transpose().tolist()
-            path, reliability = hmm.decode(seg)
+            path, reliability = hmm.decode(seg,[hmm.n - 1])
             #print 'data' ,seg[:,1].transpose().tolist()
             #print path
             paths.append(path)
-            cprobs = params[args.probname]
-            cnds = [cprobs[s] for s in path]
-            prob_mappings.append(cnds)
 
            
 
-        #np.savetxt('paths.csv',np.array(paths),delimiter=",")
-        smoothed_probs,sleep_segments,forward_probs,backward_probs,indiv_probs = decode_probs(paths,prob_mappings)
 
-        probmeas = np.array(smoothed_probs).reshape((len(smoothed_probs),1))
-        segment_path,other_stuff = segmenter.decode(probmeas,[2])
         
-#        print np.array(smoothed_probs).tolist()
-        #joined_segments = join_segments(sleep_segments)
         
-        nplots = 3
+        nplots = 2
 
         t2 = array([get_unix_time_as_datetime(tt) for tt in t])
         figure(1)
         ax = subplot(nplots, 1, 1)
 
+        print seg.shape
         N = seg.shape[1]
         for i in xrange(N):
             plot(t2, seg[:, i])
@@ -435,42 +426,16 @@ if __name__ == '__main__':
         questionable_indices = where(reliability < k_reliability_threshold)
         t2_marked = t2[questionable_indices]
         path_marked = path[questionable_indices]
+
+        plot(t2, path, '.-')
+
         if args.model2 != None:
-            plot(t2, path, '.-',t2,paths[1],'.-')
-        else:
-            plot(t2, path, '.-')
-
-        legend(['motion','light'])
-        #plot(t2, path_cost, 'ro')
-        grid('on')
-
-        ax3 = subplot(nplots,1,3,sharex=ax)
-        ax3.fmt_xdata = mdates.DateFormatter('%Y-%m-%d | %H:%M')
-#        plot(t2,forward_probs,t2,backward_probs,t2,smoothed_probs,'k')
-#        legend(['forward','backward','smoothed'])
-        plot(t2,(array(smoothed_probs)),'k-')
-        plot(t2,segment_path / 3.0,'mo')
-        legend('sleep prob')
+            plot(t2,paths[1],'.-')
+        
+        if args.model3 != None:
+            plot(t2, paths[2], '.-')
 
         grid('on')
-        '''
-        for seg in joined_segments:
-            if len(seg) < 2:
-                continue
-            
-            if seg[0] < 0 or seg[0] >= len(t2):
-                print 'seg[0] is outside of bounds'
-                continue
-
-            if seg[1] < 0 or seg[1] >= len(t2):
-                print 'seg[1] is outside of bounds'
-                continue
-            
-            start_time = t2[seg[0]]
-            end_time = t2[seg[1]]
-
-            print start_time,end_time
-        '''
 
         show()
 

@@ -20,7 +20,11 @@ k_accounts_map = {'normiesA' : normiesA, 'normiesB' : normiesB, 'problemA' : pro
 #k_accounts_map = {'normiesA' : normiesA, 'normiesB' : normiesB}
 
 k_min_date = '2015-11-16'
-k_event_types = ['WAKE_UP','SLEEP']
+#k_event_types = ['IN_BED','OUT_OF_BED','WAKE_UP','SLEEP']
+#k_event_types = ['WAKE_UP','SLEEP']
+#k_event_types = ['WAKE_UP']
+k_event_types = ['SLEEP']
+
 k_fail_threshold = 30
 
 def pull_data(account_id):

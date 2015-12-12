@@ -261,10 +261,12 @@ static MeasAndLabels_t alphabetToMeasAndLabels(Value::ConstMemberIterator alphab
         const std::string key = it->name.GetString();
         
         /*
-        if (key == "disturbances") {
+        if (key == "artificiallight") {
+            std::cout << "skipping " << std::endl;
             continue;
         }
          */
+        
          
          
         

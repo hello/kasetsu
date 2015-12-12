@@ -10,7 +10,7 @@ from matplotlib.pyplot import *
 
 k_num_minutes_smoothed = 2
 light_offset = 0.0
-RANGE_THRESHOLD = 0.0    
+RANGE_THRESHOLD = -1000000000000 
 def fill_zeros_if_none(data):
     for i in xrange(len(data)):
         vec =data[i]

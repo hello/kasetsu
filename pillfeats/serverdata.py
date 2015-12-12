@@ -8,7 +8,6 @@ import os
 
 
 k_server = 'https://research-api-benjo.hello.is'
-#k_server = 'http://ec2-52-1-32-223.compute-1.amazonaws.com'
 
 k_minute_data_url = k_server + '/v1/datascience/device_sensors_motion/'
 k_binned_url = k_server + '/v1/datascience/binneddata/'
@@ -82,7 +81,6 @@ class BinnedDataGetter(object):
             mydict = {}
             mydict['times'] = tvec.tolist()
             mydict['data'] = xvec.tolist()
-            
             return mydict
             
         return None
@@ -178,7 +176,6 @@ if __name__ == '__main__':
     if 0:
         a = ServerDataGetter([1012,1040])
         mydata = a.get_all_minute_data('2015-02-16', 5, 1440 * 1, 100)
-        #print mydata[1012]
     if 1:
         aux_params = {}
         aux_params['pill_magnitude_disturbance_threshold_lsb'] = 12000

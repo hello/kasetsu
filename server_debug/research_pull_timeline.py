@@ -82,7 +82,8 @@ def print_results(data):
             event_type = mydict['type']
             timestr = get_time_as_string(mydict['startTimestamp'],mydict['timezoneOffset'])
             print 'LABEL:', timestr,event_type
-
+       
+        print '---------------------\n\n'
                 
 if __name__ == '__main__':
     k_params['algorithm'] = sys.argv[3]

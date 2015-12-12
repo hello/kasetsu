@@ -8,7 +8,7 @@ import sklearn.cluster
 
 np.set_printoptions(precision=4,suppress=True,linewidth=10000)
 MAX_DIMS = 4
-k_cutoff_threshold = 0.98
+k_cutoff_threshold = 0.99
 
 def get_matrix(inmtx):
     M = inmtx.num_rows
@@ -174,13 +174,13 @@ def main():
 
 
         
-        kmeans = sklearn.cluster.KMeans()
+        kmeans = sklearn.cluster.KMeans(n_clusters=20)
         kmeans.fit(U)
         groups = kmeans.predict(U)
 
         num_groups = np.max(groups)
 
-        print 'FOUND %d GROUPS!' % num_groups
+        print 'FOUND %d GROUPS!' % (num_groups + 1)
 
         group_keys = {}
 
