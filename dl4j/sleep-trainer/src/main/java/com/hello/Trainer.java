@@ -1,20 +1,8 @@
 package com.hello;
 
 import com.google.common.base.Optional;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 /**
  * Created by benjo on 12/8/15.
@@ -25,10 +13,11 @@ public class Trainer {
 
     public static void main(String [] args) throws Exception {
 
-        final Map<String,JsonRawDataSource.Item> data = JsonRawDataSource.createFromFile("/Users/benjo/dev/Kasetsu/dl4j/sleep-trainer/data/normiesAraw.json");
+        final String path = "/Users/benjo/dev/Kasetsu/dl4j/sleep-trainer/data/";
 
+        final Optional<SleepDataSource> data = SleepDataSource.createFromFile(path + "normiesAraw.json", path + "labels.csv");
 
-        if (data.isEmpty()) {
+        if (!data.isPresent()) {
             return;
         }
 
