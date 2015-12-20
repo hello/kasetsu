@@ -1,6 +1,17 @@
 package com.hello;
 
 import com.google.common.base.Optional;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,18 +22,20 @@ public class Trainer {
 
     final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
+    final static int LSTM_LAYER_SIZE = 10;
+
     public static void main(String [] args) throws Exception {
 
         final String path = "/Users/benjo/dev/Kasetsu/dl4j/sleep-trainer/data/";
 
-        final Optional<SleepDataSource> data = SleepDataSource.createFromFile(path + "normiesAraw.json", path + "labels.csv");
+        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(path + "normiesAraw.json", path + "labels.csv");
 
-        if (!data.isPresent()) {
+        if (!dataOptional.isPresent()) {
             return;
         }
 
+        final SleepDataSource data = dataOptional.get();
 
-/*
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                 .learningRate(0.1)
@@ -31,17 +44,17 @@ public class Trainer {
                 .regularization(true)
                 .l2(0.001)
                 .list(3)
-                .layer(0, new GravesLSTM.Builder().nIn(iter.inputColumns()).nOut(lstmLayerSize)
+                .layer(0, new GravesLSTM.Builder().nIn(data.inputColumns()).nOut(LSTM_LAYER_SIZE)
                         .updater(Updater.RMSPROP)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-0.08, 0.08)).build())
-                .layer(1, new GravesLSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(Updater.RMSPROP)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-0.08, 0.08)).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
                         .updater(Updater.RMSPROP)
-                        .nIn(lstmLayerSize).nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(LSTM_LAYER_SIZE).nOut(data.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-0.08, 0.08)).build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -49,7 +62,22 @@ public class Trainer {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-*/
+        //Print the  number of parameters in the network (and for each layer)
+        Layer[] layers = net.getLayers();
+        int totalNumParams = 0;
+        for( int i=0; i<layers.length; i++ ){
+            int nParams = layers[i].numParams();
+            System.out.println("Number of parameters in layer " + i + ": " + nParams);
+            totalNumParams += nParams;
+        }
+        System.out.println("Total number of network parameters: " + totalNumParams);
+
+
+        net.fit(data);
+
+        int foo = 3;
+        foo++;
+
     }
 
 }
