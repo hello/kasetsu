@@ -62,10 +62,18 @@ public class SleepDataSource implements DataSetIterator {
 
     public DataSet next(final int n) {
 
+        int endIdx = numExamplesSoFar + n;
+
+        if (endIdx > dataSets.size()) {
+            endIdx = dataSets.size();
+        }
+
         final List<DataSet> dsList = Lists.newArrayList();
-        for (int i = numExamplesSoFar; i < numExamplesSoFar + n; i++) {
+        for (int i = numExamplesSoFar; i < endIdx; i++) {
             dsList.add(dataSets.get(i));
         }
+
+        numExamplesSoFar += n;
 
         return  DataSet.merge(dsList);
     }
@@ -153,10 +161,11 @@ public class SleepDataSource implements DataSetIterator {
             primitiveDataArray[j] = ArrayUtils.toPrimitive(sensorData.data[j]);
         }
 
-        final INDArray input = Nd4j.create(new int[]{1, numTimeSteps,vecSize}, primitiveDataArray);
+        final INDArray input = Nd4j.create(primitiveDataArray);
+
 
         //zeros because an all zero label will have no effect on the cross entropy objective function evaluation
-        final INDArray labels = Nd4j.zeros(new int[]{1,numTimeSteps,NUM_LABELS});
+        final INDArray labels = Nd4j.zeros(new int[]{numTimeSteps,NUM_LABELS});
 
         for (final LabelItem label : labelData) {
             final int idx =(int) ((label.timestamp - t0) / (5L * 60L));
@@ -178,7 +187,7 @@ public class SleepDataSource implements DataSetIterator {
             }
 
             for (int t = startIdx; t < endIdx; t++) {
-                labels.putScalar(new int[]{0,t,label.eventIndex},1.0);
+                labels.putScalar(new int[]{t,label.eventIndex},1.0);
             }
         }
 

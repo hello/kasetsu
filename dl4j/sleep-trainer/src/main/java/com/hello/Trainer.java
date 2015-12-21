@@ -11,9 +11,13 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * Created by benjo on 12/8/15.
@@ -37,7 +41,8 @@ public class Trainer {
         final SleepDataSource data = dataOptional.get();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
                 .learningRate(0.1)
                 .rmsDecay(0.95)
                 .seed(12345)
@@ -47,11 +52,11 @@ public class Trainer {
                 .layer(0, new GravesLSTM.Builder().nIn(data.inputColumns()).nOut(LSTM_LAYER_SIZE)
                         .updater(Updater.RMSPROP)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-0.08, 0.08)).build())
+                        .dist(new UniformDistribution(-0.5, 0.5)).build())
                 .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(Updater.RMSPROP)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-0.08, 0.08)).build())
+                        .dist(new UniformDistribution(-0.5, 0.5)).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
                         .updater(Updater.RMSPROP)
                         .nIn(LSTM_LAYER_SIZE).nOut(data.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
@@ -60,7 +65,14 @@ public class Trainer {
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
+
         net.init();
+
+        net.printConfiguration();
+
+
+        //net.setListeners(new ScoreIterationListener(1));
+
 
         //Print the  number of parameters in the network (and for each layer)
         Layer[] layers = net.getLayers();
@@ -73,7 +85,20 @@ public class Trainer {
         System.out.println("Total number of network parameters: " + totalNumParams);
 
 
-        net.fit(data);
+        for (int iEpoch = 0; iEpoch < 5; iEpoch++) {
+            net.fit(data);
+
+            System.out.println("Completed epoch " + iEpoch );
+
+            data.reset();
+
+        }
+
+        final INDArray feats = data.next().getFeatureMatrix();
+
+        final int [] result = net.predict(feats);
+
+
 
         int foo = 3;
         foo++;
