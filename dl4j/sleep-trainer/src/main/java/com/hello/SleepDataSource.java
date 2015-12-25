@@ -58,6 +58,7 @@ public class SleepDataSource implements DataSetIterator {
     final int numInputs;
     final int numOutcomes;
     final int exampleLength;
+    private final int miniBatchSize;
     int numExamplesSoFar;
 
     public DataSet next(final int n) {
@@ -75,7 +76,9 @@ public class SleepDataSource implements DataSetIterator {
 
         numExamplesSoFar += n;
 
-        return  DataSet.merge(dsList);
+        final DataSet ds = DataSet.merge(dsList);
+
+        return ds;
     }
 
     public int totalExamples() {
@@ -95,7 +98,7 @@ public class SleepDataSource implements DataSetIterator {
     }
 
     public int batch() {
-        return exampleLength;
+        return miniBatchSize;
     }
 
     public int cursor() {
@@ -151,6 +154,7 @@ public class SleepDataSource implements DataSetIterator {
     }
 
     private static DataSet getDataSet(final Collection<LabelItem> labelData, final DataItem sensorData ) {
+        //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 
         final int vecSize = sensorData.data[0].length;
         final int numTimeSteps = sensorData.data.length;
@@ -161,11 +165,11 @@ public class SleepDataSource implements DataSetIterator {
             primitiveDataArray[j] = ArrayUtils.toPrimitive(sensorData.data[j]);
         }
 
-        final INDArray input = Nd4j.create(primitiveDataArray);
-
+        final INDArray primitiveDataAsInput = Nd4j.create(primitiveDataArray).transpose();
+        final INDArray input = Nd4j.create(Lists.<INDArray>newArrayList(primitiveDataAsInput),new int[]{1,primitiveDataAsInput.size(0),primitiveDataAsInput.size(1)});
 
         //zeros because an all zero label will have no effect on the cross entropy objective function evaluation
-        final INDArray labels = Nd4j.zeros(new int[]{numTimeSteps,NUM_LABELS});
+        final INDArray labels = Nd4j.zeros(new int[]{1,NUM_LABELS,numTimeSteps});
 
         for (final LabelItem label : labelData) {
             final int idx =(int) ((label.timestamp - t0) / (5L * 60L));
@@ -187,15 +191,21 @@ public class SleepDataSource implements DataSetIterator {
             }
 
             for (int t = startIdx; t < endIdx; t++) {
-                labels.putScalar(new int[]{t,label.eventIndex},1.0);
+                labels.putScalar(new int[]{0,label.eventIndex,t},1.0);
             }
         }
 
         return new DataSet(input,labels);
     }
 
-    private SleepDataSource(final Map<String, DataItem> dataMap, final Multimap<String,LabelItem> labelMap) {
+    private SleepDataSource(final Map<String, DataItem> dataMap, final Multimap<String,LabelItem> labelMap, final int miniBatchSize) {
         dataSets = Lists.newArrayList();
+
+        this.miniBatchSize = miniBatchSize;
+
+        int count = 0;
+
+        List<DataSet> miniBatch = Lists.newArrayList();
 
         for (final String key : dataMap.keySet()) {
             if (!labelMap.containsKey(key)) {
@@ -210,15 +220,26 @@ public class SleepDataSource implements DataSetIterator {
             }
 
 
-            dataSets.add(getDataSet(labels, data));
+            miniBatch.add(getDataSet(labels, data));
 
+
+            count++;
+
+            if (count % miniBatchSize == 0) {
+                dataSets.add(DataSet.merge(miniBatch));
+                miniBatch.clear();
+            }
+        }
+
+        if (!miniBatch.isEmpty()) {
+            dataSets.add(DataSet.merge(miniBatch));
         }
 
         reset();
 
         exampleLength = dataSets.get(0).numExamples();
-        numInputs = dataSets.get(0).numInputs();
-        numOutcomes = dataSets.get(0).numOutcomes();
+        numInputs = dataSets.get(0).getFeatureMatrix().size(1);
+        numOutcomes = dataSets.get(0).getLabels().size(1);
         numExamplesSoFar = 0;
 
 
@@ -231,7 +252,7 @@ public class SleepDataSource implements DataSetIterator {
         return new String(encoded, encoding);
     }
 
-    public static Optional<SleepDataSource> createFromFile(final String pathToJsonRawData, final String pathToCsvLabels) {
+    public static Optional<SleepDataSource> createFromFile(final String pathToJsonRawData, final String pathToCsvLabels, final int miniBatchSize) {
         try {
             final String jsonFileContents = readFile(pathToJsonRawData, java.nio.charset.Charset.forName("UTF-8"));
 
@@ -273,7 +294,7 @@ public class SleepDataSource implements DataSetIterator {
 
             }
 
-            return Optional.of(new SleepDataSource(dataMap, labelMap));
+            return Optional.of(new SleepDataSource(dataMap, labelMap,miniBatchSize));
 
         }
         catch (IOException e) {

@@ -24,54 +24,57 @@ import java.util.List;
  */
 public class Trainer {
 
+    final static int NUM_ITER = 2;
+
     final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
-    final static int LSTM_LAYER_SIZE = 10;
+    final static int LSTM_LAYER_SIZE = 3;
+    final static double UNIFORM_INIT_MAGNITUDE = 0.01;
+    final static int MINI_BATCH_SIZE = 10;
 
     public static void main(String [] args) throws Exception {
 
         final String path = "/Users/benjo/dev/Kasetsu/dl4j/sleep-trainer/data/";
 
-        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(path + "normiesAraw.json", path + "labels.csv");
+        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(path + "normiesAraw.json", path + "labels.csv",MINI_BATCH_SIZE);
 
         if (!dataOptional.isPresent()) {
             return;
         }
 
-        final SleepDataSource data = dataOptional.get();
+        final SleepDataSource dataIterator = dataOptional.get();
+
+        final Updater updater = Updater.RMSPROP;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        //        .adamMeanDecay(0.9)
+        //        .adamVarDecay(.999)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(1)
-                .learningRate(0.1)
+                .iterations(10)
+                .learningRate(0.01)
                 .rmsDecay(0.95)
-                .seed(12345)
+                .seed(1)
                 .regularization(true)
                 .l2(0.001)
-                .list(3)
-                .layer(0, new GravesLSTM.Builder().nIn(data.inputColumns()).nOut(LSTM_LAYER_SIZE)
-                        .updater(Updater.RMSPROP)
+                .list(2)
+                .layer(0, new GravesLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
+                        .updater(updater)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-0.5, 0.5)).build())
-                .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
-                        .updater(Updater.RMSPROP)
-                        .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-0.5, 0.5)).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
-                        .updater(Updater.RMSPROP)
-                        .nIn(LSTM_LAYER_SIZE).nOut(data.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-0.08, 0.08)).build())
+                        .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
+                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
+                        .updater(updater)
+                        .nIn(LSTM_LAYER_SIZE).nOut(dataIterator.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
                 .pretrain(false).backprop(true)
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         net.init();
-
         net.printConfiguration();
 
 
-        //net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(1));
 
 
         //Print the  number of parameters in the network (and for each layer)
@@ -85,23 +88,51 @@ public class Trainer {
         System.out.println("Total number of network parameters: " + totalNumParams);
 
 
-        for (int iEpoch = 0; iEpoch < 5; iEpoch++) {
-            net.fit(data);
+        for (int iEpoch = 0; iEpoch < NUM_ITER; iEpoch++) {
+            net.printConfiguration();
+
+            net.fit(dataIterator);
+
+            net.computeGradientAndScore();
 
             System.out.println("Completed epoch " + iEpoch );
 
-            data.reset();
+            dataIterator.reset();
+
 
         }
 
-        final INDArray feats = data.next().getFeatureMatrix();
+        for (int idataset = 0; idataset < 1; idataset++) {
+            final INDArray feats = dataIterator.next().getFeatureMatrix();
 
-        final int [] result = net.predict(feats);
+            final INDArray output = net.output(feats);
+
+            int[] preds = new int[192];
+            for (int i = 0; i < output.size(1); i++) {
+                final INDArray row = output.slice(i);
+                float themax = Float.NEGATIVE_INFINITY;
+                int maxIdx = -1;
+                final int len = row.size(0);
+                for (int j = 0; j < len; j++) {
+                    if (row.getFloat(j) > themax) {
+                        themax = row.getFloat(j);
+                        maxIdx = j;
+                    }
+
+                    preds[i] = maxIdx;
+                }
+
+                LOGGER.info("{}",preds);
+
+
+            }
+
+            int foo = 3;
+            foo++;
+        }
 
 
 
-        int foo = 3;
-        foo++;
 
     }
 
