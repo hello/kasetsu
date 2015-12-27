@@ -9,6 +9,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import org.apache.commons.cli.Option;
 import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,12 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by benjo on 12/8/15.
@@ -38,12 +34,12 @@ public class SleepDataSource implements DataSetIterator {
     final static Logger LOGGER = LoggerFactory.getLogger(SleepDataSource.class);
     final static TypeReference<HashMap<String,DataItem>> typeRef = new TypeReference<HashMap<String,DataItem>>() {};
 
-    final static int INDEX_IN_BED = 0;
-    final static int INDEX_SLEEP = 1;
-    final static int INDEX_WAKE_UP = 2;
-    final static int INDEX_OUT_OF_BED = 3;
+    final static int INDEX_IN_BED = 1;
+    final static int INDEX_SLEEP = 2;
+    final static int INDEX_WAKE_UP = 3;
+    final static int INDEX_OUT_OF_BED = 4;
 
-    final static int NUM_LABELS = 4;
+    final static int NUM_LABELS = 3;
 
     final static Map<String,Integer> eventIndexMap;
     static {
@@ -54,7 +50,8 @@ public class SleepDataSource implements DataSetIterator {
         eventIndexMap.put("OUT_OF_BED",INDEX_OUT_OF_BED);
     }
 
-    final List<DataSet> dataSets;
+    public final List<DataSet> dataSets;
+    public final List<INDArray> unusedFeatures;
     final int numInputs;
     final int numOutcomes;
     final int exampleLength;
@@ -95,6 +92,9 @@ public class SleepDataSource implements DataSetIterator {
 
     public void reset() {
         numExamplesSoFar = 0;
+
+        Collections.shuffle(dataSets);
+
     }
 
     public int batch() {
@@ -118,7 +118,7 @@ public class SleepDataSource implements DataSetIterator {
     }
 
     public DataSet next() {
-        return next(1);
+        return next(miniBatchSize);
     }
 
     public void remove() {
@@ -153,59 +153,75 @@ public class SleepDataSource implements DataSetIterator {
         }
     }
 
-    private static DataSet getDataSet(final Collection<LabelItem> labelData, final DataItem sensorData ) {
-        //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
-
-        final int vecSize = sensorData.data[0].length;
-        final int numTimeSteps = sensorData.data.length;
-        final long t0 = sensorData.times.get(0);
-
+    private static INDArray getFeatures( final DataItem sensorData) {
         double [][] primitiveDataArray = new double[sensorData.data.length][];
         for (int j = 0; j < primitiveDataArray.length; j++) {
             primitiveDataArray[j] = ArrayUtils.toPrimitive(sensorData.data[j]);
         }
 
         final INDArray primitiveDataAsInput = Nd4j.create(primitiveDataArray).transpose();
-        final INDArray input = Nd4j.create(Lists.<INDArray>newArrayList(primitiveDataAsInput),new int[]{1,primitiveDataAsInput.size(0),primitiveDataAsInput.size(1)});
+        final INDArray features = Nd4j.create(Lists.<INDArray>newArrayList(primitiveDataAsInput),new int[]{1,primitiveDataAsInput.size(0),primitiveDataAsInput.size(1)});
+
+        return features;
+    }
+
+    private static Optional<DataSet> getDataSet(final Collection<LabelItem> labelData, final DataItem sensorData ) {
+        //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
+
+        final int vecSize = sensorData.data[0].length;
+        final int numTimeSteps = sensorData.data.length;
+        final long t0 = sensorData.times.get(0);
+        final long tf = sensorData.times.get(sensorData.times.size() - 1);
+
 
         //zeros because an all zero label will have no effect on the cross entropy objective function evaluation
+        final INDArray input = getFeatures(sensorData);
         final INDArray labels = Nd4j.zeros(new int[]{1,NUM_LABELS,numTimeSteps});
 
+        LabelItem sleepLabel = null;
+        LabelItem wakeLabel = null;
         for (final LabelItem label : labelData) {
-            final int idx =(int) ((label.timestamp - t0) / (5L * 60L));
-
-            if (idx < 0 || idx >= numTimeSteps) {
-                continue;
+            if (label.eventIndex == INDEX_SLEEP) {
+                sleepLabel = label;
             }
 
-            int startIdx = idx - 12;
-
-            if (startIdx < 0) {
-                startIdx = 0;
-            }
-
-            int endIdx = idx + 12;
-
-            if (endIdx > numTimeSteps) {
-                endIdx = numTimeSteps;
-            }
-
-            for (int t = startIdx; t < endIdx; t++) {
-                labels.putScalar(new int[]{0,label.eventIndex,t},1.0);
+            if (label.eventIndex == INDEX_WAKE_UP) {
+                wakeLabel = label;
             }
         }
 
-        return new DataSet(input,labels);
+        if (sleepLabel == null || wakeLabel == null) {
+            return Optional.absent();
+        }
+
+
+        final int idxSleep =(int) ((sleepLabel.timestamp - t0) / (5L * 60L));
+        final int idxWake =(int) ((wakeLabel.timestamp - t0) / (5L * 60L));
+        final int idxEnd = (int) ((tf - t0) / (5L * 60L));
+
+        for (int t = 0; t < idxSleep; t++) {
+            labels.putScalar(new int[]{0,0,t},1.0);
+
+        }
+
+        for (int t = idxSleep; t < idxWake; t++) {
+            labels.putScalar(new int[]{0,1,t},1.0);
+
+        }
+
+        for (int t = idxWake; t <= idxEnd; t++) {
+            labels.putScalar(new int[]{0,2,t},1.0);
+        }
+
+
+        return Optional.of(new DataSet(input,labels));
     }
 
     private SleepDataSource(final Map<String, DataItem> dataMap, final Multimap<String,LabelItem> labelMap, final int miniBatchSize) {
         dataSets = Lists.newArrayList();
+        unusedFeatures = Lists.newArrayList();
 
         this.miniBatchSize = miniBatchSize;
-
-        int count = 0;
-
-        List<DataSet> miniBatch = Lists.newArrayList();
 
         for (final String key : dataMap.keySet()) {
             if (!labelMap.containsKey(key)) {
@@ -220,19 +236,15 @@ public class SleepDataSource implements DataSetIterator {
             }
 
 
-            miniBatch.add(getDataSet(labels, data));
+            final Optional<DataSet> ds = getDataSet(labels,data);
 
-
-            count++;
-
-            if (count % miniBatchSize == 0) {
-                dataSets.add(DataSet.merge(miniBatch));
-                miniBatch.clear();
+            if (ds.isPresent()) {
+                dataSets.add(ds.get());
             }
-        }
+            else {
+                unusedFeatures.add(getFeatures(data));
+            }
 
-        if (!miniBatch.isEmpty()) {
-            dataSets.add(DataSet.merge(miniBatch));
         }
 
         reset();

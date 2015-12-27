@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.hello</groupId>
-    <artifactId>parent1</artifactId>
+    <artifactId>sleeptrainer</artifactId>
     <version>0.1-SNAPSHOT</version>
 
     <description>training RNN on sleep data</description>
@@ -133,7 +133,7 @@
                 </executions>
             </plugin>
 
-            <!--
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -142,7 +142,7 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
-            -->
+           
 
         </plugins>
     </build>
