@@ -19,25 +19,31 @@ import java.nio.file.Paths;
  * Created by benjo on 12/26/15.
  */
 public class NetEvaluator {
-    final static String DATA_PATH = "/home/benjo/sleeptrainer/data/";
-    final static String NET_FILE_NAME = "net2.bin";
 
     final static Logger LOGGER = LoggerFactory.getLogger(NetEvaluator.class);
 
 
     public static void main(String [] args) throws Exception {
 
-        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(DATA_PATH + "normiesAraw.json", DATA_PATH + "labels.csv", 1);
+        if (args.length < 2) {
+            LOGGER.info("need args as neural.net, then the features.json filename");
+            return;
+        }
+
+        final String netFilename = args[0];
+        final String dataFilename = args[1];
+
+        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(dataFilename);
 
         if (!dataOptional.isPresent()) {
             LOGGER.error("failed to load data sources");
             return;
         }
 
-        final Optional<MultiLayerNetwork> networkOptional = loadNet(DATA_PATH,NET_FILE_NAME);
+        final Optional<MultiLayerNetwork> networkOptional = loadNet(netFilename);
 
         if (!networkOptional.isPresent()) {
-            LOGGER.error("failed to load network {}",NET_FILE_NAME);
+            LOGGER.error("failed to load network {}",netFilename);
             return;
         }
 
@@ -53,17 +59,22 @@ public class NetEvaluator {
 
     }
 
-    private static Optional<MultiLayerNetwork> loadNet(final String dir, final String filename) {
-
+    private static Optional<MultiLayerNetwork> loadNet(final String filename) {
+        
         try {
-            final InputStream ios = Files.newInputStream(Paths.get(dir,filename));
+
+            final ClassLoader cl = NetEvaluator.class.getClassLoader();
+            final File file = new File(cl.getResource(filename).getFile());
+            final File confFile = new File(cl.getResource(filename + ".conf").getFile());
+
+            final InputStream ios = Files.newInputStream(Paths.get(file.getAbsolutePath()));
             final DataInputStream dis = new DataInputStream(ios);
 
             final INDArray params = Nd4j.read(dis);
 
             dis.close();
 
-            final String json = FileUtils.readFileToString(Paths.get(dir,filename + ".conf").toFile());
+            final String json = FileUtils.readFileToString(confFile);
 
             final MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
 

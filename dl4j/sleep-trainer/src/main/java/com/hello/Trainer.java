@@ -35,9 +35,8 @@ import java.util.List;
  */
 public class Trainer {
 
-    final static String DATA_PATH = "/home/benjo/sleeptrainer/data/";
-    final static String NET_FILE_NAME = "net4.bin";
-    final static String CONF_FILE_NAME = NET_FILE_NAME + ".conf";
+    final static String NET_FILE_NAME = "data/net4.bin";
+
 
     final static int NUM_EPOCHS = 100;
     final static int NUM_ITERS = 1;
@@ -49,10 +48,18 @@ public class Trainer {
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int MINI_BATCH_SIZE = 3;
 
-    private static void saveNet(final MultiLayerNetwork net,MultiLayerConfiguration conf, final String dir, final String filename) {
+    public static void saveNet(final MultiLayerNetwork net,MultiLayerConfiguration conf,final String filename) {
+
+        final ClassLoader cl = Trainer.class.getClassLoader();
+        final String baseDir = cl.getResource("").getFile();
+        final String fileFullPath = baseDir + filename;
+        final String confFileFullPath = baseDir + filename;
+
+        final File file = new File(fileFullPath);
+        final File confFile = new File(confFileFullPath);
 
         try {
-            final OutputStream fos = Files.newOutputStream(Paths.get(dir,filename));
+            final OutputStream fos = Files.newOutputStream(Paths.get(file.getAbsolutePath()));
             final DataOutputStream dos = new DataOutputStream(fos);
 
             Nd4j.write(net.params(), dos);
@@ -60,7 +67,7 @@ public class Trainer {
             dos.flush();
             dos.close();
 
-            FileUtils.write(Paths.get(dir,filename + ".conf").toFile(), conf.toJson());
+            FileUtils.write(confFile, conf.toJson());
 
 
         } catch (IOException e) {
@@ -72,8 +79,11 @@ public class Trainer {
 
     public static void main(String [] args) throws Exception {
 
+        final String rawDataFilePath = args[0];
+        final String labelsFilePath = args[1];
 
-        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(DATA_PATH + "normiesAraw.json", DATA_PATH + "labels.csv",MINI_BATCH_SIZE);
+
+        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(rawDataFilePath,labelsFilePath,MINI_BATCH_SIZE);
 
         if (!dataOptional.isPresent()) {
             return;
@@ -140,7 +150,7 @@ public class Trainer {
             eval.evalTimeSeries(ds.getLabels(), output);
             LOGGER.info(eval.stats());
 
-            saveNet(net,conf,DATA_PATH,NET_FILE_NAME);
+            saveNet(net,conf,NET_FILE_NAME);
 
             System.out.println("Completed epoch " + iEpoch );
 

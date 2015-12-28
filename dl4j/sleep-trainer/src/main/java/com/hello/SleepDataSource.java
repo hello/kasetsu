@@ -19,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -224,12 +225,16 @@ public class SleepDataSource implements DataSetIterator {
         this.miniBatchSize = miniBatchSize;
 
         for (final String key : dataMap.keySet()) {
+
+            final DataItem data = dataMap.get(key);
+
             if (!labelMap.containsKey(key)) {
+                //not labeled? add to data set
+                unusedFeatures.add(getFeatures(data));
                 continue;
             }
 
             final Collection<LabelItem> labels = labelMap.get(key);
-            final DataItem data = dataMap.get(key);
 
             if (labels.isEmpty()) {
                 continue;
@@ -249,10 +254,19 @@ public class SleepDataSource implements DataSetIterator {
 
         reset();
 
-        exampleLength = dataSets.get(0).numExamples();
-        numInputs = dataSets.get(0).getFeatureMatrix().size(1);
-        numOutcomes = dataSets.get(0).getLabels().size(1);
-        numExamplesSoFar = 0;
+        if (dataSets.isEmpty()) {
+            exampleLength = unusedFeatures.get(0).size(2);
+            numInputs = unusedFeatures.get(0).size(1);
+            numOutcomes = NUM_LABELS;
+            numExamplesSoFar = 0;
+        }
+        else {
+            exampleLength = dataSets.get(0).numExamples();
+            numInputs = dataSets.get(0).getFeatureMatrix().size(1);
+            numOutcomes = dataSets.get(0).getLabels().size(1);
+            numExamplesSoFar = 0;
+        }
+
 
 
     }
@@ -264,13 +278,24 @@ public class SleepDataSource implements DataSetIterator {
         return new String(encoded, encoding);
     }
 
-    public static Optional<SleepDataSource> createFromFile(final String pathToJsonRawData, final String pathToCsvLabels, final int miniBatchSize) {
+    public static Optional<SleepDataSource> createFromFile(final String rawDataFilePath) {
+        return createFromFile(rawDataFilePath,"",0);
+    }
+
+    public static Optional<SleepDataSource> createFromFile(final String rawDataFilePath, final String csvLabelsPath, final int miniBatchSize) {
         try {
-            final String jsonFileContents = readFile(pathToJsonRawData, java.nio.charset.Charset.forName("UTF-8"));
+
+            final File rawDataFile = new File(SleepDataSource.class.getClassLoader().getResource(rawDataFilePath).getFile());
+            final File labelFile = new File(SleepDataSource.class.getClassLoader().getResource(csvLabelsPath).getFile());
+
+            final String jsonFileContents = readFile(rawDataFile.getAbsolutePath(), java.nio.charset.Charset.forName("UTF-8"));
 
             final Map<String,DataItem> dataMap = objectMapper.readValue(jsonFileContents, typeRef);
 
-            final String labelFileContents = readFile(pathToCsvLabels, java.nio.charset.Charset.forName("UTF-8"));
+            String labelFileContents = "";
+            if (!csvLabelsPath.isEmpty()) {
+                labelFileContents = readFile(labelFile.getAbsolutePath(), java.nio.charset.Charset.forName("UTF-8"));
+            }
 
             final Multimap<String,LabelItem> labelMap = ArrayListMultimap.create();
 
