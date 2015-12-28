@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +34,20 @@ public class NetEvaluator {
         final String netFilename = args[0];
         final String dataFilename = args[1];
 
-        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(dataFilename);
+        String labelsPath = "";
+
+        if (args.length == 3) {
+            labelsPath = args[2];
+        }
+
+        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(dataFilename,labelsPath,0);
 
         if (!dataOptional.isPresent()) {
             LOGGER.error("failed to load data sources");
             return;
         }
+
+        final SleepDataSource data = dataOptional.get();
 
         final Optional<MultiLayerNetwork> networkOptional = loadNet(netFilename);
 
@@ -49,18 +58,30 @@ public class NetEvaluator {
 
         final MultiLayerNetwork net = networkOptional.get();
 
+        //if labels were included
+        if (!data.dataSets.isEmpty()) {
+            final Evaluation eval = new Evaluation();
+            final DataSet ds = DataSet.merge(data.dataSets);
 
-        for (final INDArray feats : dataOptional.get().unusedFeatures) {
-            final INDArray output = net.output(feats);
-            LOGGER.info(output.slice(0).transpose().toString());
-            LOGGER.info("----");
+            final INDArray output = net.output(ds.getFeatureMatrix());
+            eval.evalTimeSeries(ds.getLabels(), output);
+            LOGGER.info(eval.stats());
 
+        }
+        else {
+            //no labels specified
+            for (final INDArray feats : data.unusedFeatures) {
+                final INDArray output = net.output(feats);
+                LOGGER.info(output.slice(0).transpose().toString());
+                LOGGER.info("----");
+
+            }
         }
 
     }
 
     private static Optional<MultiLayerNetwork> loadNet(final String filename) {
-        
+
         try {
 
             final ClassLoader cl = NetEvaluator.class.getClassLoader();
