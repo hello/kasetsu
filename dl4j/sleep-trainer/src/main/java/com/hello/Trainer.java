@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -26,9 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 /**
  * Created by benjo on 12/8/15.
@@ -40,7 +38,8 @@ public class Trainer {
 
     final static int NUM_EPOCHS = 100;
     final static int NUM_ITERS = 1;
-    final static double LEARNING_RATE = 0.01;
+    final static double LEARNING_RATE = 0.1;
+    final static Updater UPDATER = Updater.ADAGRAD;
 
     final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
@@ -67,7 +66,7 @@ public class Trainer {
             dos.flush();
             dos.close();
 
-            FileUtils.write(confFile, conf.toJson());
+            FileUtils.writeStringToFile(confFile, conf.toJson());
 
 
         } catch (IOException e) {
@@ -91,9 +90,8 @@ public class Trainer {
 
         final SleepDataSource dataIterator = dataOptional.get();
 
-        final Updater updater = Updater.RMSPROP;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .iterations(NUM_ITERS)
                 .learningRate(LEARNING_RATE)
@@ -102,18 +100,18 @@ public class Trainer {
                 .regularization(true)
                 .l2(0.001)
                 .list(3)
-                .layer(0, new GravesLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
-                        .updater(updater)
+                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
+                        .updater(UPDATER)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
-                .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
-                        .updater(updater)
+                .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
+                        .updater(UPDATER)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
-                        .updater(updater)
+                        .updater(UPDATER)
                         .nIn(LSTM_LAYER_SIZE).nOut(dataIterator.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
                 .pretrain(false).backprop(true)

@@ -114,6 +114,11 @@ public class SleepDataSource implements DataSetIterator {
 
     }
 
+    @Override
+    public List<String> getLabels() {
+        return Collections.EMPTY_LIST;
+    }
+
     public boolean hasNext() {
         return numExamplesSoFar < dataSets.size();
     }
