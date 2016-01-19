@@ -11,6 +11,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import org.apache.commons.cli.Option;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -40,7 +42,7 @@ public class SleepDataSource implements DataSetIterator {
     final static int INDEX_WAKE_UP = 3;
     final static int INDEX_OUT_OF_BED = 4;
 
-    final static int NUM_LABELS = 3;
+    final static int NUM_LABELS = 2;
 
     final static Map<String,Integer> eventIndexMap;
     static {
@@ -165,7 +167,9 @@ public class SleepDataSource implements DataSetIterator {
             primitiveDataArray[j] = ArrayUtils.toPrimitive(sensorData.data[j]);
         }
 
-        final INDArray primitiveDataAsInput = Nd4j.create(primitiveDataArray).transpose();
+        final RealMatrix mat = new Array2DRowRealMatrix(primitiveDataArray);
+        final INDArray primitiveDataAsInput = Nd4j.create(mat.transpose().getData());
+
         final INDArray features = Nd4j.create(Lists.<INDArray>newArrayList(primitiveDataAsInput),new int[]{1,primitiveDataAsInput.size(0),primitiveDataAsInput.size(1)});
 
         return features;
@@ -211,12 +215,16 @@ public class SleepDataSource implements DataSetIterator {
         }
 
         for (int t = idxSleep; t < idxWake; t++) {
-            labels.putScalar(new int[]{0,1,t},1.0);
+            final Double motioncount = input.getDouble(new int[]{0,1,t});
+            if (motioncount > 10.0) {
+                continue;
+            }
+            labels.putScalar(new int[]{0, 1, t}, 1.0);
 
         }
 
         for (int t = idxWake; t <= idxEnd; t++) {
-            labels.putScalar(new int[]{0,2,t},1.0);
+            labels.putScalar(new int[]{0,0,t},1.0);
         }
 
 

@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -33,17 +34,17 @@ import java.nio.file.Paths;
  */
 public class Trainer {
 
-    final static String NET_FILE_NAME = "data/net4.bin";
+    final static String NET_FILE_NAME = "data/net8.bin";
 
 
-    final static int NUM_EPOCHS = 100;
+    final static int NUM_EPOCHS = 1000;
     final static int NUM_ITERS = 1;
-    final static double LEARNING_RATE = 0.1;
-    final static Updater UPDATER = Updater.ADAGRAD;
+    final static double LEARNING_RATE = 0.003;
+    final static Updater UPDATER = Updater.RMSPROP;
 
     final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
-    final static int LSTM_LAYER_SIZE = 5;
+    final static int LSTM_LAYER_SIZE = 2;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int MINI_BATCH_SIZE = 3;
 
@@ -52,7 +53,7 @@ public class Trainer {
         final ClassLoader cl = Trainer.class.getClassLoader();
         final String baseDir = cl.getResource("").getFile();
         final String fileFullPath = baseDir + filename;
-        final String confFileFullPath = baseDir + filename;
+        final String confFileFullPath = baseDir + filename + ".conf";
 
         final File file = new File(fileFullPath);
         final File confFile = new File(confFileFullPath);
@@ -102,11 +103,13 @@ public class Trainer {
                 .list(3)
                 .layer(0, new GravesBidirectionalLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
+                        .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
                 .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
+                        .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 

@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,7 @@ public class NetEvaluator {
         final MultiLayerNetwork net = networkOptional.get();
 
         //if labels were included
-        if (!data.dataSets.isEmpty()) {
+        if (!data.dataSets.isEmpty() && false) {
             final Evaluation eval = new Evaluation();
             final DataSet ds = DataSet.merge(data.dataSets);
 
@@ -71,9 +72,19 @@ public class NetEvaluator {
         else {
             //no labels specified
             for (final INDArray feats : data.unusedFeatures) {
+                final INDArray featArray = feats.slice(0);
                 final INDArray output = net.output(feats);
-                LOGGER.info(output.slice(0).transpose().toString());
-                LOGGER.info("----");
+                final INDArray x1 = featArray.slice(0);
+                final INDArray x2 = featArray.slice(1);
+
+                final INDArray sleep = output.slice(0).getRow(1).transpose();
+
+                LOGGER.info("------");
+                LOGGER.info("\n\ny = {};\n x1={};\n x2 = {} \n",sleep,x1,x2);
+
+
+
+
 
             }
         }
