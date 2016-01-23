@@ -18,7 +18,7 @@
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 30.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 5.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 2.0,"weight": 1.000000}}],
-[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.1,"weight": 1.000000}}],
+[{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 0.01,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 30.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 3.0,"weight": 1.000000}}],
 [{"model_type": "poisson", "model_data": {"obs_num": 1, "mean": 3.0,"weight": 1.000000}}],
