@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+//import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -34,10 +34,10 @@ import java.nio.file.Paths;
  */
 public class Trainer {
 
-    final static String NET_FILE_NAME = "data/net8.bin";
+    final static String NET_FILE_NAME = "data/net7.bin";
 
 
-    final static int NUM_EPOCHS = 1000;
+    final static int NUM_EPOCHS = 500;
     final static int NUM_ITERS = 1;
     final static double LEARNING_RATE = 0.003;
     final static Updater UPDATER = Updater.RMSPROP;
@@ -101,13 +101,13 @@ public class Trainer {
                 .regularization(true)
                 .l2(0.001)
                 .list(3)
-                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
+                .layer(0, new GravesLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
                         .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
-                .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
+                .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
                         .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)

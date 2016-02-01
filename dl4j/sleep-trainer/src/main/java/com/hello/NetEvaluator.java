@@ -59,8 +59,9 @@ public class NetEvaluator {
 
         final MultiLayerNetwork net = networkOptional.get();
 
+        int count = 0;
         //if labels were included
-        if (!data.dataSets.isEmpty() && false) {
+        if (!data.dataSets.isEmpty() && true) {
             final Evaluation eval = new Evaluation();
             final DataSet ds = DataSet.merge(data.dataSets);
 
@@ -76,11 +77,13 @@ public class NetEvaluator {
                 final INDArray output = net.output(feats);
                 final INDArray x1 = featArray.slice(0);
                 final INDArray x2 = featArray.slice(1);
+                final INDArray x4 = featArray.slice(4);
+                final INDArray x5 = featArray.slice(5);
 
                 final INDArray sleep = output.slice(0).getRow(1).transpose();
 
-                LOGGER.info("------");
-                LOGGER.info("\n\ny = {};\n x1={};\n x2 = {} \n",sleep,x1,x2);
+                LOGGER.info("---{}---",count++);
+                LOGGER.info("\n\ny = {};\n x1={};\n x2 = {} \n x4={}\n x5={}\n",sleep,x1,x2,x4,x5);
 
 
 
