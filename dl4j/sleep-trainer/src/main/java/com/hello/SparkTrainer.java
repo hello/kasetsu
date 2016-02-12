@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -46,7 +47,7 @@ public class SparkTrainer {
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
         final ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.ERROR);
+        root.setLevel(Level.INFO);
 
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
@@ -112,6 +113,7 @@ public class SparkTrainer {
         net.init();
         net.setUpdater(null);   //Workaround for a minor bug in 0.4-rc3.8
         net.printConfiguration();
+        net.setListeners(new ScoreIterationListener(1));
 
         final SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net);
 
@@ -127,7 +129,6 @@ public class SparkTrainer {
             {
                 final Evaluation eval = new Evaluation();
                 final DataSet ds2 = DataSet.merge(sleepDataSource.getDatasets());
-
                 final INDArray output = net.output(ds2.getFeatureMatrix());
                 eval.evalTimeSeries(ds2.getLabels(), output);
                 LOGGER.error(eval.stats());
