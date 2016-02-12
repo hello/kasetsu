@@ -19,6 +19,7 @@ public class S3Utils {
     final static Logger LOGGER = LoggerFactory.getLogger(S3Utils.class);
 
     public static String getZippedS3Object(final AmazonS3 s3, final String bucket, final String key) {
+        LOGGER.info("pulling {}/{}",bucket,key);
 
         final S3Object s3Object = s3.getObject(new GetObjectRequest(bucket, key));
         try (final InputStream stream = new GZIPInputStream(s3Object.getObjectContent())) {
@@ -33,6 +34,8 @@ public class S3Utils {
     }
 
     public static String getRegularS3Object(final AmazonS3 s3, final String bucket, final String key) {
+        LOGGER.info("pulling {}/{}",bucket,key);
+
         final S3Object s3Object = s3.getObject(new GetObjectRequest(bucket, key));
 
         try (final InputStream stream = s3Object.getObjectContent()) {

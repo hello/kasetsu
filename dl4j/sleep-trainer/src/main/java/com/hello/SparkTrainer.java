@@ -42,7 +42,7 @@ public class SparkTrainer {
     final static int LSTM_LAYER_SIZE = 2;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int MINI_BATCH_SIZE = 3;
-    final static int NUM_CORES = 4;
+    final static int NUM_CORES = 2;
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
@@ -52,7 +52,42 @@ public class SparkTrainer {
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
                         "hello-data/neuralnet",
-                        new String[]{"Jan15.csv000.gz","Jan14.csv000.gz"},
+                        new String[]{
+                                "2016-01-01.csv000.gz",
+                                "2016-01-02.csv000.gz",
+                                "2016-01-03.csv000.gz",
+                                "2016-01-04.csv000.gz",
+                                "2016-01-05.csv000.gz",
+                                "2016-01-06.csv000.gz",
+                                "2016-01-07.csv000.gz",
+                                "2016-01-08.csv000.gz",
+                                "2016-01-09.csv000.gz",
+                                "2016-01-10.csv000.gz",
+                                "2016-01-11.csv000.gz",
+                                "2016-01-12.csv000.gz",
+                                "2016-01-13.csv000.gz",
+                                "2016-01-14.csv000.gz",
+                                "2016-01-15.csv000.gz",
+                                "2016-01-16.csv000.gz",
+                                "2016-01-17.csv000.gz",
+                                "2016-01-18.csv000.gz",
+                                "2016-01-19.csv000.gz",
+                                "2016-01-20.csv000.gz",
+                                "2016-01-21.csv000.gz",
+                                "2016-01-22.csv000.gz",
+                                "2016-01-23.csv000.gz",
+                                "2016-01-24.csv000.gz",
+                                "2016-01-25.csv000.gz",
+                                "2016-01-26.csv000.gz",
+                                "2016-01-27.csv000.gz",
+                                "2016-01-28.csv000.gz",
+                                "2016-01-29.csv000.gz",
+                                "2016-01-30.csv000.gz",
+                                "2016-01-31.csv000.gz",
+                                "2016-02-01.csv000.gz",
+                                "2016-02-02.csv000.gz",
+                                "2016-02-03.csv000.gz",
+                                "2016-02-04.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
 
