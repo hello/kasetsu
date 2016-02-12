@@ -26,12 +26,10 @@ import java.util.zip.GZIPInputStream;
  */
 public class S3SleepDataSource {
     final static Logger LOGGER = LoggerFactory.getLogger(S3SleepDataSource.class);
-    final List<List<S3DataPoint>> allData;
-    final LabelLookup labels;
 
-    public S3SleepDataSource(final String bucket, final String [] datakeys, final String[] labelkeys) {
 
-        allData = Lists.newArrayList();
+    public static S3SleepDataSource create(final String bucket, final String [] datakeys, final String[] labelkeys) {
+        final List<List<S3DataPoint>> allData = Lists.newArrayList();
 
         final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -95,10 +93,27 @@ public class S3SleepDataSource {
             }
         }
 
-        labels = LabelLookup.create(labelList);
-        int foo = 3;
-        foo++;
+        final LabelLookup labels = LabelLookup.create(labelList);
+
+
+        //now create datasets
+
+        for (final List<S3DataPoint> oneDaysData : allData) {
+            if (oneDaysData.isEmpty()) {
+                continue;
+            }
+
+            final long accountId = oneDaysData.get(0).accountId;
+
+            labels.getLabel(accountId,oneDaysData.get(0).time);
+
+
+        }
+
+        return new S3SleepDataSource();
     }
+
+
 
     //TODO go from current data to dataset
     public List<DataSet> getDataset() {

@@ -51,7 +51,7 @@ public class SparkTrainer {
         root.setLevel(Level.ERROR);
 
         final S3SleepDataSource sleepDataSource =
-                new S3SleepDataSource(
+                S3SleepDataSource.create(
                         "hello-data/neuralnet",
                         new String[]{"Jan15.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
