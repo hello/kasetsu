@@ -17,10 +17,23 @@ import org.joda.time.format.DateTimeFormatter;
 // [4] audio_peak_disturbances_db,
 // [5] my pill durations,
 // [6] partner pill duration
-public class S3DataPoint {
+public class S3DataPoint implements Comparable<S3DataPoint> {
     final public double [] x;
     final public long accountId;
     final public long time;
+
+    @Override
+    public int compareTo(final S3DataPoint o) {
+        if (time > o.time) {
+            return 1;
+        }
+
+        if (time < o.time) {
+            return -1;
+        }
+
+        return 0;
+    }
 
     enum Transform {
         IDENTITY,

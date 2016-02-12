@@ -3,8 +3,6 @@ package com.hello;
 
 import java.util.List;
 
-import com.clearspring.analytics.util.Lists;
-import com.google.common.base.Optional;
 import com.hello.data.S3SleepDataSource;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -53,32 +51,22 @@ public class SparkTrainer {
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
                         "hello-data/neuralnet",
-                        new String[]{"Jan15.csv000.gz"},
+                        new String[]{"Jan15.csv000.gz","Jan14.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
 
 
-        final String rawDataFilePath = args[0];
-        final String labelsFilePath = args[1];
 
 
-        final Optional<SleepDataSource> dataOptional = SleepDataSource.createFromFile(rawDataFilePath,labelsFilePath,MINI_BATCH_SIZE);
 
-        if (!dataOptional.isPresent()) {
-            return;
-        }
+        final List<DataSet> dataSetList = sleepDataSource.getDatasets();
 
-        final SleepDataSource dataIterator = dataOptional.get();
-
-        final List<DataSet> dataSetList = Lists.newArrayList();
-        while (dataIterator.hasNext()) {
-            dataSetList.add(dataIterator.next());
-        }
+        System.out.format("found %d user days of data\n",dataSetList.size());
 
 
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + NUM_CORES + "]");
-        sparkConf.setAppName("LSTM_Char");
+        sparkConf.setAppName("LSTM_sleep");
         sparkConf.set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION, String.valueOf(true));
 
         final JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -97,7 +85,7 @@ public class SparkTrainer {
                 .regularization(true)
                 .l2(0.001)
                 .list(3)
-                .layer(0, new GravesLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
+                .layer(0, new GravesLSTM.Builder().nIn(sleepDataSource.getNumInputs()).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
                         .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
@@ -111,7 +99,7 @@ public class SparkTrainer {
 
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
                         .updater(UPDATER)
-                        .nIn(LSTM_LAYER_SIZE).nOut(dataIterator.numOutcomes).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(LSTM_LAYER_SIZE).nOut(sleepDataSource.getNumOutput()).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -138,7 +126,7 @@ public class SparkTrainer {
 
             {
                 final Evaluation eval = new Evaluation();
-                final DataSet ds2 = DataSet.merge(dataIterator.dataSets);
+                final DataSet ds2 = DataSet.merge(sleepDataSource.getDatasets());
 
                 final INDArray output = net.output(ds2.getFeatureMatrix());
                 eval.evalTimeSeries(ds2.getLabels(), output);
