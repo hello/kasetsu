@@ -54,7 +54,7 @@ public class SparkTrainer {
                         "hello-data/neuralnet",
                         new String[]{
                                 "2016-01-01.csv000.gz",
-                                "2016-01-02.csv000.gz",
+                                /*"2016-01-02.csv000.gz",
                                 "2016-01-03.csv000.gz",
                                 "2016-01-04.csv000.gz",
                                 "2016-01-05.csv000.gz",
@@ -86,7 +86,7 @@ public class SparkTrainer {
                                 "2016-01-31.csv000.gz",
                                 "2016-02-01.csv000.gz",
                                 "2016-02-02.csv000.gz",
-                                "2016-02-03.csv000.gz",
+                                "2016-02-03.csv000.gz",*/
                                 "2016-02-04.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
@@ -99,6 +99,10 @@ public class SparkTrainer {
 
         System.out.format("found %d user days of data\n",dataSetList.size());
 
+        int numCores = NUM_CORES;
+        if (args.length > 0) {
+            numCores = Integer.valueOf(args[0]);
+        }
 
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + NUM_CORES + "]");
