@@ -2,15 +2,13 @@ package com.hello;
 
 
 import java.util.List;
-import java.util.Map;
 
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Optional;
+import com.hello.data.S3SleepDataSource;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -49,10 +47,16 @@ public class SparkTrainer {
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
-
-
         final ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
+
+        final S3SleepDataSource sleepDataSource =
+                new S3SleepDataSource(
+                        "hello-data/neuralnet",
+                        new String[]{"Jan15.csv000.gz"},
+                        new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
+
+
 
         final String rawDataFilePath = args[0];
         final String labelsFilePath = args[1];
