@@ -2,11 +2,17 @@ package com.hello.data;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.io.CharStreams;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -48,5 +54,23 @@ public class S3Utils {
         }
         return "";
 
+    }
+
+    public static void putRegularS3Object(final byte [] data,final AmazonS3 s3, final String bucket, final String key) {
+
+        LOGGER.info("putting to {}/{}",bucket,key);
+        final InputStream is = new ByteArrayInputStream(data);
+
+        // content is a passed in InputStream
+        byte[] resultByte = DigestUtils.md5(data);
+        String streamMD5 = new String(Base64.encodeBase64(resultByte));
+
+
+
+        final ObjectMetadata metaData = new ObjectMetadata();
+        metaData.setContentLength(data.length);
+        metaData.setContentMD5(streamMD5);
+
+        s3.putObject(bucket,key,is,metaData);
     }
 }

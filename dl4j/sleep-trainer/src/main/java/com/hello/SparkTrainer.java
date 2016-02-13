@@ -3,7 +3,14 @@ package com.hello;
 
 import java.util.List;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.hello.data.S3ResultSink;
 import com.hello.data.S3SleepDataSource;
+import com.hello.data.S3Utils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -20,6 +27,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.joda.time.DateTime;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -32,7 +40,7 @@ import ch.qos.logback.classic.Level;
  * Created by benjo on 1/24/16.
  */
 public class SparkTrainer {
-    final static int NUM_EPOCHS = 500;
+    final static int NUM_EPOCHS = 1000;
     final static int NUM_ITERS = 10;
     final static double LEARNING_RATE = 0.003;
     final static Updater UPDATER = Updater.RMSPROP;
@@ -49,12 +57,14 @@ public class SparkTrainer {
         final ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.INFO);
 
+        final S3ResultSink resultSink = new S3ResultSink();
+
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
                         "hello-data/neuralnet",
                         new String[]{
                                 "2016-01-01.csv000.gz",
-                                /*"2016-01-02.csv000.gz",
+                                "2016-01-02.csv000.gz",
                                 "2016-01-03.csv000.gz",
                                 "2016-01-04.csv000.gz",
                                 "2016-01-05.csv000.gz",
@@ -86,7 +96,7 @@ public class SparkTrainer {
                                 "2016-01-31.csv000.gz",
                                 "2016-02-01.csv000.gz",
                                 "2016-02-02.csv000.gz",
-                                "2016-02-03.csv000.gz",*/
+                                "2016-02-03.csv000.gz",
                                 "2016-02-04.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
@@ -170,10 +180,15 @@ public class SparkTrainer {
                 final DataSet ds2 = DataSet.merge(sleepDataSource.getDatasets());
                 final INDArray output = net.output(ds2.getFeatureMatrix());
                 eval.evalTimeSeries(ds2.getLabels(), output);
-                LOGGER.error(eval.stats());
+                LOGGER.info(eval.stats());
+
+                if (i % 100 == 0) {
+                    resultSink.saveNet(net, conf, DateTime.now().toString());
+                }
             }
         }
 
+        resultSink.saveNet(net,conf, DateTime.now().toString());
 
     }
 }
