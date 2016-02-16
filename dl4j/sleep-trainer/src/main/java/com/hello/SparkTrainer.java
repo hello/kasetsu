@@ -96,8 +96,7 @@ public class SparkTrainer {
                                 "2016-01-31.csv000.gz",
                                 "2016-02-01.csv000.gz",
                                 "2016-02-02.csv000.gz",
-                                "2016-02-03.csv000.gz",
-                                "2016-02-04.csv000.gz"},
+                                "2016-02-03.csv000.gz"},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
 
