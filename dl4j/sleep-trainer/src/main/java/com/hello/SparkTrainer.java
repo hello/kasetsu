@@ -50,7 +50,7 @@ public class SparkTrainer {
     final static int LSTM_LAYER_SIZE = 2;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int MINI_BATCH_SIZE = 3;
-    final static int NUM_CORES = 2;
+    final static int NUM_CORES = 32;
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
@@ -107,11 +107,6 @@ public class SparkTrainer {
         final List<DataSet> dataSetList = sleepDataSource.getDatasets();
 
         System.out.format("found %d user days of data\n",dataSetList.size());
-
-        int numCores = NUM_CORES;
-        if (args.length > 0) {
-            numCores = Integer.valueOf(args[0]);
-        }
 
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + NUM_CORES + "]");
