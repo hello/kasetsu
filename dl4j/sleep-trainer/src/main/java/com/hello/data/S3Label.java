@@ -64,7 +64,7 @@ public class S3Label {
         final int c1 = t1.compareTo(time);
         final int c2 = t2.compareTo(time);
 
-        if (c1 == 1 && c2 == -1) {
+        if (c1 == -1 && c2 == 1) {
             return 1;
         }
 

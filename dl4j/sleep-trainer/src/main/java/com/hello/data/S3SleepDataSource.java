@@ -42,7 +42,7 @@ public class S3SleepDataSource {
         final INDArray labels = Nd4j.zeros(new int[]{1,NUM_LABELS,numMinutes + 1});
         final INDArray features = Nd4j.zeros(new int[]{1,numFeats,numMinutes + 1});
         final INDArray mat = features.slice(0);
-
+        final int [] lc = {0,0};
         final long t0 = oneDaysData.get(0).time;
         int lastidx = -1;
         for (final S3DataPoint p : oneDaysData) {
@@ -77,13 +77,17 @@ public class S3SleepDataSource {
                 final Optional<Integer> label = lookup.getLabel(p.accountId, p.time);
 
                 if (label.isPresent()) {
-                    labels.putScalar(new int[]{0, label.get(), idx}, 1.0);
+                    final int labelIdx = label.get();
+                    lc[labelIdx]++;
+                    labels.putScalar(new int[]{0, labelIdx, idx}, 1.0);
                 }
             }
 
             lastidx = idx;
         }
 
+
+        System.out.format("label count=[%d,%d]\n",lc[0],lc[1]);
 
        return Optional.of(new DataSet(features,labels));
 
