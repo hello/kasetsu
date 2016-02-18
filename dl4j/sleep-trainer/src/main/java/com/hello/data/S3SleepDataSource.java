@@ -5,11 +5,8 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Optional;
-import com.google.common.io.CharStreams;
 import org.joda.time.DateTimeConstants;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -17,13 +14,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Created by benjo on 2/10/16.
@@ -145,7 +138,7 @@ public class S3SleepDataSource {
                 data = S3Utils.getZippedS3Object(amazonS3,bucket,key);
             }
             else {
-                data = S3Utils.getRegularS3Object(amazonS3,bucket,key);
+                data = S3Utils.getRegularS3ObjectAsString(amazonS3,bucket,key);
             }
 
             Scanner scanner = new Scanner(data);

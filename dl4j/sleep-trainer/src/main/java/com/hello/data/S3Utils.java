@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -39,7 +40,7 @@ public class S3Utils {
         return "";
     }
 
-    public static String getRegularS3Object(final AmazonS3 s3, final String bucket, final String key) {
+    public static String getRegularS3ObjectAsString(final AmazonS3 s3, final String bucket, final String key) {
         LOGGER.info("pulling {}/{}",bucket,key);
 
         final S3Object s3Object = s3.getObject(new GetObjectRequest(bucket, key));
@@ -54,6 +55,21 @@ public class S3Utils {
         }
         return "";
 
+    }
+
+    public static byte [] getRegularS3ObjectAsBytes(final AmazonS3 s3, final String bucket, final String key) {
+        LOGGER.info("pulling {}/{}",bucket,key);
+
+        final S3Object s3Object = s3.getObject(new GetObjectRequest(bucket, key));
+
+        try (final InputStream stream = s3Object.getObjectContent()) {
+            return ByteStreams.toByteArray(stream);
+        }
+        catch (IOException e) {
+            LOGGER.error(e.getMessage());
+        }
+
+        return new byte[0];
     }
 
     public static void putRegularS3Object(final byte [] data,final AmazonS3 s3, final String bucket, final String key) {

@@ -49,8 +49,7 @@ public class SparkTrainer {
 
     final static int LSTM_LAYER_SIZE = 2;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
-    final static int MINI_BATCH_SIZE = 3;
-    final static int NUM_CORES = 32;
+    final static int NUM_CORES = 8;
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
