@@ -37,7 +37,8 @@ public class S3DataPoint implements Comparable<S3DataPoint> {
 
     enum Transform {
         IDENTITY,
-        LOG2
+        LOG2,
+        SQRT
     };
 
     private final static double [] CONVERSION_FACTORS = {0.003814697265625, 1.4551915228366852e-05,1.0,1.0,0.00009765625,1.0,1.0};
@@ -52,6 +53,13 @@ public class S3DataPoint implements Comparable<S3DataPoint> {
 
             if (TRANSFORMS[i].equals(Transform.LOG2)) {
                 y[i] = Math.log(y[i]) / Math.log(2.0);
+            }
+            else  if (TRANSFORMS[i].equals(Transform.SQRT)) {
+                if (y[i] < 0.0) {
+                    y[i] = 0.0;
+                }
+
+                y[i] = Math.sqrt(y[i]);
             }
 
             if (Double.isNaN(y[i])) {

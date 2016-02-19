@@ -23,7 +23,7 @@ public class S3NetEvaluator {
     final static String BUCKET = "hello-data/neuralnet";
     final static String NET_BASE_KEY = "2016-02-18T19:27:27.776Z";
     final static String [] DATA_FILES = new String[]{
-            "2016-01-01.csv000.gz"};
+            "2016-02-03.csv000.gz"};
     final static String [] LABEL_FILES = new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"};
 
     public static void main(final String [] args) {

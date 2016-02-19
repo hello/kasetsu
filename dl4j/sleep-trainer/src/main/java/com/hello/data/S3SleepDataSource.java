@@ -7,7 +7,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Optional;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
+import org.joda.time.DateTimeZone;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -15,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -112,7 +115,15 @@ public class S3SleepDataSource {
                 final S3DataPoint dp = dpOptional.get();
 
                 if (dp.accountId != lastAccountId) {
+
+
+
                     if (!dpList.isEmpty()) {
+                        Collections.sort(dpList);
+
+                        setDeltaFeatures(dpList);
+                        zeroLight(dpList);
+
                         allData.add(dpList);
                     }
                     dpList = Lists.newArrayList();
@@ -164,7 +175,7 @@ public class S3SleepDataSource {
                 continue;
             }
 
-            Collections.sort(oneDaysData);
+
 
             final long duration = oneDaysData.get(oneDaysData.size()-1).time - oneDaysData.get(0).time;
 
@@ -195,6 +206,32 @@ public class S3SleepDataSource {
         }
 
         return new S3SleepDataSource(dsList);
+    }
+
+    private static void zeroLight(final List<S3DataPoint> dpList) {
+        for (final Iterator<S3DataPoint> it = dpList.iterator(); it.hasNext(); ) {
+            final S3DataPoint current = it.next();
+
+            final DateTime time = new DateTime(current.time, DateTimeZone.UTC);
+            if (time.getHourOfDay() >= 5 && time.getHourOfDay() < 20) {
+                current.x[0] = 0.0;
+            }
+        }
+    }
+
+    private static void setDeltaFeatures(final List<S3DataPoint> dpList) {
+
+        S3DataPoint last = null;
+        for (final Iterator<S3DataPoint> it = dpList.iterator(); it.hasNext(); ) {
+            final S3DataPoint current = it.next();
+
+            if (last != null) {
+                current.x[1] = current.x[0] - last.x[0];
+            }
+
+            last = current;
+        }
+
     }
 
     private S3SleepDataSource(List<DataSet> dataSets) {
