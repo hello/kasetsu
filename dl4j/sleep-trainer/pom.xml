@@ -49,9 +49,9 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${dl4j.version}</version>
-            <!--<scope>system</scope>
+            <scope>system</scope>
             <systemPath>${project.basedir}/src/main/resources/deeplearning4j-core-0.4-rc3.9-SNAPSHOT.jar</systemPath>
-            -->
+
         </dependency>
 
         <dependency>

@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -53,8 +54,7 @@ public class SparkTrainer {
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
-        final ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.INFO);
+        LoggerUtils.setDefaultLoggingLevel(Level.INFO);
 
         final S3ResultSink resultSink = new S3ResultSink();
 
@@ -128,13 +128,13 @@ public class SparkTrainer {
                 .regularization(true)
                 .l2(0.001)
                 .list(3)
-                .layer(0, new GravesLSTM.Builder().nIn(sleepDataSource.getNumInputs()).nOut(LSTM_LAYER_SIZE)
+                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(sleepDataSource.getNumInputs()).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
                         .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
-                .layer(1, new GravesLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
+                .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
                         .dropOut(0.5)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
