@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Level;
 import com.google.common.base.Optional;
 import com.hello.data.S3NeuralNet;
 import com.hello.data.S3SleepDataSource;
-import com.hello.data.S3Utils;
 import com.xeiam.xchart.Chart;
 import com.xeiam.xchart.QuickChart;
 import com.xeiam.xchart.SwingWrapper;
@@ -22,20 +21,22 @@ import java.util.List;
 public class S3NetEvaluator {
     final static Logger LOGGER = LoggerFactory.getLogger(S3NetEvaluator.class);
 
-    final static String BUCKET = "hello-data/neuralnet";
-    final static String NET_BASE_KEY = "2016-02-19T18:15:36.266Z";
+    final static String NET_BUCKET = "hello-data/neuralnet";
+    final static String NET_BASE_KEY = "2016-02-21T05:42:47.236Z";
+
+    final static String DATA_BUCKET = "hello-data/neuralnet";
     final static String [] DATA_FILES = new String[]{
-            "2016-02-01.csv000.gz"};
+            "2016-01-02.csv000.gz"};
     final static String [] LABEL_FILES = new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"};
 
     public static void main(final String [] args) {
         LoggerUtils.setDefaultLoggingLevel(Level.INFO);
 
 
-        final Optional<MultiLayerNetwork> net = S3NeuralNet.getNet(BUCKET, NET_BASE_KEY);
+        final Optional<MultiLayerNetwork> net = S3NeuralNet.getNet(NET_BUCKET, NET_BASE_KEY);
 
         if (!net.isPresent()) {
-            LOGGER.error("could not find valid neural net in {}/{}",BUCKET, NET_BASE_KEY);
+            LOGGER.error("could not find valid neural net in {}/{}", DATA_BUCKET, NET_BASE_KEY);
             return;
         }
 
@@ -43,7 +44,7 @@ public class S3NetEvaluator {
 
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
-                        BUCKET,
+                        DATA_BUCKET,
                         DATA_FILES,
                         LABEL_FILES);
 

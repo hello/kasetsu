@@ -42,13 +42,13 @@ import ch.qos.logback.classic.Level;
  */
 public class SparkTrainer {
     final static int NUM_EPOCHS = 1000;
-    final static int NUM_ITERS = 10;
-    final static double LEARNING_RATE = 0.003;
+    final static int NUM_ITERS = 3;
+    final static double LEARNING_RATE = 0.15;
     final static Updater UPDATER = Updater.RMSPROP;
 
     final static Logger LOGGER = LoggerFactory.getLogger(SparkTrainer.class);
 
-    final static int LSTM_LAYER_SIZE = 2;
+    final static int LSTM_LAYER_SIZE = 7;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int NUM_CORES = 8;
 
@@ -175,7 +175,7 @@ public class SparkTrainer {
                 eval.evalTimeSeries(ds2.getLabels(), output);
                 LOGGER.info(eval.stats());
 
-                if (i % 100 == 0) {
+                if (i % 20 == 0) {
                     resultSink.saveNet(net, conf, DateTime.now().toString());
                 }
             }
