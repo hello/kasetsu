@@ -2,6 +2,7 @@ package com.hello;
 
 import ch.qos.logback.classic.Level;
 import com.google.common.base.Optional;
+import com.hello.data.NeuralNetAndInfo;
 import com.hello.data.S3NeuralNet;
 import com.hello.data.S3SleepDataSource;
 import com.xeiam.xchart.Chart;
@@ -22,7 +23,7 @@ public class S3NetEvaluator {
     final static Logger LOGGER = LoggerFactory.getLogger(S3NetEvaluator.class);
 
     final static String NET_BUCKET = "hello-data/neuralnet";
-    final static String NET_BASE_KEY = "2016-02-21T05:42:47.236Z";
+    final static String NET_BASE_KEY = "2016-02-21T21:55:39.746Z";
 
     final static String DATA_BUCKET = "hello-data/neuralnet";
     final static String [] DATA_FILES = new String[]{
@@ -33,14 +34,14 @@ public class S3NetEvaluator {
         LoggerUtils.setDefaultLoggingLevel(Level.INFO);
 
 
-        final Optional<MultiLayerNetwork> net = S3NeuralNet.getNet(NET_BUCKET, NET_BASE_KEY);
+        final Optional<NeuralNetAndInfo> netAndInfo = S3NeuralNet.getNet(NET_BUCKET, NET_BASE_KEY);
 
-        if (!net.isPresent()) {
+        if (!netAndInfo.isPresent()) {
             LOGGER.error("could not find valid neural net in {}/{}", DATA_BUCKET, NET_BASE_KEY);
             return;
         }
 
-        net.get().printConfiguration();
+        netAndInfo.get().net.printConfiguration();
 
         final S3SleepDataSource sleepDataSource =
                 S3SleepDataSource.create(
@@ -55,7 +56,7 @@ public class S3NetEvaluator {
         int count = 0;
         for (DataSet ds : dss) {
 
-            final INDArray output = net.get().output(ds.getFeatureMatrix()).slice(0);
+            final INDArray output = netAndInfo.get().net.output(ds.getFeatureMatrix()).slice(0);
 
             final INDArray mat = ds.getFeatureMatrix().slice(0);
             final int T = mat.columns();

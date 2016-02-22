@@ -8,6 +8,9 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.common.base.Optional;
+import com.hello.data.NeuralNetAndInfo;
+import com.hello.data.S3NeuralNet;
 import com.hello.data.S3ResultSink;
 import com.hello.data.S3SleepDataSource;
 import com.hello.data.S3Utils;
@@ -51,6 +54,10 @@ public class SparkTrainer {
     final static int LSTM_LAYER_SIZE = 7;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
     final static int NUM_CORES = 8;
+
+    final static String NET_BUCKET = "hello-data/neuralnet";
+    final static String NET_BASE_KEY = "2016-02-21T21:55:39.746Z";
+    final static boolean LOAD_FROM_S3 = true;
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
@@ -119,39 +126,55 @@ public class SparkTrainer {
 
 
         //------------------------------//
-        final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(NUM_ITERS)
-                .learningRate(LEARNING_RATE)
-                .rmsDecay(0.95)
-                .seed(1)
-                .regularization(true)
-                .l2(0.001)
-                .list(3)
-                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(sleepDataSource.getNumInputs()).nOut(LSTM_LAYER_SIZE)
-                        .updater(UPDATER)
-                        .dropOut(0.5)
-                        .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
+        MultiLayerNetwork net = null;
+        MultiLayerConfiguration conf = null;
 
-                .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
-                        .updater(UPDATER)
-                        .dropOut(0.5)
-                        .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
+        if (!LOAD_FROM_S3) {
+            conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .iterations(NUM_ITERS)
+                    .learningRate(LEARNING_RATE)
+                    .rmsDecay(0.95)
+                    .seed(1)
+                    .regularization(true)
+                    .l2(0.001)
+                    .list(3)
+                    .layer(0, new GravesBidirectionalLSTM.Builder().nIn(sleepDataSource.getNumInputs()).nOut(LSTM_LAYER_SIZE)
+                            .updater(UPDATER)
+                            .dropOut(0.5)
+                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
-                        .updater(UPDATER)
-                        .nIn(LSTM_LAYER_SIZE).nOut(sleepDataSource.getNumOutput()).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
-                .pretrain(false).backprop(true)
-                .build();
+                    .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
+                            .updater(UPDATER)
+                            .dropOut(0.5)
+                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
+
+                    .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
+                            .updater(UPDATER)
+                            .nIn(LSTM_LAYER_SIZE).nOut(sleepDataSource.getNumOutput()).weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
+                    .pretrain(false).backprop(true)
+                    .build();
 
 
+            net = new MultiLayerNetwork(conf);
+        }
+        else {
+            final Optional<NeuralNetAndInfo> netAndInfo = S3NeuralNet.getNet(NET_BUCKET, NET_BASE_KEY);
 
+            if (netAndInfo.isPresent()) {
+                LOGGER.info("successfully pulled net from S3");
+                net = netAndInfo.get().net;
+                conf = netAndInfo.get().conf;
+            }
+        }
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-
+        if (net == null) {
+            LOGGER.error("NO VALID NEURAL NET FOUND");
+            return;
+        }
         net.init();
         net.setUpdater(null);   //Workaround for a minor bug in 0.4-rc3.8
         net.printConfiguration();

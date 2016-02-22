@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 public class S3NeuralNet {
     final static Logger LOGGER = LoggerFactory.getLogger(S3NeuralNet.class);
 
-    public static Optional<MultiLayerNetwork> getNet(final String bucket, final String keybase) {
+    public static Optional<NeuralNetAndInfo> getNet(final String bucket, final String keybase) {
         final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
@@ -62,7 +62,7 @@ public class S3NeuralNet {
             net.init();
             net.setParameters(params);
 
-            return Optional.of(net);
+            return Optional.of(new NeuralNetAndInfo(net,confFromJson));
 
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage());
