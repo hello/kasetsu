@@ -10,6 +10,7 @@ import os
 
 #k_uri = 'http://ec2-52-1-32-223.compute-1.amazonaws.com/v1/prediction/sleep_events/{}/{}'
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'http://127.0.0.1:9997/v1/prediction/sleep_events/{}/{}'
 k_magic_auth = os.environ['RESEARCH_TOKEN']
 
 def get_time_as_string(timestamp,offset):
