@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.pyplot import *
 import scipy.signal as sig
 import sys
-
+import scipy.stats as stats
 
 def write_vec(x,name):
     sys.stdout.write("\nconst int16_t %s[] = {" % name)
@@ -24,17 +24,28 @@ fc = 22000
 Tc = 1.0 / fc
 wc = fc * 2.0 * math.pi
 num_cycles = Tc * 11.0 / (Ts)
+num_cycles2 = 10000
+
 print "num cycles of carrier",num_cycles
 
 t = np.array(range(0,int(num_cycles))) * Ts
-thecos = (full_range * np.cos(wc*t)).astype(int)
-thesin = (full_range * np.sin(wc*t)).astype(int)
+t2 = np.array(range(0,int(num_cycles2))) * Ts
+#thecos = (full_range * np.cos(wc*t)).astype(int)
+#write_vec(thecos,"cos_vec")
 
-write_vec(thecos,"cos_vec")
-write_vec(thesin,"sin_vec")
+thesin = (full_range * np.sin(wc*t))
+a = len(thesin)/2
+x = (np.array(range(len(thesin)))- a) / (a/2.0)
+y = stats.norm.pdf(x)
+y = y / np.max(y)
 
-f,h  =sig.welch(thecos)
-plot(f,h); show()
+
+q = np.array(y) * np.array(thesin)
+plot(q); show()
+write_vec(q.astype(int),"sin_vec")
+
+f,h  =sig.welch(q)
+#plot(f,10*np.log(h)); show()
 
 
 

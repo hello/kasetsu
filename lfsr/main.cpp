@@ -4,10 +4,10 @@
 #include <sndfile.hh>
 #include <string.h>
 
-#define NUM_PN_PERIODS   (10)
+#define NUM_PN_PERIODS   (100)
 #define PN_LEN           ((1<<9) - 1)
 #define LEN ((NUM_PN_PERIODS) * (PN_LEN))
-#define SAMPLE_BUF_SIZE (LEN * 11)
+#define SAMPLE_BUF_SIZE (LEN * 24)
 
 static void create_file (const char * fname,const int16_t * buffer, const uint32_t buflen) {
     
