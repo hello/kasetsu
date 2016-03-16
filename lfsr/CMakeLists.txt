@@ -14,6 +14,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
 
 
 add_executable(PnGenerator
-               lfsr.c)
+               main.c
+               pn.c)
 
 target_link_libraries(PnGenerator ${SNDFILE_LIBRARIES})

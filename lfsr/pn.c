@@ -1,8 +1,49 @@
+
+#include "pn.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+typedef struct {
+    uint16_t state;
+    
+    
+} PNSequence_t;
 const int8_t k_lookup[256] = {-8,-6,-6,-4,-6,-4,-4,-2,-6,-4,-4,-2,-4,-2,-2,0,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,0,2,2,4,2,4,4,6,2,4,4,6,4,6,6,8};
+
+#define MASK_16 (0xd008u)
+
+static PNSequence_t _data;
+void pn_init_with_state(uint16_t init_state) {
+    memset(&_data,0,sizeof(_data));
+    _data.state = init_state;
+}
+
+void pn_init(void){
+    memset(&_data,0,sizeof(_data));
+    _data.state = 0xABCD; //something, anything not zero
+}
+
+uint8_t pn_get_next_bit() {
+    const uint8_t lsb = (uint8_t)_data.state & 1;   /* Get LSB (i.e., the output bit). */
+    _data.state >>= 1;
+    _data.state ^= (-lsb) & MASK_16;
+    return lsb;
+}
+
+int32_t pn_correlate_with_xor(const uint16_t * v1, const uint16_t * v2, uint32_t len) {
+    int i;
+    int32_t sum = 0;
+    for (i = 0;i < len; i++) {
+        const uint16_t res =  v1[i] ^ v2[i];
+        const uint8_t b1 = (res & 0xFF00) >> 8;
+        const uint8_t b2 = res & 0x00FF;
+        sum += k_lookup[b1] + k_lookup[b2];
+    }
+    return sum;
+}
+
+#if 0
 
 int main(void) {
 #define LEN ((1 << 16) - 1)
@@ -86,4 +127,5 @@ int main(void) {
     printf("%d\n",sum2);
 
     return 0;
-} 
+}
+#endif
