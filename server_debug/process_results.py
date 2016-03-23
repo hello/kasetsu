@@ -6,7 +6,7 @@ import argparse
 import datetime
 import calendar
 from tabulate import tabulate
-
+import math
 #k_type_map = {'IN_BED' : 'PRED_IN_BED', 'SLEEP' : 'PRED_SLEEP', 'WAKE_UP' : 'PRED_WAKE_UP', 'OUT_OF_BED' : 'PRED_OUT_OF_BED'}
 k_type_map = {'LABEL_IN_BED' : 'PRED_IN_BED', 'LABEL_SLEEP' : 'PRED_SLEEP', 'LABEL_WAKE_UP' : 'PRED_WAKE_UP', 'LABEL_OUT_OF_BED' : 'PRED_OUT_OF_BED'}
 k_fail_threshold = 20 #minutes
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose',help = 'display each event for each user',default=False,action='store_true')
     parser.add_argument('--threshold',help = 'threshold in minutes for success',default=k_fail_threshold,type=int)
     parser.add_argument('--normalize',help = 'normalize by 1 / # contributions from an individual',default=False,action='store_true')
+    parser.add_argument('--output',help='output vector of deltas')
     args = parser.parse_args()
 
 
@@ -145,6 +146,22 @@ if __name__ == '__main__':
             entries.append(entry)
 
     byaccount = flatten_by_account(entries,args.event)
+    
+    if args.output != None and args.event != None:
+        vec = []
+        for key in byaccount:
+            items = byaccount[key]
+            for item in items:
+                vec.append(item[2])
+
+        with open(args.output,'wb') as csvfile:
+            writer = csv.writer(csvfile,delimiter=',')
+            for item in vec:
+                if math.isinf(item):
+                    continue 
+                writer.writerow([item])
+        
+             
     stats = accumulate_stats_by_account(byaccount,args.normalize)
 
     if args.verbose:
