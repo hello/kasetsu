@@ -2,8 +2,24 @@
 
 import numpy as np
 from matplotlib.pyplot import *
+#max height to plot (so from hm to hmax)
+hmax = 0.5
 
+#max distnace to plot to (hm to xmax)
+xmax = 2.5
 
+#num distance ponts to plot    
+N = 100
+
+#num heights to plot
+M = 5
+
+#height of mics
+hm = 0.010#meters
+
+#wavelength of interest
+wavelength = 0.30 #meters
+    
 def eval_func(r,hm,dh,x):
     dp2 = x*x + (hm+dh)*(hm+dh)
     k = 1.0 + dh / hm
@@ -41,35 +57,29 @@ def get_distance(x,dh,hm):
 
 if __name__ == '__main__':
 
-    hmax = 0.5
     
-    #height of mics
-    hm = 0.05#meters
+    x1 = np.linspace(hm+0.01,xmax,N)
 
-    #half wavelength of interest
-    half_wavelength = 0.30/2#meters
-    
-    N = 100
-    M = 5
-    
-    d = np.zeros((N,N))
-    x1 = np.linspace(0.15,2.5,N)
-
-    hs = np.linspace(0,hmax,M)
+    hs = np.linspace(hmax/M,hmax,M)
     ds = []
     for i2 in range(hs.shape[0]):
-        d = []
+        dplushalf = []
         for i1 in range(x1.shape[0]):
             x = x1[i1]
             dh = hs[i2]
             distance = get_distance(x,dh,hm)
             d2 = hm + dh
             dp = np.sqrt((d2*d2 + x*x))
-            d.append(dp + half_wavelength - distance)
-        ds.append(d)
+            dplushalf.append(dp + 0.5*wavelength - distance)
+        ds.append(dplushalf)
     
-    plot(x1,np.array(ds).transpose()); xlabel('horizontal distance');
+    plot(x1,np.array(ds).transpose()); 
+    xlabel('horizontal distance');
+    ylabel('primary + half  - secondary') 
+    title('mic height=%g mm, zero-crossings mean nulls' % (hm * 1000.))
     grid('on')
-    legend(hs)
+    legend(['h=%g' % h  for h in hs.tolist()])
+    ylim((-0.05,0.2))
+    plot([0,xmax],[0,0],'k')
     show()
 
