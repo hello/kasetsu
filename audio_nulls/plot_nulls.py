@@ -2,6 +2,11 @@
 
 import numpy as np
 from matplotlib.pyplot import *
+
+
+#height of mics
+hm = 0.025#meters
+
 #max height to plot (so from hm to hmax)
 hmax = 0.5
 
@@ -13,9 +18,6 @@ N = 100
 
 #num heights to plot
 M = 5
-
-#height of mics
-hm = 0.010#meters
 
 #wavelength of interest
 wavelength = 0.30 #meters
@@ -74,11 +76,11 @@ if __name__ == '__main__':
         ds.append(dplushalf)
     
     plot(x1,np.array(ds).transpose()); 
-    xlabel('horizontal distance');
-    ylabel('primary + half  - secondary') 
-    title('mic height=%g mm, zero-crossings mean nulls' % (hm * 1000.))
+    xlabel('horizontal distance (meters)');
+    ylabel('primary + half  - secondary (meters)') 
+    title('mic height=%g mm, wavelength=%g m,  zero-crossings mean nulls' % (hm * 1000.,wavelength))
     grid('on')
-    legend(['h=%g' % h  for h in hs.tolist()])
+    legend(['h=%gm' % h  for h in hs.tolist()])
     ylim((-0.05,0.2))
     plot([0,xmax],[0,0],'k')
     show()
