@@ -73,10 +73,10 @@ def main():
     legend(['sleep event','wake event'])
       
     figure(2)
-    plot(t3,x3,linewidth=2.0)
+    plot(t3,np.array(x3) / x3[-1],linewidth=2.0)
     xlabel('Time')
-    title('Number of Active Users')
-    ylabel('#  Users')
+    title('Fraction of Present-Day Active Users')
+    ylabel('Fraction')
     grid('on')
 
     show()
