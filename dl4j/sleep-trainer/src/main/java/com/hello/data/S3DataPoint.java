@@ -17,10 +17,13 @@ import org.joda.time.format.DateTimeFormatter;
 // [4] audio_peak_disturbances_db,
 // [5] my pill durations,
 // [6] partner pill duration
+// [7] pill pagnitude
 public class S3DataPoint implements Comparable<S3DataPoint> {
     final public double [] x;
     final public long accountId;
     final public long time;
+
+    private static final int EXEPCTED_NUM_COLS = 10;
 
     @Override
     public int compareTo(final S3DataPoint o) {
@@ -41,9 +44,9 @@ public class S3DataPoint implements Comparable<S3DataPoint> {
         SQRT
     };
 
-    private final static double [] CONVERSION_FACTORS = {0.003814697265625, 1.4551915228366852e-05,1.0,1.0,0.00009765625,1.0,1.0};
-    private final static double [] OFFSETS = {1.0,1.0,0.0,1.0,-4.0,0.0,0.0};
-    private final static Transform [] TRANSFORMS = {Transform.LOG2,Transform.LOG2,Transform.IDENTITY,Transform.LOG2,Transform.IDENTITY,Transform.IDENTITY,Transform.IDENTITY};
+    private final static double [] CONVERSION_FACTORS = {0.003814697265625, 1.4551915228366852e-05,1.0,1.0,0.00009765625,1.0,1.0,1.0 / 1000.};
+    private final static double [] OFFSETS = {1.0,1.0,0.0,1.0,-4.0,0.0,0.0,0.0};
+    private final static Transform [] TRANSFORMS = {Transform.LOG2,Transform.LOG2,Transform.IDENTITY,Transform.LOG2,Transform.IDENTITY,Transform.IDENTITY,Transform.IDENTITY,Transform.IDENTITY};
 
     private static double [] applyTransform(final double [] x ) {
         final double [] y = new double[x.length];
@@ -78,7 +81,7 @@ public class S3DataPoint implements Comparable<S3DataPoint> {
 
         final String [] items = line.split(",");
 
-        if (items.length < 9) {
+        if (items.length < EXEPCTED_NUM_COLS) {
             return Optional.absent();
         }
 
@@ -88,8 +91,8 @@ public class S3DataPoint implements Comparable<S3DataPoint> {
         final DateTime dateTime = dateTimeFormatter.parseDateTime(items[1]);
 
 
-        final double [] x = new double[7];
-        for (int i = 2; i < 9; i++) {
+        final double [] x = new double[EXEPCTED_NUM_COLS - 2];
+        for (int i = 2; i < EXEPCTED_NUM_COLS; i++) {
             x[i-2] = Double.valueOf(items[i]);
         }
 

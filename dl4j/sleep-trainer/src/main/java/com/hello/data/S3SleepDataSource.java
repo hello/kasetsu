@@ -7,11 +7,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Optional;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
 import org.joda.time.DateTimeZone;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +26,7 @@ import java.util.Scanner;
 /**
  * Created by benjo on 2/10/16.
  */
-public class S3SleepDataSource {
+public class S3SleepDataSource implements DataSetIterator {
     final static Logger LOGGER = LoggerFactory.getLogger(S3SleepDataSource.class);
     final static int NUM_LABELS = 2;
     final static int MAX_GAP_SIZE = 5;
@@ -32,6 +34,9 @@ public class S3SleepDataSource {
     final int numInputs;
     final int numOutputs;
     private final List<DataSet> dataSets;
+
+    int dataSetIndex = 0;
+    int batchSize = 1;
 
     private static Optional<DataSet> createDataSet(final LabelLookup lookup, final List<S3DataPoint> oneDaysData, final int numMinutes) {
         final int numFeats = oneDaysData.get(0).x.length;
@@ -259,4 +264,94 @@ public class S3SleepDataSource {
         return numOutputs;
     }
 
+    public void setBatchSize(final int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public void setBatchFraction(final double fraction) {
+        this.batchSize = (int) (fraction * dataSets.size());
+    }
+
+    @Override
+    public DataSet next(int num) {
+        final List<DataSet> ds = Lists.newArrayList();
+        for (int i = dataSetIndex; i < dataSetIndex + num; i++) {
+            if (i >= dataSets.size()) {
+                break;
+            }
+
+            ds.add(dataSets.get(i));
+        }
+
+        dataSetIndex += num;
+
+        return DataSet.merge(ds);
+    }
+
+    @Override
+    public int totalExamples() {
+        return getDatasets().size();
+    }
+
+    @Override
+    public int inputColumns() {
+        return getNumInputs();
+    }
+
+    @Override
+    public int totalOutcomes() {
+        return getNumOutput();
+    }
+
+    @Override
+    public void reset() {
+        this.dataSetIndex = 0;
+        //Collections.shuffle(this.dataSets);
+    }
+
+    @Override
+    public int batch() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int cursor() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int numExamples() {
+        return dataSetIndex;
+    }
+
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> getLabels() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasNext() {
+        return this.dataSets.size() > dataSetIndex;
+    }
+
+    @Override
+    public DataSet next() {
+        int localBatchSize = batchSize;
+        if (dataSetIndex + batchSize >= dataSets.size()) {
+            localBatchSize = dataSets.size() - dataSetIndex;
+        }
+
+
+        return next(localBatchSize);
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 }

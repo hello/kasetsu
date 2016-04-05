@@ -53,11 +53,11 @@ public class SparkTrainer {
 
     final static int LSTM_LAYER_SIZE = 7;
     final static double UNIFORM_INIT_MAGNITUDE = 0.01;
-    final static int NUM_CORES = 8;
+    final static int NUM_CORES = 2;
 
     final static String NET_BUCKET = "hello-data/neuralnet";
     final static String NET_BASE_KEY = "2016-02-21T21:55:39.746Z";
-    final static boolean LOAD_FROM_S3 = true;
+    final static boolean LOAD_FROM_S3 = false;
 
     public static void main(String[] args) throws Exception {
 //Number of CPU cores to use for training
@@ -70,7 +70,7 @@ public class SparkTrainer {
                         "hello-data/neuralnet",
                         new String[]{
                                 "2016-01-01.csv000.gz",
-                                "2016-01-02.csv000.gz",
+                               /* "2016-01-02.csv000.gz",
                                 "2016-01-03.csv000.gz",
                                 "2016-01-04.csv000.gz",
                                 "2016-01-05.csv000.gz",
@@ -102,7 +102,7 @@ public class SparkTrainer {
                                 "2016-01-31.csv000.gz",
                                 "2016-02-01.csv000.gz",
                                 "2016-02-02.csv000.gz",
-                                "2016-02-03.csv000.gz"},
+                                "2016-02-03.csv000.gz"*/},
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
 
