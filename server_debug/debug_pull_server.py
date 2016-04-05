@@ -29,8 +29,8 @@ my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171',
             }
 '''
 
-my_users = {'bingo':'4.749bff8cb91847119385bf9c85abb131'}
-#my_users = {'bj' : '2.26d34270933b4d5e88e513b0805a0644'}
+#my_users = {'bingo':'4.749bff8cb91847119385bf9c85abb131'}
+my_users = {'bj' : '2.26d34270933b4d5e88e513b0805a0644'}
 #my_users = {'sp' : '4.4a4a066a56164203b0f2828096bcdc01'}
 #my_users = {'fm' : '3.120ca851b92d49cdae5e0e33eb02f171' }
 #my_users = {'kik' : '4.9a1f7741f22a46959d7923a53f15776e'}

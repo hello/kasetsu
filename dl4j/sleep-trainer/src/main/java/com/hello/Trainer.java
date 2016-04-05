@@ -48,13 +48,13 @@ public class Trainer {
 
     final static int NUM_EPOCHS = 500;
     final static int NUM_ITERS = 1;
-    final static double LEARNING_RATE = 0.15;
+    final static float LEARNING_RATE = 0.15f;
     final static Updater UPDATER = Updater.RMSPROP;
 
     final static Logger LOGGER = LoggerFactory.getLogger(Trainer.class);
 
     final static int LSTM_LAYER_SIZE = 7;
-    final static double UNIFORM_INIT_MAGNITUDE = 0.01;
+    final static float UNIFORM_INIT_MAGNITUDE = 0.01f;
     final static int MINI_BATCH_SIZE = 3;
 
     public static void saveNet(final MultiLayerNetwork net,MultiLayerConfiguration conf,final String filename) {
@@ -133,26 +133,26 @@ public class Trainer {
                         new String[]{"labels_sleep_2016-01-01_2016-02-05.csv000.gz"});
 
 
-        dataIterator.setBatchFraction(0.05);
+        dataIterator.setBatchFraction(0.20);
 
         final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .iterations(NUM_ITERS)
                 .learningRate(LEARNING_RATE)
-                .rmsDecay(0.95)
+                .rmsDecay(0.95f)
                 .seed(1)
                 .regularization(true)
-                .l2(0.001)
-                .list(3)
+                .l2(0.001f)
+                .list()
                 .layer(0,new GravesBidirectionalLSTM.Builder().nIn(dataIterator.inputColumns()).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
-                        .dropOut(0.5)
+                        .dropOut(0.5f)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
                 .layer(1, new GravesBidirectionalLSTM.Builder().nIn(LSTM_LAYER_SIZE).nOut(LSTM_LAYER_SIZE)
                         .updater(UPDATER)
-                        .dropOut(0.5)
+                        .dropOut(0.5f)
                         .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
                         .dist(new UniformDistribution(-UNIFORM_INIT_MAGNITUDE, UNIFORM_INIT_MAGNITUDE)).build())
 
