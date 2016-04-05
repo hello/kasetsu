@@ -6,10 +6,22 @@ import datetime
 from math import *
 import copy
 
+def read_24_hr_time(orig_time,dstr):
+    t =  datetime.datetime.strptime(dstr,'%H:%M')
+    t2=datetime.datetime(year=orig_time.year,month=orig_time.month,day=orig_time.day,hour=t.hour,minute=t.minute)
+    
+    if t.hour <= 14:
+        t2 += datetime.timedelta(days=1)
+
+    return t2
+
+
+def read_time(dstr):
+    return datetime.datetime.strptime(dstr,'%Y-%m-%d %H:%M:%S')
+
 def sensor_data_vector_from_line(line):
     acc = line[0]
-    dstr = line[1]
-    t = datetime.datetime.strptime(dstr,'%Y-%m-%d %H:%M:%S')
+    t = read_time(line[1])
 
     x = []
     for i in range(2,len(line)):
@@ -52,6 +64,33 @@ def read_input_file(filename):
 
     return accs,tt,all_sensor_data            
 
+def read_label_file(filename):
+    with open(filename,'rb') as f:
+        reader = csv.reader(f)
+
+        wakes = {}
+        sleeps = {}
+        
+        for line in reader:
+            acc = line[0]
+            t = read_time(line[1])
+            t1 = read_24_hr_time(t,line[2])
+            t2 = read_24_hr_time(t,line[3])
+
+            if not wakes.has_key(acc):
+                wakes[acc] = []
+
+            if not sleeps.has_key(acc):
+                sleeps[acc] = []
+
+            sleeps[acc].append(t1)
+            wakes[acc].append(t2)
+
+    print sleeps
+    return sleeps,wakes
+
+
 if __name__ == '__main__':
+    read_label_file('labels_sleep_2016-01-01_2016-03-02.csv000')
     read_input_file('2016-01-04.csv000')
 
