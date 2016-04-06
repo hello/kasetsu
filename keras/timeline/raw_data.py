@@ -8,6 +8,7 @@ import copy
 import pytz
 import calendar
 import bisect
+#from matplotlib.pyplot import *
 
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
@@ -25,6 +26,31 @@ def read_24_hr_time(orig_time,dstr):
 def read_time(dstr):
     return datetime.datetime.strptime(dstr,'%Y-%m-%d %H:%M:%S')
 
+def process_raw_data(times,rawdata):
+    for idx in range(len(times)):
+        xx = rawdata[idx]
+        tt = times[idx]
+
+        lastx = None
+        for i,x in enumerate(xx):
+            t = tt[i]
+            x[0] = log(x[0]*256 / float(2 ** 16) + 1.0) / log(2)
+            x[1] = 0;
+            x[4] = x[4] / 1024.0 / 10. - 4.
+            if x[4] < 0: x[4] = 0
+            x[7] /= 10000.
+            dt = datetime.datetime.fromtimestamp(t,pytz.UTC)
+
+            if i > 1:
+                x[1] = x[0] - lastx[0]
+
+            lastx = copy.deepcopy(x)
+            #if between 5am and 6pm, zero out light
+            if dt.hour >= 5 and dt.hour <= 18:
+                x[0] = 0
+
+
+                
 def sensor_data_vector_from_line(line):
     acc = line[0]
     t = read_time(line[1])
@@ -33,11 +59,7 @@ def sensor_data_vector_from_line(line):
     for i in range(2,len(line)):
         x.append(float(line[i]))
 
-    x[0] = log(x[0]*256 / float(2 ** 16) + 1.0) / log(2)
-    x[1] = 0;
-    x[4] = x[4] / 1024.0 / 10. - 4.
-    if x[4] < 0: x[4] = 0
-    x[7] /= 10000.
+ 
     
     return acc,t,x
 
@@ -49,6 +71,7 @@ def read_input_file(filename):
         all_sensor_data = []
         accs = []
         times = []
+        
         for line in reader:
             acc,dt,x = sensor_data_vector_from_line(line)
             t = get_timestamp(dt)
@@ -144,6 +167,7 @@ def load_data(list_of_data_files,label_file):
     data = []
     for filename in list_of_data_files:
         accounts,times,rawdata=read_input_file(filename)
+        process_raw_data(times,rawdata)
         indexed_labels = extract_label_times_for_day(accounts,times,wakes)
 
         label_vecs = []
@@ -166,4 +190,5 @@ if __name__ == '__main__':
 
     data = load_data(raw_data_files,labels_file)
     print len(data)
-    print data[4]
+    #plot(data[1][0])
+    #show()
