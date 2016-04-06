@@ -7,6 +7,7 @@ from math import *
 import copy
 import pytz
 import calendar
+import bisect
 
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
@@ -66,7 +67,7 @@ def read_input_file(filename):
             
             prev_account_id = acc
 
-    print '%d users' % len(all_sensor_data)
+    #print '%d users' % len(all_sensor_data)
 
     return accs,times,all_sensor_data            
 
@@ -94,11 +95,16 @@ def read_label_file(filename):
 
     return sleeps,wakes
 
-def create_labels_for_day(accounts,times,data,labels):
+#accounts is list of accounts, matched by index with times and data
+#labels is a map by account, with a list of label times (which may exceed the
+#current day)
+def extract_label_times_for_day(accounts,times,labels):
     t1 = times[0][0];
     t2 = times[0][-1];
 
+    indexed_labels = []
     for i,account in enumerate(accounts):
+        indexed_labels.append([])
         if not labels.has_key(account):
             continue
 
@@ -108,13 +114,56 @@ def create_labels_for_day(accounts,times,data,labels):
             if x >= t1 and x <= t2:
                 L.append(x)
       
-        if len(L) > 0:
-            print L
 
+        indexed_labels[i].extend(L)
+
+    return indexed_labels
         
+
+def create_event_labels(times,event_times,ipre,ipost,num_labels,radius):
+    labels = [[0 for i in range(num_labels)] for t in times]
+
+    indices = [bisect.bisect(times,t) for t in event_times]
+
+    for idx in indices:
+        for i in range(idx-radius,idx+radius):
+            if i < 0 or i >= len(times):
+                continue
+
+            if i >= idx:
+                labels[i][ipost] = 1.0
+
+            if i < idx:
+                labels[i][ipre] = 1.0
+    
+    return labels
+
+def load_data(list_of_data_files,label_file):
+    sleeps,wakes=read_label_file(label_file)
+
+    data = []
+    for filename in list_of_data_files:
+        accounts,times,rawdata=read_input_file(filename)
+        indexed_labels = extract_label_times_for_day(accounts,times,wakes)
+
+        label_vecs = []
+        for ts,L in zip(times,indexed_labels):
+            if len(L) == 0:
+                label_vecs.append([])
+                continue
+
+            label_vecs.append(create_event_labels(ts,L,0,1,2,30))
+
+
+        data.extend(zip(rawdata,label_vecs))
+
+    return data
 
 
 if __name__ == '__main__':
-    sleeps,wakes=read_label_file('labels_sleep_2016-01-01_2016-03-02.csv000')
-    accounts,times,data=read_input_file('2016-01-04.csv000')
-    create_labels_for_day(accounts,times,data,wakes)   
+    labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
+    raw_data_files = ['2016-01-04.csv000']
+
+    data = load_data(raw_data_files,labels_file)
+    print len(data)
+    print data[4]
