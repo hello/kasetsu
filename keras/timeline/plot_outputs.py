@@ -12,7 +12,7 @@ def get_data():
 
 def dostuff():
     configdata = None
-    with open('my_config.json','r') as f:
+    with open(sys.argv[1] + '.json','r') as f:
         configdata= f.read()
     if configdata == None:
         print 'could not read config file'
@@ -20,7 +20,7 @@ def dostuff():
         
     model = model_from_json(configdata)
 
-    model.load_weights('my_weights.h5')
+    model.load_weights(sys.argv[1] + '.h5')
 
     print 'getting data...'
     data = get_data();
@@ -59,7 +59,9 @@ def dostuff():
     for i in range(p.shape[0]):
         y = p[i]
         x = xx[i]
-        plot(y); show()
+        l = ll[i]
+        plot(y[:,1]*10.);plot(x); title('%d' % i)
+        show()
         
 
 if __name__ == '__main__':

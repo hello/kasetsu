@@ -8,10 +8,10 @@ import copy
 import pytz
 import calendar
 import bisect
-#from matplotlib.pyplot import *
+from matplotlib.pyplot import *
 
 k_num_labels = 2
-
+k_radius = 120
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 
@@ -179,8 +179,9 @@ def load_data(list_of_data_files,label_file):
 
             
             labels = [[0 for i in range(k_num_labels)] for t in ts]
-            insert_event_labels(labels,ts,L,1,0,30)
-            insert_event_labels(labels,ts,L2,0,1,30)
+            insert_event_labels(labels,ts,L,1,0,k_radius)
+            insert_event_labels(labels,ts,L2,0,1,k_radius)
+
             label_vecs.append(labels)
 
 
@@ -188,13 +189,46 @@ def load_data(list_of_data_files,label_file):
 
     return data
 
+def get_inputs_from_data(data):
+    print 'getting data...'
+
+    dt = []
+    for d in data:
+        dt.append(len(d[0]))
+
+    timesteps = np.median(dt)
+    data_dim = len(d[0][0])
+    nb_classes = len(d[1][0])
+
+    data2 = []
+    for d in data:
+        if len(d[0]) == timesteps:
+            data2.append(d)
+
+    data = data2
+    data2 = []
+    for d in data:
+        if len(d[1]) > 0:
+            data2.append(d)
+
+    print "found %d user-days" % len(data2)
+    print "T=%d,N=%d,L=%d" % (timesteps,data_dim,nb_classes)
+
+    #concatenate all the classes
+    xx = []
+    ll = []
+    for x,l in data2:
+        xx.append(x)
+        ll.append(l)
+
+    xx = np.array(xx)
+    ll = np.array(ll)
+    return xx,ll
 
 if __name__ == '__main__':
     labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
     raw_data_files = ['2016-01-04.csv000']
 
     data = load_data(raw_data_files,labels_file)
-    print data[30][1]
-    print len(data)
-#    plot(data[30][1])
-#    show()
+    for d in data: 
+        plot(d[1]); show()
