@@ -8,7 +8,9 @@ import copy
 import pytz
 import calendar
 import bisect
-#from matplotlib.pyplot import *
+from matplotlib.pyplot import *
+
+k_num_labels = 2
 
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
@@ -65,6 +67,7 @@ def sensor_data_vector_from_line(line):
 
     
 def read_input_file(filename):
+    print "opening %s..." % filename
     with open(filename,'rb') as f:
         reader = csv.reader(f)
         prev_account_id = None
@@ -95,6 +98,7 @@ def read_input_file(filename):
     return accs,times,all_sensor_data            
 
 def read_label_file(filename):
+    print "opening %s..." % filename
     with open(filename,'rb') as f:
         reader = csv.reader(f)
 
@@ -143,11 +147,9 @@ def extract_label_times_for_day(accounts,times,labels):
     return indexed_labels
         
 
-def create_event_labels(times,event_times,ipre,ipost,num_labels,radius):
-    labels = [[0 for i in range(num_labels)] for t in times]
-
+def insert_event_labels(labels,times,event_times,ipre,ipost,radius):
     indices = [bisect.bisect(times,t) for t in event_times]
-
+    print ipre,ipost
     for idx in indices:
         for i in range(idx-radius,idx+radius):
             if i < 0 or i >= len(times):
@@ -159,8 +161,6 @@ def create_event_labels(times,event_times,ipre,ipost,num_labels,radius):
             if i < idx:
                 labels[i][ipre] = 1.0
     
-    return labels
-
 def load_data(list_of_data_files,label_file):
     sleeps,wakes=read_label_file(label_file)
 
@@ -169,14 +169,19 @@ def load_data(list_of_data_files,label_file):
         accounts,times,rawdata=read_input_file(filename)
         process_raw_data(times,rawdata)
         indexed_labels = extract_label_times_for_day(accounts,times,wakes)
+        indexed_labels2 = extract_label_times_for_day(accounts,times,sleeps)
 
         label_vecs = []
-        for ts,L in zip(times,indexed_labels):
-            if len(L) == 0:
+        for ts,L,L2 in zip(times,indexed_labels,indexed_labels2):
+            if len(L) and len(L2) == 0:
                 label_vecs.append([])
                 continue
 
-            label_vecs.append(create_event_labels(ts,L,0,1,2,30))
+            
+            labels = [[0 for i in range(k_num_labels)] for t in ts]
+            insert_event_labels(labels,ts,L,1,0,30)
+            insert_event_labels(labels,ts,L2,0,1,30)
+            label_vecs.append(labels)
 
 
         data.extend(zip(rawdata,label_vecs))
@@ -189,6 +194,7 @@ if __name__ == '__main__':
     raw_data_files = ['2016-01-04.csv000']
 
     data = load_data(raw_data_files,labels_file)
+    print data[30][1]
     print len(data)
-    #plot(data[1][0])
-    #show()
+    plot(data[30][1])
+    show()

@@ -7,11 +7,16 @@ from keras.optimizers import Adam
 import numpy as np
 import raw_data
 import sys
+import os
+import re
+
 def get_data():
     labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
-    raw_data_files = ['2016-01-01.csv000','2016-01-02.csv000','2016-01-03.csv000','2016-01-04.csv000','2016-01-05.csv000','2016-01-06.csv000','2016-01-07.csv000']
-
-    return raw_data.load_data(raw_data_files,labels_file)
+    files = os.listdir("./")
+    csvfiles = [f for f in files if "csv" in f]
+    raw_data_files = [f for f in csvfiles if "label" not in f]
+    
+    return raw_data.load_data(sorted(raw_data_files),labels_file)
 
     
 
@@ -74,7 +79,7 @@ def train():
 
     print 'fitting....'
     model.fit(xx, ll,
-              batch_size=64, nb_epoch=25, show_accuracy=True,
+              batch_size=64, nb_epoch=50, show_accuracy=True,
               validation_data=(xx, ll))
 
     with open('my_config.json','w') as f:
