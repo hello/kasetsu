@@ -8,7 +8,7 @@ import copy
 import pytz
 import calendar
 import bisect
-from matplotlib.pyplot import *
+#from matplotlib.pyplot import *
 
 k_num_labels = 2
 
@@ -149,7 +149,7 @@ def extract_label_times_for_day(accounts,times,labels):
 
 def insert_event_labels(labels,times,event_times,ipre,ipost,radius):
     indices = [bisect.bisect(times,t) for t in event_times]
-    print ipre,ipost
+
     for idx in indices:
         for i in range(idx-radius,idx+radius):
             if i < 0 or i >= len(times):
@@ -196,5 +196,5 @@ if __name__ == '__main__':
     data = load_data(raw_data_files,labels_file)
     print data[30][1]
     print len(data)
-    plot(data[30][1])
-    show()
+#    plot(data[30][1])
+#    show()
