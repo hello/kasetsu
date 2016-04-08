@@ -8,10 +8,9 @@ import copy
 import pytz
 import calendar
 import bisect
-from matplotlib.pyplot import *
-
+import numpy as np
 k_num_labels = 2
-k_radius = 120
+k_radius = 60
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 

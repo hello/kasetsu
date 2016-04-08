@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import keras.callbacks
 from keras.models import Sequential,Graph
 from keras.layers import LSTM
 from keras.layers.core import TimeDistributedDense, Activation, Dropout
@@ -10,6 +11,10 @@ import sys
 import os
 import re
 
+
+k_batch_size=512
+k_num_epochs=100
+
 def get_data():
     labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
     files = os.listdir("./")
@@ -20,7 +25,12 @@ def get_data():
     return raw_data.get_inputs_from_data(data)
     
 
-def train():
+def train(fname):
+
+    #setup callbacks
+    filepath = fname + '_weights.{epoch:02d}-{val_loss:.2f}.h5'
+    keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, mode='auto')
+
 
     print 'getting data...'
     xx,ll = get_data();
@@ -68,13 +78,16 @@ def train():
     adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
     model.compile(adam, {'output': 'categorical_crossentropy'})
-    history = model.fit({'input':xx, 'output':ll}, batch_size=12,nb_epoch=25)
 
-   
-
-    with open('my_config.json','w') as f:
+    print 'saving config'
+    with open(fname + '.json','w') as f:
         f.write(model.to_json())
-    model.save_weights('my_weights.h5')
+
+
+    history = model.fit({'input':xx, 'output':ll}, batch_size=k_batch_size,nb_epoch=k_num_epochs)
+
+    model.save_weights(fname + '.h5',overwrite=True)
 
 if __name__ == '__main__':
-    train()
+    fname = sys.argv[1]
+    train(fname)
