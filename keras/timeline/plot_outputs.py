@@ -3,11 +3,12 @@ from matplotlib.pyplot import *
 from keras.models import model_from_json
 import sys
 import raw_data
-
+import os
 def get_data():
     labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
-    raw_data_files = ['2016-01-04.csv000']
-
+    files = os.listdir("./")
+    csvfiles = [f for f in files if "csv" in f]
+    raw_data_files = [f for f in csvfiles if "label" not in f]
     return raw_data.load_data(raw_data_files,labels_file)
 
 def dostuff():
@@ -54,10 +55,10 @@ def dostuff():
     print "found %d user-days" % len(data2)
     print "T=%d,N=%d,L=%d" % (timesteps,data_dim,nb_classes)
 
-    p = model.predict(xx)
+    p = model.predict({'input':xx})
 
     for i in range(p.shape[0]):
-        y = p[i]
+        y = p[i]['output']
         x = xx[i]
         l = ll[i]
         plot(y[:,1]*10.);plot(x); title('%d' % i)
