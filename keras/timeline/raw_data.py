@@ -9,8 +9,9 @@ import pytz
 import calendar
 import bisect
 import numpy as np
-k_num_labels = 2
+k_num_labels = 3
 k_radius = 60
+k_uncertainty = 15
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 
@@ -154,10 +155,10 @@ def insert_event_labels(labels,times,event_times,ipre,ipost,radius):
             if i < 0 or i >= len(times):
                 continue
 
-            if i >= idx:
+            if i >= idx + k_uncertainty:
                 labels[i][ipost] = 1.0
 
-            if i < idx:
+            if i < idx - k_uncertainty:
                 labels[i][ipre] = 1.0
     
 def load_data(list_of_data_files,label_file):
@@ -178,9 +179,8 @@ def load_data(list_of_data_files,label_file):
 
             
             labels = [[0 for i in range(k_num_labels)] for t in ts]
-            insert_event_labels(labels,ts,L,1,0,k_radius)
             insert_event_labels(labels,ts,L2,0,1,k_radius)
-
+            insert_event_labels(labels,ts,L,1,2,k_radius)
             label_vecs.append(labels)
 
 

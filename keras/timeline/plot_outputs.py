@@ -56,9 +56,9 @@ def dostuff():
     print "T=%d,N=%d,L=%d" % (timesteps,data_dim,nb_classes)
 
     p = model.predict({'input':xx})
-
-    for i in range(p.shape[0]):
-        y = p[i]['output']
+    output = p['output']
+    for i in range(output.shape[0]):
+        y = output[i]
         x = xx[i]
         l = ll[i]
         plot(y[:,1]*10.);plot(x); title('%d' % i)
