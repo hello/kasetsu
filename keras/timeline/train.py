@@ -5,6 +5,7 @@ from keras.layers import LSTM
 from keras.layers.core import TimeDistributedDense, Activation, Dropout
 from keras.optimizers import SGD
 from keras.optimizers import Adam
+from keras.optimizers import Adagrad
 import numpy as np
 import raw_data
 import sys
@@ -12,8 +13,10 @@ import os
 import re
 
 
-k_batch_size=512
-k_num_epochs=100
+k_batch_size=128
+k_num_epochs=40
+
+optimizer = Adagrad()
 
 def get_data():
     labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
@@ -29,7 +32,7 @@ def train(fname):
 
     #setup callbacks
     filepath = fname + '_weights.{epoch:02d}-{val_loss:.2f}.h5'
-    keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, mode='auto')
+    checkpoint_callback = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, mode='auto')
 
 
     print 'getting data...'
@@ -64,27 +67,30 @@ def train(fname):
     model = Graph()
     model.add_input(name='input', input_shape=(int(timesteps),int(data_dim)))
 
-    model.add_node(LSTM(32,return_sequences=True, go_backwards=False), name='forward1', input='input')
-    model.add_node(LSTM(32,return_sequences=True, go_backwards=True), name='backward1',input='input')
+    model.add_node(LSTM(256,return_sequences=True, go_backwards=False), name='forward1', input='input')
+    model.add_node(LSTM(256,return_sequences=True, go_backwards=True), name='backward1',input='input')
     model.add_node(Dropout(0.5), name='dropout1', inputs=['forward1', 'backward1'])
 
-    model.add_node(LSTM(32,return_sequences=True, go_backwards=False), name='forward2', input='dropout1')
-    model.add_node(LSTM(32,return_sequences=True, go_backwards=True), name='backward2',input='dropout1')
+    model.add_node(LSTM(128,return_sequences=True, go_backwards=False), name='forward2', input='dropout1')
+    model.add_node(LSTM(128,return_sequences=True, go_backwards=True), name='backward2',input='dropout1')
     model.add_node(Dropout(0.5), name='dropout2', inputs=['forward2', 'backward2'])
 
-    model.add_node(TimeDistributedDense(nb_classes,activation='softmax'), name='dense1', input='dropout2')
+    model.add_node(LSTM(64,return_sequences=True, go_backwards=False), name='forward3', input='dropout2')
+    model.add_node(LSTM(64,return_sequences=True, go_backwards=True), name='backward3',input='dropout2')
+    model.add_node(Dropout(0.5), name='dropout3', inputs=['forward3', 'backward3'])
+
+
+    model.add_node(TimeDistributedDense(nb_classes,activation='softmax'), name='dense1', input='dropout3')
     model.add_output(name='output', input='dense1')
     print 'compiling...'
-    adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-
-    model.compile(adam, {'output': 'categorical_crossentropy'})
+    model.compile(optimizer, {'output': 'categorical_crossentropy'})
 
     print 'saving config'
     with open(fname + '.json','w') as f:
         f.write(model.to_json())
 
 
-    history = model.fit({'input':xx, 'output':ll}, batch_size=k_batch_size,nb_epoch=k_num_epochs)
+    history = model.fit({'input':xx, 'output':ll},validation_split=0.1, batch_size=k_batch_size,nb_epoch=k_num_epochs,callbacks=[checkpoint_callback])
 
     model.save_weights(fname + '.h5',overwrite=True)
 

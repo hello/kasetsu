@@ -10,8 +10,10 @@ import calendar
 import bisect
 import numpy as np
 k_num_labels = 3
-k_radius = 60
-k_uncertainty = 15
+k_radius = 120
+k_uncertainty_sleep = 30
+k_uncertainty_wake = 10
+
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 
@@ -40,7 +42,7 @@ def process_raw_data(times,rawdata):
             x[1] = 0;
             x[4] = x[4] / 1024.0 / 10. - 4.
             if x[4] < 0: x[4] = 0
-            x[7] /= 10000.
+            x[7] /= 1000.
             dt = datetime.datetime.fromtimestamp(t,pytz.UTC)
 
             if i > 1:
@@ -147,7 +149,7 @@ def extract_label_times_for_day(accounts,times,labels):
     return indexed_labels
         
 
-def insert_event_labels(labels,times,event_times,ipre,ipost,radius):
+def insert_event_labels(labels,times,event_times,ipre,ipost,radius,uncertainty):
     indices = [bisect.bisect(times,t) for t in event_times]
 
     for idx in indices:
@@ -155,10 +157,10 @@ def insert_event_labels(labels,times,event_times,ipre,ipost,radius):
             if i < 0 or i >= len(times):
                 continue
 
-            if i >= idx + k_uncertainty:
+            if i >= idx + uncertainty:
                 labels[i][ipost] = 1.0
 
-            if i < idx - k_uncertainty:
+            if i < idx - uncertainty:
                 labels[i][ipre] = 1.0
     
 def load_data(list_of_data_files,label_file):
@@ -179,8 +181,8 @@ def load_data(list_of_data_files,label_file):
 
             
             labels = [[0 for i in range(k_num_labels)] for t in ts]
-            insert_event_labels(labels,ts,L2,0,1,k_radius)
-            insert_event_labels(labels,ts,L,1,2,k_radius)
+            insert_event_labels(labels,ts,L2,0,1,k_radius,k_uncertainty_sleep)
+            insert_event_labels(labels,ts,L,1,2,k_radius,k_uncertainty_wake)
             label_vecs.append(labels)
 
 
