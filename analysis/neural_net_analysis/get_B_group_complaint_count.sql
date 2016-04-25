@@ -1,4 +1,4 @@
-(SELECT q3.event_type,SUM((abs(q3.corrected_time) > 30)::int) as counts,AVG(q3.corrected_time),STDDEV_SAMP(q3.corrected_time)
+(SELECT q3.event_type,SUM((abs(q3.corrected_time) > 30)::int) as counts, SUM((abs(q3.corrected_time) > 30)::int)::float / COUNT(*) as frac,AVG(q3.corrected_time),STDDEV_SAMP(q3.corrected_time)
 FROM
   (SELECT id,q2.account_id,q2.date_of_night,q2.event_type,q2.created,
   CASE
