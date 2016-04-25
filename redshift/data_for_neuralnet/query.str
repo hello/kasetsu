@@ -1,0 +1,92 @@
+UNLOAD
+('
+WITH 
+-- start and end time of local_utc time period of interest
+k_start_date AS (SELECT  \'{0} 20:00:00\'  as val),
+k_end_date AS (SELECT \'{1} 12:00:00\'  as val),
+k_date_of_night AS (SELECT \'{0} 00:00:00\'  as val),
+
+-- get feedback in time period where both sleep and wake are present
+valid_feedback AS (
+SELECT sleeps.account_id AS accounts
+FROM
+(
+   (SELECT account_id,date_of_night,new_time,event_type FROM timeline_feedback 
+       WHERE 
+          event_type=11 AND date_of_night =(SELECT val FROM k_date_of_night)) sleeps
+   JOIN
+   (SELECT account_id,date_of_night,new_time,event_type FROM timeline_feedback 
+         WHERE 
+event_type=13 AND date_of_night= (SELECT val FROM k_date_of_night)) wakes
+   ON
+   sleeps.account_id=wakes.account_id 
+   AND
+   sleeps.date_of_night = wakes.date_of_night
+)),
+-- get the partner map
+partner_map AS 
+(
+SELECT p1.account_id AS my_id, p2.account_id as partner_id     
+FROM  
+(SELECT account_id,device_id FROM account_device_map_old        
+WHERE account_id IN (SELECT accounts from valid_feedback)) p1
+JOIN  
+(SELECT account_id,device_id FROM account_device_map_old) p2
+ON p1.device_id = p2.device_id 
+WHERE p1.account_id != p2.account_id
+),
+valid_accounts AS ( 
+SELECT accounts FROM (
+valid_feedback
+JOIN
+partner_map
+ON 
+partner_map.my_id=valid_feedback.accounts)
+),
+-- get my data and partner data as union
+tracker_union AS (SELECT * FROM
+(SELECT account_id,date_trunc(\'minute\',local_utc_ts) as local_utc_ts, on_duration_seconds,0 as partner_durations,svm_no_gravity FROM tracker_motion_master
+    WHERE local_utc_ts >= (SELECT val FROM k_start_date)
+    AND local_utc_ts <= (SELECT val FROM k_end_date)
+    AND account_id IN (SELECT accounts from valid_accounts)
+)  orig
+UNION
+(SELECT partner_map.my_id,date_trunc(\'minute\',local_utc_ts) as local_utc_ts, 0,on_duration_seconds,0  FROM
+  (SELECT * FROM tracker_motion_master 
+    WHERE local_utc_ts >= (SELECT val FROM k_start_date)
+    AND local_utc_ts <= (SELECT val FROM k_end_date)) pill
+  JOIN
+  partner_map
+  ON
+  pill.account_id=partner_map.partner_id)
+),
+
+-- aggregate my data and partner data that happened at the same time
+pill_data AS (SELECT account_id,local_utc_ts,SUM(on_duration_seconds) as on_duration_seconds,SUM(partner_durations) as partner_durations,SUM(svm_no_gravity) as mag
+FROM tracker_union
+GROUP BY
+account_id,local_utc_ts)
+
+--now join sense data with the pill_data
+SELECT sensors.*,COALESCE(on_duration_seconds,0) as on_duration_seconds ,COALESCE(partner_durations,0) as partner_durations,COALESCE(mag,0) as mag
+FROM
+(SELECT account_id,date_trunc(\'minute\',local_utc_ts) as local_utc_ts,ambient_light
+,ambient_light_variance,wave_count,audio_num_disturbances,audio_peak_disturbances_db
+FROM device_sensors_master
+WHERE account_id IN (SELECT accounts FROM valid_feedback)) sensors
+LEFT JOIN
+pill_data
+ON 
+sensors.account_id=pill_data.account_id AND sensors.local_utc_ts=pill_data.local_utc_ts
+WHERE
+sensors.local_utc_ts >= (SELECT val FROM k_start_date) and sensors.local_utc_ts <=  (SELECT val FROM k_end_date)
+AND
+sensors.account_id IN (SELECT accounts from valid_accounts)
+ORDER BY
+account_id,local_utc_ts;
+
+')
+TO
+'s3://hello-data/neuralnet/bed_{0}.csv' 
+CREDENTIALS 
+'aws_access_key_id={2};aws_secret_access_key={3}' delimiter ',' PARALLEL OFF GZIP;
