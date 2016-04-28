@@ -13,7 +13,7 @@ import os
 import re
 
 
-k_batch_size=128
+k_batch_size=32
 k_num_epochs=40
 
 optimizer = Adagrad()
