@@ -9,10 +9,15 @@ import pytz
 import calendar
 import bisect
 import numpy as np
+from collections import defaultdict
+from multiprocessing import Pool
+
+
 k_num_labels = 3
 k_radius = 120
-k_uncertainty_sleep = 30
-k_uncertainty_wake = 10
+k_uncertainty = 10
+
+k_label_map = {'14' : (1,2), '12' : (0,1)}
 
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
@@ -104,29 +109,27 @@ def read_label_file(filename):
     with open(filename,'rb') as f:
         reader = csv.reader(f)
 
-        wakes = {}
-        sleeps = {}
+        events = {}
         
         for line in reader:
             acc = line[0]
-            t = read_time(line[1])
-            t1 = read_24_hr_time(t,line[2])
-            t2 = read_24_hr_time(t,line[3])
+            date_of_night = read_time(line[1])
+            t1 = read_24_hr_time(date_of_night,line[2])
+            event_type = line[3]
 
-            if not wakes.has_key(acc):
-                wakes[acc] = []
+            if not events.has_key(acc):
+                events[acc] = []
 
-            if not sleeps.has_key(acc):
-                sleeps[acc] = []
 
-            sleeps[acc].append(get_timestamp(t1))
-            wakes[acc].append(get_timestamp(t2))
+            events[acc].append((get_timestamp(t1),event_type))
 
-    return sleeps,wakes
+    return events
 
 #accounts is list of accounts, matched by index with times and data
 #labels is a map by account, with a list of label times (which may exceed the
 #current day)
+#labels is a map by account_id where the value is a list of label tuples (time,label_type)
+#the goal here is to just find the times for the timespan and account_id of interest
 def extract_label_times_for_day(accounts,times,labels):
     t1 = times[0][0];
     t2 = times[0][-1];
@@ -140,7 +143,8 @@ def extract_label_times_for_day(accounts,times,labels):
         xx = labels[account]
         L = []
         for x in xx:
-            if x >= t1 and x <= t2:
+            #is in time bounds?
+            if x[0] >= t1 and x[0] <= t2:
                 L.append(x)
       
 
@@ -149,10 +153,12 @@ def extract_label_times_for_day(accounts,times,labels):
     return indexed_labels
         
 
-def insert_event_labels(labels,times,event_times,ipre,ipost,radius,uncertainty):
-    indices = [bisect.bisect(times,t) for t in event_times]
+def insert_event_labels(labels,times,L,radius,uncertainty):
 
-    for idx in indices:
+    for t,event_type in L:
+        idx = bisect.bisect(times,t)
+        ipre,ipost = k_label_map[event_type]
+
         for i in range(idx-radius,idx+radius):
             if i < 0 or i >= len(times):
                 continue
@@ -162,32 +168,51 @@ def insert_event_labels(labels,times,event_times,ipre,ipost,radius,uncertainty):
 
             if i < idx - uncertainty:
                 labels[i][ipre] = 1.0
-    
-def load_data(list_of_data_files,label_file):
-    sleeps,wakes=read_label_file(label_file)
 
-    data = []
+
+def load_data_helper(my_input):
+    filename,events = my_input
+    accounts,times,rawdata=read_input_file(filename)
+
+    process_raw_data(times,rawdata)
+
+    indexed_labels = extract_label_times_for_day(accounts,times,events)
+
+    label_vecs = []
+    for ts,L in zip(times,indexed_labels):
+        if len(L) == 0:
+            label_vecs.append([])
+            continue
+
+        #default labels, set to "0" for all times and all labels 
+        labels = [[0 for i in range(k_num_labels)] for t in ts]
+        insert_event_labels(labels,ts,L,k_radius,k_uncertainty)
+        label_vecs.append(labels)
+
+
+    return zip(rawdata,label_vecs)
+        
+def load_data(list_of_data_files,label_files):
+    events = defaultdict(list)
+
+    for label_file in label_files:
+        new_events = read_label_file(label_file)
+
+        for key in new_events:
+            events[key].extend(new_events[key])
+
+    my_pool = Pool(8)
+
+    inputs = []
     for filename in list_of_data_files:
-        accounts,times,rawdata=read_input_file(filename)
-        process_raw_data(times,rawdata)
-        indexed_labels = extract_label_times_for_day(accounts,times,wakes)
-        indexed_labels2 = extract_label_times_for_day(accounts,times,sleeps)
-
-        label_vecs = []
-        for ts,L,L2 in zip(times,indexed_labels,indexed_labels2):
-            if len(L) and len(L2) == 0:
-                label_vecs.append([])
-                continue
-
-            
-            labels = [[0 for i in range(k_num_labels)] for t in ts]
-            insert_event_labels(labels,ts,L2,0,1,k_radius,k_uncertainty_sleep)
-            insert_event_labels(labels,ts,L,1,2,k_radius,k_uncertainty_wake)
-            label_vecs.append(labels)
-
-
-        data.extend(zip(rawdata,label_vecs))
-
+        inputs.append((filename,events))
+    
+    results = my_pool.map(load_data_helper,inputs)
+    
+    data = []
+    for result in results:
+        data.extend(result)
+    
     return data
 
 def get_inputs_from_data(data):
@@ -227,9 +252,14 @@ def get_inputs_from_data(data):
     return xx,ll
 
 if __name__ == '__main__':
-    labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
-    raw_data_files = ['2016-01-04.csv000']
+    from matplotlib.pyplot import *
+    labels_files = ['labels_et12_2016-01-01_2016-03-10.csv000', 'labels_et14_2016-01-01_2016-03-10.csv000'] 
+    raw_data_files = ['any_sleep_or_wake_2016-01-01.csv000']
 
-    data = load_data(raw_data_files,labels_file)
+    data = load_data(raw_data_files,labels_files)
+    count = 0
     for d in data: 
         plot(d[1]); show()
+        count += 1
+        if count > 10:
+            break

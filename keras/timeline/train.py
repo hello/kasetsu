@@ -19,12 +19,12 @@ k_num_epochs=40
 optimizer = Adagrad()
 
 def get_data():
-    labels_file = 'labels_sleep_2016-01-01_2016-03-02.csv000'
+    labels_files = ['labels_et12_2016-01-01_2016-03-10.csv000','labels_et14_2016-01-01_2016-03-10.csv000'] 
     files = os.listdir("./")
     csvfiles = [f for f in files if "csv" in f]
     raw_data_files = [f for f in csvfiles if "label" not in f]
     
-    data = raw_data.load_data(sorted(raw_data_files),labels_file)
+    data = raw_data.load_data(sorted(raw_data_files),labels_files)
     return raw_data.get_inputs_from_data(data)
     
 
