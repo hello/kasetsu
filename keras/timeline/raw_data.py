@@ -45,9 +45,12 @@ def process_raw_data(times,rawdata):
             t = tt[i]
             x[0] = log(x[0]*256 / float(2 ** 16) + 1.0) / log(2)
             x[1] = 0;
+            x[3] /= 2.0;
             x[4] = x[4] / 1024.0 / 10. - 4.
             if x[4] < 0: x[4] = 0
-            x[7] /= 1000.
+            x[5] /= 5.0
+            x[6] /= 5.0
+            x[7] /= 5000.
             dt = datetime.datetime.fromtimestamp(t,pytz.UTC)
 
             if i > 1:
