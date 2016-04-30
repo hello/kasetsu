@@ -15,9 +15,9 @@ from multiprocessing import Pool
 
 k_num_labels = 3
 k_radius = 120
-k_uncertainty = 10
 
 k_label_map = {'14' : (1,2), '12' : (0,1)}
+k_uncertainy_map = {'14' : 10, '12' : 15}
 
 def get_timestamp(dt):
     return calendar.timegm(dt.utctimetuple())
@@ -153,11 +153,12 @@ def extract_label_times_for_day(accounts,times,labels):
     return indexed_labels
         
 
-def insert_event_labels(labels,times,L,radius,uncertainty):
+def insert_event_labels(labels,times,L,radius):
 
     for t,event_type in L:
         idx = bisect.bisect(times,t)
         ipre,ipost = k_label_map[event_type]
+        uncertainty = k_uncertainy_map[event_type]
 
         for i in range(idx-radius,idx+radius):
             if i < 0 or i >= len(times):
@@ -186,7 +187,7 @@ def load_data_helper(my_input):
 
         #default labels, set to "0" for all times and all labels 
         labels = [[0 for i in range(k_num_labels)] for t in ts]
-        insert_event_labels(labels,ts,L,k_radius,k_uncertainty)
+        insert_event_labels(labels,ts,L,k_radius)
         label_vecs.append(labels)
 
 
