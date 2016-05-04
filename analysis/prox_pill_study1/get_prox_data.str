@@ -1,0 +1,8 @@
+SELECT * 
+  FROM 
+  (SELECT split_part("ts|pil",'|',2) as pill_id,lutcts,prox,prox4 
+     FROM prefix_2016_05 
+     WHERE lutcts >= '{1}'
+  ) 
+  WHERE pill_id='{0}'
+  ORDER BY lutcts ASC;
