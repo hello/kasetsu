@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) {
     num_samples_written = upconvert_bits_bpsk(samplebuf, bits, len * NUM_PN_PERIODS, sample_buf_size);
     
     
-    create_file("test.wav",samplebuf,num_samples_written);
+    create_file("bpsk.wav",samplebuf,num_samples_written);
     
     
     return 0;

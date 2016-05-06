@@ -4,7 +4,7 @@
 #include <sndfile.hh>
 #include <string.h>
 
-#define NUM_PN_PERIODS   (1)
+#define NUM_PN_PERIODS   (10)
 
 static void create_file (const char * fname,const int16_t * buffer, const uint32_t buflen) {
     
@@ -35,11 +35,11 @@ int main(int argc, char * argv[]) {
     const uint32_t len = pn_get_length();
     
     //malloc
-    uint8_t bits[len];
-    int16_t samplebuf[len];
+    uint8_t bits[NUM_PN_PERIODS * len];
+    int16_t samplebuf[NUM_PN_PERIODS * len];
     
     
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < NUM_PN_PERIODS * len; i++) {
         bits[i] = pn_get_next_bit();
     
         if (bits[i] > 0) {
@@ -53,7 +53,7 @@ int main(int argc, char * argv[]) {
     
     
     
-    create_file("white.wav",samplebuf,len);
+    create_file("white.wav",samplebuf,NUM_PN_PERIODS * len);
     
     
     return 0;
