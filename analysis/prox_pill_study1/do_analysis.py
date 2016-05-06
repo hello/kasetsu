@@ -51,8 +51,13 @@ def get_pill_data(pill_id,conn):
     zero_invalid_values(prox)
     zero_invalid_values(prox4)
 
-    
-    return ts,np.array(prox) - np.array(prox4),np.array(prox),np.array(prox4)
+    prox = np.array(prox)
+    prox4 = np.array(prox4)
+
+    prox = prox - np.mean(prox)
+    prox4 = prox4 - np.mean(prox4)    
+    #prox += 10
+    return ts,prox,prox4
         
 
 def main():
@@ -80,9 +85,16 @@ def main():
 
 #        ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%m'))
 #        ax.xaxis.set_major_locator(mdates.HourLocator())
+        '''
+        print np.dot(d[1],d[2])
+        plot(d[1],d[2],'--.')
+        b = 50
+        xlim([-b,b])
+        ylim([-b,b])
+        '''
+        plot(t,d[1])
         plot(t,d[2])
-        plot(t,d[3])
-        xlim([t1,tf])
+        #xlim([t1,tf])
         #plot(t,d[3]-d[2],'.'o)
 
         fig.autofmt_xdate()
