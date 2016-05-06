@@ -6,31 +6,45 @@
 
 typedef struct {
     uint16_t state;
-    
-    
+    uint16_t mask;
+    uint32_t len;
 } PNSequence_t;
+
 const int8_t k_lookup[256] = {-8,-6,-6,-4,-6,-4,-4,-2,-6,-4,-4,-2,-4,-2,-2,0,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,0,2,2,4,2,4,4,6,2,4,4,6,4,6,6,8};
 
 #define MASK_16 (0xd008u)
 #define MASK_9 (0x0110u)
 
-#define MASK MASK_9
+#define PN_LEN_9           ((1<<9) - 1)
+#define PN_LEN_16          ((1<<16) - 1)
+
 
 static PNSequence_t _data;
-void pn_init_with_state(uint16_t init_state) {
+
+
+void pn_init_with_state(uint16_t init_state, uint16_t mask, uint32_t len) {
     memset(&_data,0,sizeof(_data));
     _data.state = init_state;
+    _data.mask = mask;
+    _data.len = len;
 }
 
-void pn_init(void){
-    memset(&_data,0,sizeof(_data));
-    _data.state = 0xABCD; //something, anything not zero
+void pn_init_with_mask_9() {
+    pn_init_with_state(0xABCD,MASK_9,PN_LEN_9);
+}
+
+void pn_init_with_mask_16() {
+    pn_init_with_state(0xABCD,MASK_16,PN_LEN_16);
+}
+
+uint32_t pn_get_length() {
+    return _data.len;
 }
 
 uint8_t pn_get_next_bit() {
     const uint8_t lsb = (uint8_t)_data.state & 1;   /* Get LSB (i.e., the output bit). */
     _data.state >>= 1;
-    _data.state ^= (-lsb) & MASK;
+    _data.state ^= (-lsb) & _data.mask;
     return lsb;
 }
 

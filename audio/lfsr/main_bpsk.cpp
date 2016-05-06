@@ -5,9 +5,6 @@
 #include <string.h>
 
 #define NUM_PN_PERIODS   (100)
-#define PN_LEN           ((1<<9) - 1)
-#define LEN ((NUM_PN_PERIODS) * (PN_LEN))
-#define SAMPLE_BUF_SIZE (LEN * 24)
 
 static void create_file (const char * fname,const int16_t * buffer, const uint32_t buflen) {
     
@@ -31,18 +28,23 @@ static void create_file (const char * fname,const int16_t * buffer, const uint32
 
 int main(int argc, char * argv[]) {
     
-    uint8_t bits[LEN];
     uint32_t i;
     uint32_t num_samples_written;
-    int16_t samplebuf[SAMPLE_BUF_SIZE];
 
-    pn_init();
+    pn_init_with_mask_9();
+    const uint32_t len = pn_get_length();
+    
+    //malloc
+    uint32_t sample_buf_size = len * 24;
+    uint8_t bits[len];
+    int16_t samplebuf[sample_buf_size];
 
-    for (i = 0; i < LEN; i++) {
+    
+    for (i = 0; i < len; i++) {
         bits[i] = pn_get_next_bit();
     }
     
-    num_samples_written = upconvert_bits_bpsk(samplebuf, bits, LEN, SAMPLE_BUF_SIZE);
+    num_samples_written = upconvert_bits_bpsk(samplebuf, bits, len * NUM_PN_PERIODS, sample_buf_size);
     
     
     create_file("test.wav",samplebuf,num_samples_written);
