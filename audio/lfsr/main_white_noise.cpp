@@ -52,7 +52,7 @@ int main(int argc, char * argv[]) {
     }
     
     
-    
+    create_file("reference.wav",samplebuf,len);
     create_file("white.wav",samplebuf,NUM_PN_PERIODS * len);
     
     
