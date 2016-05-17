@@ -1,0 +1,36 @@
+WITH num_timelines AS ( 
+  SELECT COUNT(*) as count
+  FROM timeline_analytics WHERE error=0 AND created_at > '2016-04-29 00:00:00' AND account_id IN ({0}))
+
+(SELECT 
+    q3.event_type,
+    SUM((abs(q3.corrected_time) > 30)::int) as complaint_counts,
+    (SELECT count FROM num_timelines)::float as num_timelines, 
+    COUNT(*) as total_count,
+    AVG(q3.corrected_time) as avg,
+    STDDEV_SAMP(q3.corrected_time) as std 
+  FROM
+  (SELECT id,q2.account_id,q2.date_of_night,q2.event_type,q2.created,
+  CASE
+    WHEN timediff > 720 then timediff - 1440
+    WHEN timediff < -720 then 1440 + timediff
+    ELSE timediff
+  END AS corrected_time
+  FROM
+    (SELECT q1.id,q1.account_id,q1.date_of_night,q1.event_type,q1.created,(extract(epoch FROM t2) - extract(epoch FROM t1))/60 timediff FROM
+      (SELECT id,account_id,date_of_night,event_type,created,
+          to_timestamp(concat('1970-01-01 ',new_time),'YYY-MM-DD HH24:mi')::timestamp without time zone t2,
+          to_timestamp(concat('1970-01-01 ',old_time),'YYY-MM-DD HH24:mi')::timestamp without time  zone t1
+       FROM timeline_feedback
+       WHERE event_type IN (11,12,13,14)
+      ) q1
+    ) q2 
+  ) q3
+WHERE 
+q3.created >= '2016-04-29 00:00:00' 
+AND 
+q3.date_of_night >= '2016-04-28'
+AND q3.account_id IN
+({0})
+GROUP BY q3.event_type
+ORDER BY q3.event_type);
