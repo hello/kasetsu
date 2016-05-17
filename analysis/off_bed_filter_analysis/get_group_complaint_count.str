@@ -1,6 +1,6 @@
 WITH num_timelines AS ( 
   SELECT COUNT(*) as count
-  FROM timeline_analytics WHERE error=0 AND created_at > '2016-04-29 00:00:00' AND account_id IN ({0}))
+  FROM timeline_analytics WHERE error=0 AND created_at > '2016-05-18 00:00:00' AND account_id IN ({0}))
 
 (SELECT 
     q3.event_type,
@@ -27,9 +27,9 @@ WITH num_timelines AS (
     ) q2 
   ) q3
 WHERE 
-q3.created >= '2016-04-29 00:00:00' 
+q3.created >= '2016-05-18 00:00:00' 
 AND 
-q3.date_of_night >= '2016-04-28'
+q3.date_of_night >= '2016-05-17'
 AND q3.account_id IN
 ({0})
 GROUP BY q3.event_type
