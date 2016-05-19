@@ -1,13 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include "../../kitsune/audiofeatures.h"
-#include "../../kitsune/audioclassifier.h"
-#include "../../kitsune/protobuf/matrix.pb.h"
-#include "../../kitsune/debugutils/debugsingleton.h"
 #include <string.h>
 #include <sstream>
-#include "pb_encode.h"
-#include "../../kitsune/debugutils/base64.h"
 #include <sndfile.hh>
 
 using namespace std;
@@ -30,10 +24,10 @@ static void read_file (const std::string & fname) {
     printf ("    Channels    : %d\n", file.channels ()) ;
     
     
-    
+/*    
     int16_t buf[AUDIO_FFT_SIZE * file.channels()];
     int16_t monobuf[AUDIO_FFT_SIZE];
-/*    while (true) {
+    while (true) {
     int count = file.read(buf, AUDIO_FFT_SIZE * file.channels());
         if (count <= 0) {
             break;

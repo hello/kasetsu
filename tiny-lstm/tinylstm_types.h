@@ -9,8 +9,11 @@ extern "C" {
 
 
 typedef int8_t Weight_t;
+typedef Weight_t Data_t;
 typedef int16_t WeightLong_t;
-
+typedef Weight_t (*SquashFunc_t)(WeightLong_t x);
+typedef void (*ActionCallback_t)(void *);
+    
 #ifdef __cplusplus
 }
 #endif

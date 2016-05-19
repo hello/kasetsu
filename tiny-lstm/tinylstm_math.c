@@ -31,3 +31,7 @@ Weight_t tinylstm_tanh(WeightLong_t x) {
     return y;
 }
 
+void tinylstm_matmulvec_long_output(WeightLong_t * out,const Weight_t * mat, const Weight_t * vec, const uint32_t num_rows, const uint32_t num_cols) {
+    
+}
+
