@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-Weight_t tinylstm_tanh(Weight_t x);
+Weight_t tinylstm_tanh(WeightLong_t x);
      
 
 
