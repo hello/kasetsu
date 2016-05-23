@@ -19,7 +19,8 @@ message(STATUS "${SNDFILE_LIBRARIES}")
 add_executable(tinylstm
 tinylstm.cpp 
 tinylstm_math.c 
-tinylstm_net.c)
+tinylstm_net.c
+tinylstm_tensor.c)
 
 target_link_libraries(tinylstm ${SNDFILE_LIBRARIES})
 

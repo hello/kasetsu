@@ -31,7 +31,67 @@ Weight_t tinylstm_tanh(WeightLong_t x) {
     return y;
 }
 
+void tinylstm_vec_tanh(Weight_t * out, const WeightLong_t * in, const uint32_t num_elements) {
+    uint32_t i;
+    
+    for (i = 0; i < num_elements; i++) {
+        out[i] = tinylstm_tanh(in[i]);
+    }
+}
+
 void tinylstm_matmulvec_long_output(WeightLong_t * out,const Weight_t * mat, const Weight_t * vec, const uint32_t num_rows, const uint32_t num_cols) {
+    
+    WeightLong_t * pOut = out;
+    const Weight_t * pRow = mat;
+    WeightLong_t temp;
+    uint32_t j,i;
+    
+    for (j = 0; j < num_rows; j++) {
+        temp = 0;
+        for (i = 0; i < num_cols; i++) {
+            temp += vec[i] * pRow[i];
+        }
+        *pOut = temp;
+        
+        pRow += num_cols;
+        pOut++;
+    }
     
 }
 
+void tinylstm_convolve2d_direct(Weight_t * out, const Weight_t * weights,const Weight_t * image, const uint32_t num_weights_rows,const uint32_t num_weights_cols, const uint32_t num_image_rows, const uint32_t num_image_cols) {
+    
+    
+    const uint32_t num_rows_out = num_image_rows - num_weights_rows + 1;
+    const uint32_t num_cols_out = num_image_cols - num_weights_cols + 1;
+    uint32_t irow,icol;
+    uint32_t j,i;
+    WeightLong_t temp;
+    const Weight_t * weight_row;
+    const Weight_t * image_row;
+    Weight_t * out_row = out;
+    
+    for (irow = 0; irow < num_rows_out; irow++) {
+        for (icol = 0; icol < num_cols_out; icol++) {
+            //now do the convolution
+            temp = 0;
+            weight_row = weights;
+            image_row = image + (irow * num_image_cols) + icol;
+            for (j = 0; j < num_weights_rows; j++) {
+                //TODO optimize this right here
+                for (i = 0; i < num_weights_cols; i++) {
+                    temp += image_row[i] * weight_row[i];
+                }
+            }
+            
+            //round
+            temp += (1 << (QFIXEDPOINT - 1));
+            temp >>= QFIXEDPOINT;
+            
+            out_row[icol] = (Weight_t) temp;
+            
+        }
+        
+        out_row += num_cols_out;
+    }
+}
