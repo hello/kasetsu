@@ -13,7 +13,7 @@ Tensor_t * tinylstm_create_new_tensor(const uint32_t size_of_weights_in_bytes,co
     MEMSET(tensor,0,sizeof(Tensor_t));
     MEMCPY(tensor->dims, dims, sizeof(tensor->dims));
     tensor->x = MALLLOC(size_of_weights_in_bytes);
-    tensor->delete = delete_tensor;
+    tensor->free = delete_tensor;
     return tensor;
 }
 

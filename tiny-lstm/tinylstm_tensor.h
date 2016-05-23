@@ -21,17 +21,7 @@ extern "C" {
  
  */
 
-#define TENSOR_DIM (3)
-    
-typedef void(*TensorDelete_t)(void * context);
-    
-    
-typedef struct{
-    Weight_t * x;
-    uint32_t dims[TENSOR_DIM];
-    uint32_t max_size;
-    TensorDelete_t delete;
-} Tensor_t;
+
     
     
 inline Weight_t * get_slice(Tensor_t * tensor, uint32_t nslice) {

@@ -37,33 +37,12 @@ typedef struct {
     //ActionCallback_t on_shutdown_function;
 } Element_t;
     */
-    
-/*
-    FUNCTION POINTER DEFINITIONS
- */
-typedef void (*LayerEval_t)(void * context,Tensor_t * out,const Tensor_t * in);
-    
-typedef uint32_t (*LayerSize_t)(void * context);
-    
-typedef void (*LayerDelete_t)(void * context);
-    
-/*
-    CLASS DEFINITIONS
- */
-typedef struct sLayer_t {
-    LayerEval_t eval;
-    LayerSize_t get_output_size_bytes;
-    LayerDelete_t delete;
-    void * context;
-} Layer_t;
+
     
 typedef struct {
     Layer_t * layers;
     const uint32_t num_layers;
 } SequentialNetwork_t;
-    
-    
-
     
 /*
    METHODS FOR SEQUENTIAL NETWORK
@@ -71,6 +50,8 @@ typedef struct {
 uint32_t get_network_output_size(const SequentialNetwork_t * net);
 
 Tensor_t * eval_net(const SequentialNetwork_t * net,Tensor_t * input);
+    
+
 
 #ifdef __cplusplus
 }

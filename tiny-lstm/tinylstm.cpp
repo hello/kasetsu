@@ -4,6 +4,8 @@
 #include <sstream>
 #include <sndfile.hh>
 
+#include "tinylstm_conv_layer.h"
+
 using namespace std;
 
 #define BUF_SIZE (1 << 24)
@@ -44,7 +46,13 @@ static void read_file (const std::string & fname) {
 */
 }
 
-
+void test_conv2d() {
+    const static Weight_t weights[4] = {0,0,0,0};
+    const static Tensor_t weight_tensor = {&weights[0],{1,2,2},0};
+    const static ConvLayer2D_t layer_def = { weight_tensor,{2,4,4},{2,3,3}};
+    
+    
+}
 
 
 
