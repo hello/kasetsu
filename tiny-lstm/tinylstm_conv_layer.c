@@ -1,13 +1,14 @@
 #include "tinylstm_conv_layer.h"
 #include "tinylstm_memory.h"
+#include "tinylstm_math.h"
 #include <assert.h>
 
-static uint32_t get_conv2d_output_size(void * context) {
-    const ConvLayer2D_t * layer = (ConvLayer2D_t *)context;
+static uint32_t get_conv2d_output_size(const void * context) {
+    const ConvLayer2D_t * layer = (const ConvLayer2D_t *)context;
     return layer->output_dims[0]*layer->output_dims[1]*layer->output_dims[2] * sizeof(Weight_t);
 }
 
-static void eval_conv2d_direct(void * context,Tensor_t * out,const Tensor_t * in) {
+static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_t * in) {
     const ConvLayer2D_t * layer = (ConvLayer2D_t *)context;
     
     uint32_t iweight,islice;
@@ -44,18 +45,10 @@ static void eval_conv2d_direct(void * context,Tensor_t * out,const Tensor_t * in
     }
 }
 
-static void delete_conv_layer(void * context) {
-    FREE(context);
-}
-
-Layer_t * create_conv_layer(ConvLayer2D_t * static_def) {
-    Layer_t * layer = MALLLOC(sizeof(Layer_t));
-    
-    layer->context = static_def;
-    layer->eval = eval_conv2d_direct;
-    layer->get_output_size_bytes = get_conv2d_output_size;
-    layer->free = delete_conv_layer;
-    
+ConstLayer_t tinylstm_create_conv_layer(const ConvLayer2D_t * static_def) {
+    ConstLayer_t layer = {eval_conv2d_direct,get_conv2d_output_size,static_def};
     return layer;
 }
+
+
 

@@ -48,9 +48,21 @@ static void read_file (const std::string & fname) {
 
 void test_conv2d() {
     const static Weight_t weights[4] = {0,0,0,0};
-    const static Tensor_t weight_tensor = {&weights[0],{1,2,2},0};
-    const static ConvLayer2D_t layer_def = { weight_tensor,{2,4,4},{2,3,3}};
+    const static ConstTensor_t weight_tensor = {&weights[0],{1,2,2}};
+    const static ConvLayer2D_t layer_def = { &weight_tensor,{2,4,4},{2,3,3}};
     
+    ConstLayer_t layer = tinylstm_create_conv_layer(&layer_def);
+
+    const uint32_t dims[3] = {2,2,2};
+    Tensor_t * t1 = tinylstm_create_new_tensor(42,dims);
+    
+    const uint32_t dims2[3] = {2,2,2};
+    Tensor_t * t2 = tinylstm_create_new_tensor(42,dims2);
+
+    layer.eval(layer.context,t2,t1);
+    
+    t1->delete_me(t1);
+    t2->delete_me(t2);
     
 }
 

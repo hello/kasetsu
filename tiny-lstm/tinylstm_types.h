@@ -27,7 +27,7 @@ typedef void(*TensorDelete_t)(void * context);
 typedef struct{
     Weight_t * x;
     uint32_t dims[TENSOR_DIM];
-    TensorDelete_t free;
+    TensorDelete_t delete_me;
 } Tensor_t;
     
 typedef struct{
@@ -35,27 +35,18 @@ typedef struct{
     const uint32_t dims[TENSOR_DIM];
 } ConstTensor_t;
 
-    typedef union {
-        ConstTensor_t const_tensor;
-        Tensor_t tensor;
-    } ;
-    
 /*
       LAYER DEFS
  */
-typedef void (*LayerEval_t)(void * context,Tensor_t * out,const Tensor_t * in);
+typedef void (*ConstLayerEval_t)(const void * context,Tensor_t * out,const Tensor_t * in);
 
-typedef uint32_t (*LayerSize_t)(void * context);
-
-typedef void (*LayerDelete_t)(void * context);
-
+typedef uint32_t (*ConstLayerSize_t)(const void * context);
 
 typedef struct {
-    LayerEval_t eval;
-    LayerSize_t get_output_size_bytes;
-    LayerDelete_t free;
-    void * context;
-} Layer_t;
+    ConstLayerEval_t eval;
+    ConstLayerSize_t get_output_size_bytes;
+    const void * context;
+} ConstLayer_t;
 
     
 #ifdef __cplusplus

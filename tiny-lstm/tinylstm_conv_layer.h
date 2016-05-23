@@ -8,13 +8,13 @@ extern "C" {
 #endif
 
 typedef struct {
-    const Tensor_t * weights;
+    const ConstTensor_t * weights;
     const uint32_t input_dims[3];
     const uint32_t output_dims[3];
-    
+
 } ConvLayer2D_t;
 
-Layer_t * create_conv_layer(ConvLayer2D_t * static_def);
+ConstLayer_t tinylstm_create_conv_layer(const ConvLayer2D_t * static_def);
 
     
     
