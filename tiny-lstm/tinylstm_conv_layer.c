@@ -3,9 +3,14 @@
 #include "tinylstm_math.h"
 #include <assert.h>
 
-static uint32_t get_conv2d_output_size(const void * context) {
+static void get_conv2d_output_size(const void * context,uint32_t * dims) {
     const ConvLayer2D_t * layer = (const ConvLayer2D_t *)context;
-    return layer->output_dims[0]*layer->output_dims[1]*layer->output_dims[2] * sizeof(Weight_t);
+    
+    uint32_t i;
+    for (i = 0; i < TENSOR_DIM; i++) {
+        dims[i] = layer->output_dims[i];
+    }
+    
 }
 
 static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_t * in) {

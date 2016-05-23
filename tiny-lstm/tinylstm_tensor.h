@@ -23,13 +23,14 @@ extern "C" {
 
 
     
-    
+
 inline Weight_t * get_slice(Tensor_t * tensor, uint32_t nslice) {
     const uint32_t stride = tensor->dims[2] * tensor->dims[1];
     return tensor->x + stride * nslice;
 }
+
     
-Tensor_t * tinylstm_create_new_tensor(const uint32_t size_of_weights_in_bytes,const uint32_t dims[3]);
+Tensor_t * tinylstm_create_new_tensor(const uint32_t dims[3]);
 
 
 #ifdef __cplusplus

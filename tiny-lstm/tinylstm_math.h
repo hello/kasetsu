@@ -8,6 +8,9 @@ extern "C" {
 #endif
 
 #define QFIXEDPOINT (7)
+    
+#define TOFIX(x)\
+        (Weight_t)(x * (1 << QFIXEDPOINT))
 
 Weight_t tinylstm_tanh(WeightLong_t x);
 void tinylstm_vec_tanh(Weight_t * out, const WeightLong_t * in, const uint32_t num_elements);

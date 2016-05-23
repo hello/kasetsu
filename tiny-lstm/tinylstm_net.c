@@ -13,11 +13,12 @@ Tensor_t * eval_net(const ConstSequentialNetwork_t * net,Tensor_t * input) {
     
     for (uint32_t ilayer = 0; ilayer < net->num_layers; ilayer++) {
         const ConstLayer_t * const layer = &net->layers[ilayer];
-        const uint32_t layer_output_size = layer->get_output_size_bytes(layer->context);
-        const uint32_t new_layer_dims[TENSOR_DIM] = {0,0,0};
+        
+        uint32_t output_dims[TENSOR_DIM];
+        layer->get_output_dims(layer->context,&output_dims[0]);
         
         //allocate output
-        current_output = tinylstm_create_new_tensor(layer_output_size,new_layer_dims);
+        current_output = tinylstm_create_new_tensor(output_dims);
 
         //perform evaluation
         layer->eval(layer->context,current_output,current_input);
@@ -30,6 +31,7 @@ Tensor_t * eval_net(const ConstSequentialNetwork_t * net,Tensor_t * input) {
         current_input = current_output;
     }
     
+    //whomever received this object must delete it
     return current_output;
     
 }

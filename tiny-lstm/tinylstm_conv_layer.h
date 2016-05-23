@@ -9,8 +9,8 @@ extern "C" {
 
 typedef struct {
     const ConstTensor_t * weights;
-    const uint32_t input_dims[3];
     const uint32_t output_dims[3];
+    const uint32_t input_dims[3];
 
 } ConvLayer2D_t;
 

@@ -40,11 +40,11 @@ typedef struct{
  */
 typedef void (*ConstLayerEval_t)(const void * context,Tensor_t * out,const Tensor_t * in);
 
-typedef uint32_t (*ConstLayerSize_t)(const void * context);
+typedef void (*ConstLayerDims_t)(const void * context,uint32_t * dims);
 
 typedef struct {
     ConstLayerEval_t eval;
-    ConstLayerSize_t get_output_size_bytes;
+    ConstLayerDims_t get_output_dims;
     const void * context;
 } ConstLayer_t;
 
