@@ -22,3 +22,14 @@ Tensor_t * tinylstm_create_new_tensor(const uint32_t dims[TENSOR_DIM]) {
     return tensor;
 }
 
+Tensor_t * tinylstm_clone_new_tensor(const ConstTensor_t * in) {
+    uint32_t num_elements= in->dims[0];
+    for (uint32_t i = 1; i < TENSOR_DIM; i++) {
+        num_elements *= in->dims[i];
+    }
+    
+    Tensor_t * tensor = tinylstm_create_new_tensor(in->dims);
+    memcpy(tensor->x,in->x,sizeof(Weight_t) * num_elements);
+    return tensor;
+}
+
