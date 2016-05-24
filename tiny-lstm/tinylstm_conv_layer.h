@@ -10,8 +10,8 @@ extern "C" {
 typedef struct {
     const ConstTensor_t * weights;
     const ConstTensor_t * biases;
-    const uint32_t output_dims[TENSOR_DIM];
-    const uint32_t input_dims[TENSOR_DIM];
+    const uint32_t * output_dims;
+    const uint32_t * input_dims;
 
 } ConvLayer2D_t;
 

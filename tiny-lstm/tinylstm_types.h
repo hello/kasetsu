@@ -32,7 +32,7 @@ typedef struct{
     
 typedef struct{
     const Weight_t * x;
-    const uint32_t dims[TENSOR_DIM];
+    const uint32_t * dims;
 } ConstTensor_t;
 
 /*
