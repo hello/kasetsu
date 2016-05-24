@@ -75,6 +75,7 @@ void test_conv2d_layer() {
     const static ConstTensor_t weight_tensor = {&weights[0],{1,2,2}};
     const static ConvLayer2D_t layer_def = { &weight_tensor,{2,4,4},{2,3,3}};
     
+    //on stack
     ConstLayer_t layer = tinylstm_create_conv_layer(&layer_def);
 
     const uint32_t dims[3] = {2,3,3};

@@ -77,11 +77,15 @@ void tinylstm_convolve2d_direct(Weight_t * out, const Weight_t * weights,const W
             temp = 0;
             weight_row = weights;
             image_row = image + (irow * num_image_cols) + icol;
+            
             for (j = 0; j < num_weights_rows; j++) {
                 //TODO optimize this right here
                 for (i = 0; i < num_weights_cols; i++) {
                     temp += image_row[i] * weight_row[i];
                 }
+                
+                weight_row += num_weights_cols;
+                image_row += num_image_cols;
             }
             
             //round
