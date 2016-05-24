@@ -47,6 +47,7 @@ static void read_file (const std::string & fname) {
 */
 }
 
+/*
 void test_conv2d_really_basic() {
     Weight_t out[1];
     Weight_t w[4] = {TOFIX(0.9),TOFIX(0.8),TOFIX(0.7),TOFIX(0.6)};
@@ -101,11 +102,11 @@ void test_conv2d_layer() {
     
 }
 
-
+*/
 
 int main(int argc, char * argv[]) {
-    test_conv2d_really_basic();
-    test_conv2d_layer();
+   // test_conv2d_really_basic();
+   // test_conv2d_layer();
 
     /*
     const std::string inFile = argv[1];

@@ -30,6 +30,7 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
         assert(input_dims[i] == layer->input_dims[i]);
     }
     
+    /*
     for (iweight = 0; iweight < weight_dims[0]; iweight++) {
         in_row = in->x;
         
@@ -48,6 +49,7 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
         
         weight_row += weight_dims[1]*weight_dims[2];
     }
+    */
 }
 
 ConstLayer_t tinylstm_create_conv_layer(const ConvLayer2D_t * static_def) {
