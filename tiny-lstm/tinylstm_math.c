@@ -59,43 +59,76 @@ void tinylstm_matmulvec_long_output(WeightLong_t * out,const Weight_t * mat, con
     
 }
 
-void tinylstm_convolve2d_direct(Weight_t * out, const Weight_t * weights,const Weight_t * image, const uint32_t num_weights_rows,const uint32_t num_weights_cols, const uint32_t num_image_rows, const uint32_t num_image_cols) {
+
+//takes two 3 dimensional tensors (a bunch of images, and a bunch of convolutional filters),
+//applies them accross each of the innermost tensor dimension (i.e. A1 x B1 x C1, A2 x B2 x C2, we're talking about A1 and A2, and A1 == A2)
+void tinylstm_convolve3d_direct(Weight_t * out, const Weight_t * weights,const Weight_t * image, const Weight_t bias,const uint32_t num_weights_rows,const uint32_t num_weights_cols, const uint32_t num_image_rows, const uint32_t num_image_cols, const uint32_t num_images) {
     
     
     const uint32_t num_rows_out = num_image_rows - num_weights_rows + 1;
     const uint32_t num_cols_out = num_image_cols - num_weights_cols + 1;
-    uint32_t irow,icol;
+    const uint32_t weight_size = num_weights_rows * num_weights_cols;
+    const uint32_t image_size = num_image_rows * num_image_cols;
+    
+    uint32_t ioutrow,ioutcol;
+    uint32_t iimage;
     uint32_t j,i;
-    WeightLong_t temp;
-    const Weight_t * weight_row;
-    const Weight_t * image_row;
+    
     Weight_t * out_row = out;
     
-    for (irow = 0; irow < num_rows_out; irow++) {
-        for (icol = 0; icol < num_cols_out; icol++) {
-            //now do the convolution
-            temp = 0;
-            weight_row = weights;
-            image_row = image + (irow * num_image_cols) + icol;
+    for (ioutrow = 0; ioutrow < num_rows_out; ioutrow++) {
+        for (ioutcol = 0; ioutcol < num_cols_out; ioutcol++) {
             
-            for (j = 0; j < num_weights_rows; j++) {
-                //TODO optimize this right here
-                for (i = 0; i < num_weights_cols; i++) {
-                    temp += image_row[i] * weight_row[i];
+            WeightLong_t accumulator = 0;
+            const Weight_t * weight_start = weights;
+            const Weight_t * image_start = image +  (ioutrow * num_image_cols) + ioutcol;
+            
+            for (iimage = 0; iimage < num_images; iimage++) {
+                
+                //element by element multiply of one matrix against another (NOT THIS IS NOT A MATRIX MULTIPLY)
+                //summing as you go.
+                
+                const Weight_t * image_row = image_start;
+                const Weight_t * weight_row = weight_start;
+
+                for (j = 0; j < num_weights_rows; j++) {
+                    
+                    // ***** TODO optimize this right here *****
+                    for (i = 0; i < num_weights_cols; i++) {
+                        accumulator += image_row[i] * weight_row[i];
+                    }
+                    
+                    weight_row += num_weights_cols;
+                    image_row += num_image_cols;
                 }
                 
-                weight_row += num_weights_cols;
-                image_row += num_image_cols;
+                //traverse to next slice for weights and image
+                weight_start += weight_size;
+                image_start += image_size;
             }
             
             //round
-            temp += (1 << (QFIXEDPOINT - 1));
-            temp >>= QFIXEDPOINT;
+            accumulator += (1 << (QFIXEDPOINT - 1));
+            accumulator >>= QFIXEDPOINT;
             
-            out_row[icol] = (Weight_t) temp;
+            //add bias
+            accumulator += bias;
+            
+            //saturate
+            if (accumulator > MAX_WEIGHT) {
+                accumulator = MAX_WEIGHT;
+            }
+            
+            if (accumulator < -MAX_WEIGHT) {
+                accumulator = -MAX_WEIGHT;
+            }
+            
+            out_row[ioutcol] = (Weight_t) accumulator;
             
         }
         
         out_row += num_cols_out;
     }
 }
+
+

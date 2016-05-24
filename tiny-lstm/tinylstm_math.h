@@ -17,7 +17,8 @@ void tinylstm_vec_tanh(Weight_t * out, const WeightLong_t * in, const uint32_t n
 
 void tinylstm_matmulvec_long_output(WeightLong_t * out,const Weight_t * mat, const Weight_t * vec, const uint32_t num_rows, const uint32_t num_cols);
 
-void tinylstm_convolve2d_direct(Weight_t * out, const Weight_t * weights,const Weight_t * image, const uint32_t num_weights_rows,const uint32_t num_weights_cols, const uint32_t num_image_rows, const uint32_t num_image_cols);
+void tinylstm_convolve3d_direct(Weight_t * out, const Weight_t * weights,const Weight_t * image, const Weight_t bias,const uint32_t num_weights_rows,const uint32_t num_weights_cols, const uint32_t num_image_rows, const uint32_t num_image_cols,const uint32_t num_images);
+    
 #define MATMULVEC_LONG_OUTPUT(out,mat,vec,numrows,numcols) \
     tinylstm_matmulvec_long_output(out,mat,vec,numrows,numcols)
 

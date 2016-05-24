@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-
+#define MAX_WEIGHT (0x7F)
 
 typedef int8_t Weight_t;
 typedef Weight_t Data_t; //data and weight are the same for now
@@ -17,7 +17,7 @@ typedef void (*SquashFunc_t)(Weight_t * out, const WeightLong_t * in, const uint
 typedef void (*ActionCallback_t)(void *);
     
 
-#define TENSOR_DIM (3)
+#define TENSOR_DIM (4)
 
 /*
       TENSOR DEFS

@@ -24,11 +24,11 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
     Weight_t * out_row = out->x;
     const Weight_t * in_row = in->x;
     const Weight_t * weight_row = layer->weights->x;
+    uint32_t i;
     
-    
-    assert(input_dims[0] == layer->input_dims[0]);
-    assert(input_dims[1] == layer->input_dims[1]);
-    assert(input_dims[2] == layer->input_dims[2]);
+    for (i = 0; i < TENSOR_DIM; i++) {
+        assert(input_dims[i] == layer->input_dims[i]);
+    }
     
     for (iweight = 0; iweight < weight_dims[0]; iweight++) {
         in_row = in->x;
