@@ -27,6 +27,7 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
     uint32_t i;
     
     for (i = 0; i < TENSOR_DIM; i++) {
+        printf("%d,%d\n",input_dims[i],layer->input_dims[i]);
         assert(input_dims[i] == layer->input_dims[i]);
     }
     

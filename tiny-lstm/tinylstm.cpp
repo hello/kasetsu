@@ -72,34 +72,7 @@ void test_conv2d_really_basic() {
 }
 
 void test_conv2d_layer() {
-    const static Weight_t weights[4] = {TOFIX(0.5),TOFIX(0.5),TOFIX(0.5),TOFIX(0.5)};
-    const static ConstTensor_t weight_tensor = {&weights[0],{1,2,2}};
-    const static ConvLayer2D_t layer_def = { &weight_tensor,{2,4,4},{2,3,3}};
-    
-    //on stack
-    ConstLayer_t layer = tinylstm_create_conv_layer(&layer_def);
-
-    const uint32_t dims[3] = {2,3,3};
-    Tensor_t * t1 = tinylstm_create_new_tensor(dims);
-    
-    const uint32_t dims2[3] = {2,4,4};
-    Tensor_t * t2 = tinylstm_create_new_tensor(dims2);
-    
-    for (uint32_t islice = 0; islice < 2; islice++) {
-        Weight_t * p = get_slice(t2,islice);
-        
-        for (uint32_t j = 0; j < 4; j++) {
-            for (uint32_t i = 0; i < 4; i++) {
-                *(p + j*4 + i) = TOFIX(0.25);
-            }
-        }
-    }
-
-    layer.eval(layer.context,t2,t1);
-    
-    t1->delete_me(t1);
-    t2->delete_me(t2);
-    
+     
 }
 
 */

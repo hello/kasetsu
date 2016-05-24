@@ -13,22 +13,29 @@ find_package(SndFile REQUIRED)
 add_definitions(-DUSE_CPP_DEBUG_LOGGING)
 add_definitions(-DNO_EQUALIZATION)
 
-include_directories (${SNDFILE_INCLUDE_DIRS} "gtest/include/" "gtest")
+include_directories (${SNDFILE_INCLUDE_DIRS} "gtest/include/" "gtest" "./")
 
 message(STATUS "${SNDFILE_INCLUDE_DIRS}")
 message(STATUS "${SNDFILE_LIBRARIES}")
 
-add_library(gtest STATIC gtest/gtest-all.cc)
-add_executable(unit-test unit-test/main.cpp unit-test/test1.cpp)
-target_link_libraries(unit-test gtest)
-
-add_executable(tinylstm
-tinylstm.cpp 
-tinylstm_math.c 
+add_library(tensor STATIC
+tinylstm_math.c
 tinylstm_net.c
 tinylstm_tensor.c
 tinylstm_conv_layer.c
 )
 
-target_link_libraries(tinylstm ${SNDFILE_LIBRARIES})
+add_library(gtest STATIC gtest/gtest-all.cc)
+add_executable(unit-test 
+unit-test/main.cpp 
+unit-test/testconv.cpp)
+
+target_link_libraries(unit-test gtest tensor)
+
+
+add_executable(tinylstm
+tinylstm.cpp)
+
+
+target_link_libraries(tinylstm tensor ${SNDFILE_LIBRARIES})
 
