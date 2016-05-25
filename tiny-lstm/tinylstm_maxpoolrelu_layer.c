@@ -13,6 +13,10 @@ static void get_maxpoolrelu_output_size(const void * context,uint32_t * dims) {
     
 }
 
+inline static Weight_t relu(Weight_t x) {
+    return x < 0 ? 0 : x;
+}
+
 
 /*   General idea is this: Given image of 4x4, a 2x4 max pool will produce a 2x1 image
  *   Another example 4x4 input, a 2x2 will produce a 2x2 result
@@ -71,7 +75,7 @@ static void eval_maxpoolrelu(const void * context,Tensor_t * out,const Tensor_t 
                     input_image_row += num_input_image_cols;
                 }
                 
-                output_image_row[iregioncol] = maxValue;
+                output_image_row[iregioncol] = relu(maxValue);
             
             }
             
