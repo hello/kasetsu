@@ -30,7 +30,7 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
     const Weight_t * weight_start = layer->weights->x;
     const uint32_t weight_filter_size = layer->weights->dims[1] * layer->weights->dims[2] * layer->weights->dims[3];
     
-    const Weight_t * image_start = in->x;
+    const Weight_t * const image_start = in->x;
     const uint32_t image_size = in->dims[2] * in->dims[3];
     
     const Weight_t * bias = layer->biases->x;
@@ -66,10 +66,11 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
     for (iout = 0; iout < num_out_images; iout++) {
         
         tinylstm_convolve3d_direct(out_start, weight_start, image_start, *bias,num_weights_rows, num_weights_cols,num_image_rows , num_image_cols, num_images);
+        
+        //printf("\n\n");
 
         
         bias += 1;
-        image_start += image_size;
         out_start += out_image_size;
         weight_start += weight_filter_size;
     }

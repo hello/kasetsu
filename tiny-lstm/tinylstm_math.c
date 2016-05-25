@@ -1,4 +1,5 @@
 #include "tinylstm_math.h"
+#include<stdio.h>
 
 const static int8_t tanh_table[356] = {0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,36,37,38,39,40,41,42,43,44,44,45,46,47,48,49,50,51,51,52,53,54,55,55,56,57,58,59,59,60,61,62,63,63,64,65,65,66,67,68,68,69,70,70,71,72,73,73,74,75,75,76,76,77,78,78,79,80,80,81,81,82,83,83,84,84,85,85,86,86,87,88,88,89,89,90,90,91,91,92,92,93,93,93,94,94,95,95,96,96,97,97,97,98,98,99,99,99,100,100,101,101,101,102,102,102,103,103,103,104,104,104,105,105,105,106,106,106,107,107,107,108,108,108,108,109,109,109,109,110,110,110,110,111,111,111,111,112,112,112,112,113,113,113,113,113,114,114,114,114,114,115,115,115,115,115,116,116,116,116,116,116,117,117,117,117,117,117,118,118,118,118,118,118,118,119,119,119,119,119,119,119,119,120,120,120,120,120,120,120,120,120,121,121,121,121,121,121,121,121,121,121,122,122,122,122,122,122,122,122,122,122,122,122,123,123,123,123,123,123,123,123,123,123,123,123,123,123,123,124,124,124,124,124,124,124,124,124,124,124,124,124,124,124,124,124,124,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,125,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,126,127};
 
@@ -79,7 +80,7 @@ void tinylstm_convolve3d_direct(Weight_t * out, const Weight_t * weights,const W
     for (ioutrow = 0; ioutrow < num_rows_out; ioutrow++) {
         for (ioutcol = 0; ioutcol < num_cols_out; ioutcol++) {
             
-            WeightLong_t accumulator = 0;
+            int32_t accumulator = 0;
             const Weight_t * weight_start = weights;
             const Weight_t * image_start = image +  (ioutrow * num_image_cols) + ioutcol;
             
@@ -95,9 +96,11 @@ void tinylstm_convolve3d_direct(Weight_t * out, const Weight_t * weights,const W
                     
                     // ***** TODO optimize this right here *****
                     for (i = 0; i < num_weights_cols; i++) {
+                      //  if (i != 0) printf(",  ");
+                        //printf("%d * %d",image_row[i],weight_row[i]);
                         accumulator += image_row[i] * weight_row[i];
                     }
-                    
+                    //printf("\n");
                     weight_row += num_weights_cols;
                     image_row += num_image_cols;
                 }
@@ -107,10 +110,14 @@ void tinylstm_convolve3d_direct(Weight_t * out, const Weight_t * weights,const W
                 image_start += image_size;
             }
             
-            //round
-            accumulator += (1 << (QFIXEDPOINT - 1));
-            accumulator >>= QFIXEDPOINT;
+
             
+            //round
+             accumulator += (1 << (QFIXEDPOINT - 1));
+           // printf("accumulation=%d\n",accumulator);
+            accumulator >>= QFIXEDPOINT;
+            //printf("\n");
+
             //add bias
             accumulator += bias;
             
