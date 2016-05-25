@@ -1,0 +1,4 @@
+#ifndef _TINYLSTM_LSTM_LAYER_H_
+#define _TINYLSTM_LSTM_LAYER_H_
+
+#endif //_TINYLSTM_LSTM_LAYER_H_

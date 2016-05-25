@@ -23,6 +23,9 @@ tinylstm_math.c
 tinylstm_net.c
 tinylstm_tensor.c
 tinylstm_conv_layer.c
+tinylstm_maxpoolrelu_layer.c
+tinylstm_fullyconnected_layer.c
+tinylstm_lstm_layer.c
 )
 
 add_library(gtest STATIC gtest/gtest-all.cc)
