@@ -1,5 +1,4 @@
 #include "tinylstm_maxpoolrelu_layer.h"
-#include "tinylstm_memory.h"
 #include <assert.h>
 
 
@@ -39,8 +38,8 @@ static void eval_maxpoolrelu(const void * context,Tensor_t * out,const Tensor_t 
     const uint32_t num_row_regions = in->dims[2] / layer->pool_dims[0];
     const uint32_t num_col_regions = in->dims[3] / layer->pool_dims[1];
     
-    const uint32_t num_pool_rows = layer->pool_dims[0];
-    const uint32_t num_pool_cols = layer->pool_dims[1];
+//    const uint32_t num_pool_rows = layer->pool_dims[0];
+//    const uint32_t num_pool_cols = layer->pool_dims[1];
     const uint32_t num_input_image_cols = in->dims[3];
     const uint32_t num_output_image_cols = out->dims[3];
 

@@ -30,9 +30,7 @@ static void eval_conv2d_direct(const void * context,Tensor_t * out,const Tensor_
     const Weight_t * weight_start = layer->weights->x;
     const uint32_t weight_filter_size = layer->weights->dims[1] * layer->weights->dims[2] * layer->weights->dims[3];
     
-    const Weight_t * const image_start = in->x;
-    const uint32_t image_size = in->dims[2] * in->dims[3];
-    
+    const Weight_t * const image_start = in->x;    
     const Weight_t * bias = layer->biases->x;
     
     Weight_t * out_start = out->x;

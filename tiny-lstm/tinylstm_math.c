@@ -32,6 +32,16 @@ Weight_t tinylstm_tanh(WeightLong_t x) {
     return y;
 }
 
+//(tanh + 1) / 2 == sigmoid
+//crud, but should work okay
+Weight_t tinylstm_sigmoid(WeightLong_t x) {
+    WeightLong_t tanh = tinylstm_tanh(x);
+    
+    tanh += (1 << QFIXEDPOINT);
+    tanh >>= 1;
+    return (Weight_t) tanh;
+}
+
 void tinylstm_vec_tanh(Weight_t * out, const WeightLong_t * in, const uint32_t num_elements) {
     uint32_t i;
     
@@ -40,25 +50,14 @@ void tinylstm_vec_tanh(Weight_t * out, const WeightLong_t * in, const uint32_t n
     }
 }
 
-void tinylstm_matmulvec_long_output(WeightLong_t * out,const Weight_t * mat, const Weight_t * vec, const uint32_t num_rows, const uint32_t num_cols) {
+void tinylstm_vec_sigmoid(Weight_t * out, const WeightLong_t * in, const uint32_t num_elements) {
+    uint32_t i;
     
-    WeightLong_t * pOut = out;
-    const Weight_t * pRow = mat;
-    WeightLong_t temp;
-    uint32_t j,i;
-    
-    for (j = 0; j < num_rows; j++) {
-        temp = 0;
-        for (i = 0; i < num_cols; i++) {
-            temp += vec[i] * pRow[i];
-        }
-        *pOut = temp;
-        
-        pRow += num_cols;
-        pOut++;
+    for (i = 0; i < num_elements; i++) {
+        out[i] = tinylstm_sigmoid(in[i]);
     }
-    
 }
+
 
 
 //takes two 3 dimensional tensors (a bunch of images, and a bunch of convolutional filters),
