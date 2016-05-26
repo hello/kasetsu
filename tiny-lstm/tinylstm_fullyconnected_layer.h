@@ -3,7 +3,10 @@
 
 #include "tinylstm_types.h"
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
 typedef struct {
     const ConstTensor_t * weights;
     const ConstTensor_t * biases;
@@ -14,5 +17,8 @@ typedef struct {
 
 ConstLayer_t tinylstm_create_fullyconnected_layer(const FullyConnectedLayer_t * static_def);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //_TINYLSTM_FULLYCONNECTED_LAYER_H_

@@ -30,7 +30,7 @@ inline Weight_t * get_slice(Tensor_t * tensor, uint32_t nslice) {
 }
 
     
-Tensor_t * tinylstm_create_new_tensor(const uint32_t dims[3]);
+Tensor_t * tinylstm_create_new_tensor(const uint32_t dims[TENSOR_DIM]);
 
 Tensor_t * tinylstm_clone_new_tensor(const ConstTensor_t * in);
 

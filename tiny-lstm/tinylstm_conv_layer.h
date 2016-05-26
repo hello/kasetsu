@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define CONV_TENSOR_SIZE (4)
+    
 typedef struct {
     const ConstTensor_t * weights;
     const ConstTensor_t * biases;

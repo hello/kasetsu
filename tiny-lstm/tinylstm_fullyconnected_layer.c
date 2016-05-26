@@ -53,8 +53,6 @@ static void eval_fullyconnected(const void * context,Tensor_t * out,const Tensor
  does squash(W*x) for each unit (each "unit" is the "slice", 3rd dimension of your data tensor, etc.)
  */
 
-
-
 ConstLayer_t tinylstm_create_fullyconnected_layer(const FullyConnectedLayer_t * static_def) {
     ConstLayer_t layer = {eval_fullyconnected,get_fullyconnectged_output_size,static_def};
     return layer;
