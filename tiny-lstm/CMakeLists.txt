@@ -31,7 +31,10 @@ tinylstm_lstm_layer.c
 add_library(gtest STATIC gtest/gtest-all.cc)
 add_executable(unit-test 
 unit-test/main.cpp 
-unit-test/testconv.cpp)
+unit-test/testconv.cpp
+unit-test/testfull.cpp
+unit-test/testlstm.cpp
+unit-test/testmaxpool.cpp)
 
 target_link_libraries(unit-test gtest tensor)
 
