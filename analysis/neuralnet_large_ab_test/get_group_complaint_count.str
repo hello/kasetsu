@@ -7,6 +7,9 @@ all_accounts AS (
     AND created_at <= '2016-06-07 00:00:00'
     AND account_id NOT IN ({1})
 ),
+account_count AS (
+  SELECT COUNT(account_id) FROM all_accounts AS count
+),
 num_timelines AS ( 
   SELECT COUNT(*) as count
   FROM timeline_analytics 
@@ -22,7 +25,8 @@ num_timelines AS (
     (SELECT count FROM num_timelines)::float as num_timelines, 
     COUNT(*) as total_count,
     AVG(q3.corrected_time) as avg,
-    STDDEV_SAMP(q3.corrected_time) as std 
+    STDDEV_SAMP(q3.corrected_time) as std,
+    (SELECT count FROM account_count) as account_count
   FROM
   (SELECT id,q2.account_id,q2.date_of_night,q2.event_type,q2.created,
   CASE
