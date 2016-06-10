@@ -13,7 +13,7 @@
      to_timestamp(concat('1970-01-01 ',new_time),'YYY-MM-DD HH24:mi')::timestamp without time zone t2,
      to_timestamp(concat('1970-01-01 ',old_time),'YYY-MM-DD HH24:mi')::timestamp without time  zone t1
                  FROM 
-                 timeline_feedback WHERE date_of_night >= '2015-03-01' AND event_type=14
+                 timeline_feedback WHERE date_of_night >= '2015-03-01' AND event_type=12
              ) q1
              ) q2 
         ) q3
