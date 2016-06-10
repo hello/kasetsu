@@ -6,6 +6,7 @@ import sys
 import datetime
 import numpy as np
 from collections import defaultdict
+import scipy.signal as signal
 
 def str2date(mystr):
     dt = datetime.datetime.strptime(mystr.strip(), '%Y-%m-%d')
@@ -34,11 +35,20 @@ tc3,c3 = read_complaints_file('sleep_complaints.txt')
 for i in range(len(c1)):
     c2[i] = c2[i] / float(c1[i])
     c3[i] = c3[i] / float(c1[i])
-    
-plot(tc1,c2,tc1,c3);
+
+N = 7.0
+B = np.ones(N) / N
+A = 1
+c2 = signal.filtfilt(B,A,c2)
+c3 = signal.filtfilt(B,A,c3)
+lines = plot(tc1,c2,tc1,c3);
 grid('on');
 legend(['wake complaint frac','sleep complaint frac'])
 xlabel('Time')
 ylabel('Fraction')
-title('Complate Rate vs Time')
+title('Smoothed Complaint Rate Vs. Time For All Users')
+setp(lines[0],linewidth=2)
+setp(lines[1],linewidth=2)
+ylim([0,0.10])
+
 show()
