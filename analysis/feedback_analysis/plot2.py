@@ -28,9 +28,9 @@ def read_complaints_file(filename):
     return t,cc
 
 
-tc1,c1 = read_complaints_file('timelinecounts.txt')
-tc2,c2 = read_complaints_file('wake_complaints.txt')
-tc3,c3 = read_complaints_file('sleep_complaints.txt')
+tc1,c1 = read_complaints_file('timelinecounts2.txt')
+tc2,c2 = read_complaints_file('wake_complaints2.txt')
+tc3,c3 = read_complaints_file('sleep_complaints2.txt')
 
 for i in range(len(c1)):
     c2[i] = c2[i] / float(c1[i])
@@ -39,8 +39,8 @@ for i in range(len(c1)):
 N = 7.0
 B = np.ones(N) / N
 A = 1
-c2 = signal.filtfilt(B,A,c2)
-c3 = signal.filtfilt(B,A,c3)
+c2 = signal.filtfilt(B,A,c2,padtype=None)
+c3 = signal.filtfilt(B,A,c3,padtype=None)
 lines = plot(tc1,c2,tc1,c3);
 grid('on');
 legend(['wake complaint frac','sleep complaint frac'])
