@@ -12,11 +12,15 @@ typedef struct {
 
 const int8_t k_lookup[256] = {-8,-6,-6,-4,-6,-4,-4,-2,-6,-4,-4,-2,-4,-2,-2,0,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-6,-4,-4,-2,-4,-2,-2,0,-4,-2,-2,0,-2,0,0,2,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-4,-2,-2,0,-2,0,0,2,-2,0,0,2,0,2,2,4,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,-2,0,0,2,0,2,2,4,0,2,2,4,2,4,4,6,0,2,2,4,2,4,4,6,2,4,4,6,4,6,6,8};
 
-#define MASK_16 (0xd008u)
+/*straight from wikipedia, ha.
+ https://en.wikipedia.org/wiki/Linear-feedback_shift_register
+ */
 #define MASK_9 (0x0110u)
+#define MASK_10 (0x0240u)
+#define MASK_12 (0x0E08u)
+#define MASK_16 (0xd008u)
 
-#define PN_LEN_9           ((1<<9) - 1)
-#define PN_LEN_16          ((1<<16) - 1)
+
 
 
 static PNSequence_t _data;
@@ -29,11 +33,15 @@ void pn_init_with_state(uint16_t init_state, uint16_t mask, uint32_t len) {
     _data.len = len;
 }
 
-void pn_init_with_mask_9() {
+void pn_init_with_mask_9(void) {
     pn_init_with_state(0xABCD,MASK_9,PN_LEN_9);
 }
 
-void pn_init_with_mask_16() {
+void pn_init_with_mask_12(void) {
+   
+}
+
+void pn_init_with_mask_16(void) {
     pn_init_with_state(0xABCD,MASK_16,PN_LEN_16);
 }
 
@@ -48,16 +56,28 @@ uint8_t pn_get_next_bit() {
     return lsb;
 }
 
-int32_t pn_correlate_with_xor(const uint16_t * v1, const uint16_t * v2, uint32_t len) {
-    int i;
-    int32_t sum = 0;
-    for (i = 0;i < len; i++) {
-        const uint16_t res =  v1[i] ^ v2[i];
-        const uint8_t b1 = (res & 0xFF00) >> 8;
-        const uint8_t b2 = res & 0x00FF;
-        sum += k_lookup[b1] + k_lookup[b2];
+void pn_correlate_4x(uint32_t x, int32_t sums[8][4],uint8_t * the_byte) {
+    int16_t i;
+    uint8_t b;
+    uint32_t x2;
+    
+    for (i = 0; i < 8; i++) {
+        *the_byte <<= 1;
+        *the_byte |= pn_get_next_bit();
+        
+        b = *the_byte;
+        
+        x2 = (b << 24) | (b << 16) | (b << 8) | (b);
+        
+        x2 ^= x;
+        
+        sums[i][0] += k_lookup[(x2 & 0x000000FF) >> 0];
+        sums[i][1] += k_lookup[(x2 & 0x0000FF00) >> 8];
+        sums[i][2] += k_lookup[(x2 & 0x00FF0000) >> 16];
+        sums[i][3] += k_lookup[(x2 & 0xFF000000) >> 24];
     }
-    return sum;
+    
+    
 }
 
 #if 0

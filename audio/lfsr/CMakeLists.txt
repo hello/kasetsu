@@ -23,3 +23,9 @@ add_executable(PnWhiteNoise
                 main_white_noise.cpp)
 
 target_link_libraries(PnWhiteNoise pn ${SNDFILE_LIBRARIES})
+
+add_executable(PnQuadCorrelator
+                main_quad_correlator.cpp)
+
+target_link_libraries(PnQuadCorrelator pn ${SNDFILE_LIBRARIES})
+

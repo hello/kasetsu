@@ -8,12 +8,18 @@
 extern "C" {
 #endif
 
-int32_t pn_correlate_with_xor(const uint16_t * v1, const uint16_t * v2, uint32_t len);
+#define PN_LEN_9           ((1<<9)  - 1)
+#define PN_LEN_10          ((1<<10) - 1)
+#define PN_LEN_12          ((1<<12) - 1)
+#define PN_LEN_16          ((1<<16) - 1)
+    
 uint8_t pn_get_next_bit();
 void pn_init_with_mask_9(void);
+void pn_init_with_mask_12(void);
 void pn_init_with_mask_16(void);
 uint32_t pn_get_length();
-    
+void pn_correlate_4x(uint32_t x, int32_t sums[8][4],uint8_t * the_byte);
+
 #ifdef __cplusplus
 }
 #endif
