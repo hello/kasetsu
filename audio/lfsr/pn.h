@@ -18,7 +18,7 @@ void pn_init_with_mask_9(void);
 void pn_init_with_mask_12(void);
 void pn_init_with_mask_16(void);
 uint32_t pn_get_length();
-void pn_correlate_4x(uint32_t x, int32_t sums[8][4],uint8_t * the_byte);
+void pn_correlate_4x(uint32_t x, int16_t sums[4][8],uint8_t * the_byte);
 
 #ifdef __cplusplus
 }

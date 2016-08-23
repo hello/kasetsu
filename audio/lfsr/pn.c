@@ -38,7 +38,7 @@ void pn_init_with_mask_9(void) {
 }
 
 void pn_init_with_mask_12(void) {
-   
+    pn_init_with_state(0xABCD,MASK_12,PN_LEN_12);
 }
 
 void pn_init_with_mask_16(void) {
@@ -56,7 +56,7 @@ uint8_t pn_get_next_bit() {
     return lsb;
 }
 
-void pn_correlate_4x(uint32_t x, int32_t sums[8][4],uint8_t * the_byte) {
+void pn_correlate_4x(uint32_t x, int16_t sums[4][8],uint8_t * the_byte) {
     int16_t i;
     uint8_t b;
     uint32_t x2;
@@ -71,10 +71,10 @@ void pn_correlate_4x(uint32_t x, int32_t sums[8][4],uint8_t * the_byte) {
         
         x2 ^= x;
         
-        sums[i][0] += k_lookup[(x2 & 0x000000FF) >> 0];
-        sums[i][1] += k_lookup[(x2 & 0x0000FF00) >> 8];
-        sums[i][2] += k_lookup[(x2 & 0x00FF0000) >> 16];
-        sums[i][3] += k_lookup[(x2 & 0xFF000000) >> 24];
+        sums[0][i] += k_lookup[(x2 & 0x000000FF) >> 0];
+        sums[1][i] += k_lookup[(x2 & 0x0000FF00) >> 8];
+        sums[2][i] += k_lookup[(x2 & 0x00FF0000) >> 16];
+        sums[3][i] += k_lookup[(x2 & 0xFF000000) >> 24];
     }
     
     
