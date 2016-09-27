@@ -15,6 +15,7 @@ import os
 
 POOL_SIZE = 4
 k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+k_uri = 'http://127.0.0.1:9987/v1/prediction/sleep_events/{}/{}'
 
 k_magic_auth=os.environ['RESEARCH_TOKEN']
 
