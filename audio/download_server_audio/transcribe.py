@@ -31,6 +31,9 @@ DISCOVERY_URL = ('https://{api}.googleapis.com/$discovery/rest?'
                  'version={apiVersion}')
 
 
+
+PHRASES = ['weather','sleep sounds','alarm']
+
 # Application default credentials provided by env variable
 # GOOGLE_APPLICATION_CREDENTIALS
 def get_speech_service():
@@ -66,6 +69,8 @@ def main(speech_file):
                 'sampleRate': 16000,  # 16 khz
                 # See https://goo.gl/A9KJ1A for a list of supported languages.
                 'languageCode': 'en-US',  # a BCP-47 language tag
+                'maxAlternatives' : 2,
+                'speechContext' : {"phrases": PHRASES}
             },
             'audio': {
                 'content': speech_content.decode('UTF-8')
