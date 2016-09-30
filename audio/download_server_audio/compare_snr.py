@@ -1,7 +1,7 @@
 from scipy.io import wavfile
 import sys
 import numpy as np
-
+import scipy.signal as s
 
 target_rate = 16000
 
@@ -37,15 +37,13 @@ if __name__ == '__main__':
     L = np.min((x1.shape[0],x2.shape[0]))
     x1 = x1[0:L]
     x2 = x2[0:L]
-
-    dx = x2 - x1
-    dxsq = dx ** 2
-
-    x3 = x1 ** 2 + x2 ** 2
-    errfrac = np.sum(dxsq) / np.sum(x3) / float(L) + 1e-14
-    print errfrac
-    errdb = 10 * np.log10(errfrac)
  
-    print errdb
-
+    f1, t1, S1 = s.spectrogram(x1)
+    f2, t2, S2 = s.spectrogram(x2)
     
+    dberr = 10*np.log10(S1) - 10*np.log10(S2)
+    nbins = dberr.shape[0]
+    
+    errt = np.sum(dberr,axis=0) / nbins
+    avgerr = np.sum(errt) / errt.shape[0]
+    print avgerr
