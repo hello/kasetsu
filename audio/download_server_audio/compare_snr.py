@@ -42,8 +42,12 @@ if __name__ == '__main__':
     f2, t2, S2 = s.spectrogram(x2)
     
     dberr = 10*np.log10(S1) - 10*np.log10(S2)
-    nbins = dberr.shape[0]
+
+    avgerr_by_freq = np.sum(dberr,axis=1) / dberr.shape[1]
     
-    errt = np.sum(dberr,axis=0) / nbins
+    #error over time 
+    errt = np.sum(dberr,axis=0) / dberr.shape[0]
     avgerr = np.sum(errt) / errt.shape[0]
-    print avgerr
+    print 'avergage error in dB',avgerr
+    print 'by freq bin'
+    print avgerr_by_freq
