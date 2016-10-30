@@ -1,0 +1,128 @@
+#JSGF 1.0 UTF-8;
+
+/**
+  * Define simple travel directives.
+  *
+  * @author mr magoo
+  * @version 3.141beta
+  */
+
+grammar com.hello.voice;
+
+/**
+ * An absolute time.
+ *
+ * @example one oh clock
+ * @example twelve thirty seven pm
+ */
+public <absoluteTime> =
+      ( <hour>  oh clock | <hour> [ <minute>  ] [ a m  | p m  ]);
+
+/**
+ * An integer referring to an hour.
+ *
+ * @example one
+ * @example seven
+ */
+<hour> =
+     ( one
+     | two
+     | three
+     | four
+     | five
+     | six
+     | seven
+     | eight
+     | nine
+     | ten
+     | eleven
+     | twelve
+     | thirteen
+     | fourteen
+     | fifteen
+     | sixteen
+     | seventeen
+     | eighteen
+     | nineteen
+     | twenty
+     | (twenty ( one | two | three ) ) 
+      );
+<minute> =
+	 ( [oh] one
+	 | [oh] two
+	 | [oh] three
+	 | [oh] four
+	 | [oh] five
+	 | [oh] six
+	 | [oh] seven
+	 | [oh] eight
+	 | [oh] nine
+	 | ten		
+	 | eleven	
+	 | twelve	
+	 | thirteen 
+	 | fourteen 
+	 | fifteen  
+	 | sixteen  
+	 | seventeen
+	 | eighteen 
+	 | nineteen 
+	 | twenty	
+	 | (twenty ( one
+	           | two
+		   | three
+		   | four
+		   | five
+		   | six  
+		   | seven
+		   | eight
+		   | nine
+		    )
+		)
+	 | thirty		 
+	 | (thirty ( one
+		   | two  
+		   | three
+		   | four
+		   | five
+		   | six  
+		   | seven
+		   | eight
+		   | nine
+		   )
+		)
+	 | forty		 
+	 | (forty ( one 
+		  | two  
+		  | three
+		  | four
+		  | five
+		  | six  
+		  | seven
+		  | eight
+		  | nine
+		  )
+		)
+	 | fifty		 
+	 | (fifty ( one 
+		  | two  
+		  | three
+		  | four
+		  | five
+		  | six  
+		  | seven
+		  | eight
+		  | nine
+		  )
+		)
+	 );
+
+
+<sounds> = (brown noise | white noise | aura | rainfall);
+
+
+
+public <setAlarm> = set alarm [for | at | to] <absoluteTime>;
+public <playSounds> = play (sleep sounds | <sounds> );
+public <sleepStatus> = (how did i sleep last night | what is my sleep score );
+
