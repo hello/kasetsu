@@ -1,0 +1,17 @@
+#JSGF 1.0 UTF-8;
+
+/**
+  * Define simple travel directives.
+  *
+  * @author mr magoo
+  * @version 3.141beta
+  */
+
+grammar com.hello.voice;
+
+public <basicCmd> = <startPolite> <command> <endPolite>;
+<command> = <action> <object>;
+<action> = /10/ open |/2/ close |/1/ delete |/1/ move;
+<object> = [the | a] (window | file | menu);
+<startPolite> = (please | kindly | could you | oh mighty computer) *;
+<endPolite> = [ please | thanks | thank you ];
