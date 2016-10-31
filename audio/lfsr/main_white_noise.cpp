@@ -3,14 +3,15 @@
 #include "upconvert.h"
 #include <sndfile.hh>
 #include <string.h>
+#include <iostream>
 
-#define NUM_PN_PERIODS   (10)
-
+#define NUM_PN_PERIODS   (500/16)
+#define SAMPLE_RATE (16000)
 static void create_file (const char * fname,const int16_t * buffer, const uint32_t buflen) {
     
     SndfileHandle file ;
     const static int channels = 1 ;
-    const static int srate = 16000 ;
+    const static int srate = SAMPLE_RATE ;
     
     printf ("Creating file named '%s'\n", fname) ;
     
@@ -30,9 +31,10 @@ int main(int argc, char * argv[]) {
     
     uint32_t i;
     
-    pn_init_with_mask_16();
+    pn_init_with_mask_14();
 
     const uint32_t len = pn_get_length();
+    std::cout << "len is " << len << " which will be about " << (len / (float)SAMPLE_RATE) << " seconds" << std::endl;
     
     //malloc
     uint8_t bits[NUM_PN_PERIODS * len];
@@ -43,10 +45,10 @@ int main(int argc, char * argv[]) {
         bits[i] = pn_get_next_bit();
     
         if (bits[i] > 0) {
-            samplebuf[i] = 32767;
+            samplebuf[i] = 1024;
         }
         else {
-            samplebuf[i] = -32767;
+            samplebuf[i] = -1024;
         }
     
     }

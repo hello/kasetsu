@@ -29,3 +29,5 @@ add_executable(PnQuadCorrelator
 
 target_link_libraries(PnQuadCorrelator pn ${SNDFILE_LIBRARIES})
 
+add_executable(TestItAll main_test.cpp)
+target_link_libraries(TestItAll pn)

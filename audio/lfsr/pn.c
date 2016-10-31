@@ -18,6 +18,7 @@ const int8_t k_lookup[256] = {-8,-6,-6,-4,-6,-4,-4,-2,-6,-4,-4,-2,-4,-2,-2,0,-6,
 #define MASK_9 (0x0110u)
 #define MASK_10 (0x0240u)
 #define MASK_12 (0x0E08u)
+#define MASK_14 (0x3802u)
 #define MASK_16 (0xd008u)
 
 
@@ -37,8 +38,16 @@ void pn_init_with_mask_9(void) {
     pn_init_with_state(0xABCD,MASK_9,PN_LEN_9);
 }
 
+void pn_init_with_mask_10(void) {
+    pn_init_with_state(0xABCD,MASK_10,PN_LEN_10);
+}
+
 void pn_init_with_mask_12(void) {
     pn_init_with_state(0xABCD,MASK_12,PN_LEN_12);
+}
+
+void pn_init_with_mask_14(void) {
+    pn_init_with_state(0xABCD,MASK_14,PN_LEN_14);
 }
 
 void pn_init_with_mask_16(void) {

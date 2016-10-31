@@ -24,10 +24,10 @@ int main(int argc, char * argv[]) {
     vec2.reserve(1<<20);
     
     
-    for (int j =0; j < 512; j++) {
+    for (int j =0; j < 2048; j++) {
         int count = 0;
 
-        pn_init_with_mask_12();
+        pn_init_with_mask_14();
         
         uint8_t the_byte = 0x00;
         
@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) {
             
             count++;
             
-            if (count >= 4096) {
+            if (count >= PN_LEN_14/8) {
                 break;
             }
         }
