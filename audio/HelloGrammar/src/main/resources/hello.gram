@@ -15,8 +15,7 @@ grammar com.hello.voice;
  * @example one oh clock
  * @example twelve thirty seven pm
  */
-public <absoluteTime> =
-      ( <hour>  oh clock | <hour> [ <minute>  ] [ a m  | p m  ]);
+<absoluteTime> = ( <hour>  oh clock | <hour> [ <minute>  ] [ a m  | p m  ]);
 
 /**
  * An integer referring to an hour.
@@ -24,17 +23,12 @@ public <absoluteTime> =
  * @example one
  * @example seven
  */
-<hour> =
-     ( one
-     | two
-     | three
-     | four
-     | five
-     | six
-     | seven
-     | eight
-     | nine
-     | ten
+
+<count9> = (one|two|three|four|five|six|seven|eight|nine);
+<hour> = (<count9> | ten | eleven | twelve);
+<hour24> = 
+     (zero 
+     | <count9>  
      | eleven
      | twelve
      | thirteen
@@ -44,19 +38,18 @@ public <absoluteTime> =
      | seventeen
      | eighteen
      | nineteen
-     | twenty
-     | (twenty ( one | two | three ) ) 
-      );
+     | twenty [one | two |three]);
+     
 <minute> =
-	 ( [oh] one
-	 | [oh] two
-	 | [oh] three
-	 | [oh] four
-	 | [oh] five
-	 | [oh] six
-	 | [oh] seven
-	 | [oh] eight
-	 | [oh] nine
+	 ( oh one
+	 | oh two
+	 | oh three
+	 | oh four
+	 | oh five
+	 | oh six
+	 | oh seven
+	 | oh eight
+	 | oh nine
 	 | ten		
 	 | eleven	
 	 | twelve	
@@ -67,62 +60,28 @@ public <absoluteTime> =
 	 | seventeen
 	 | eighteen 
 	 | nineteen 
-	 | twenty	
-	 | (twenty ( one
-	           | two
-		   | three
-		   | four
-		   | five
-		   | six  
-		   | seven
-		   | eight
-		   | nine
-		    )
-		)
-	 | thirty		 
-	 | (thirty ( one
-		   | two  
-		   | three
-		   | four
-		   | five
-		   | six  
-		   | seven
-		   | eight
-		   | nine
-		   )
-		)
-	 | forty		 
-	 | (forty ( one 
-		  | two  
-		  | three
-		  | four
-		  | five
-		  | six  
-		  | seven
-		  | eight
-		  | nine
-		  )
-		)
-	 | fifty		 
-	 | (fifty ( one 
-		  | two  
-		  | three
-		  | four
-		  | five
-		  | six  
-		  | seven
-		  | eight
-		  | nine
-		  )
-		)
-	 );
+	 | twenty [<count9>]	
+	 | thirty [<count9>]
+         | forty [<count9>]
+         | fifty [<count9>]);
 
+
+<ampm> = ( pee em| a em | this evening | this morning);
+<absoluteTime12> = ( <hour>  oh clock | <hour> <minute> ) [<ampm>];
+<absoluteTime24> = ( <hour24> <minute> );
+<absolutetime> = (<absoluteTime12> | <absoluteTime24>);
 
 <sounds> = (brown noise | white noise | aura | rainfall);
 
+<politeStart> = (please | kindly | (could | can) you)* [tell me];
 
+<querylang1> = (what's | what is | how is) [the];
 
-public <setAlarm> = set alarm [for | at | to] <absoluteTime>;
-public <playSounds> = play (sleep sounds | <sounds> );
-public <sleepStatus> = (how did i sleep last night | what is my sleep score );
+<sensors> = (temperature | humidity | particulate | dust | light | brightness | sound | pressure);
 
+public <cmdSetAlarm> = set [an] alarm [fur | for | at | to] <absoluteTime12> ;
+public <cmdPlaySounds> = play (sleep sounds | <sounds> );
+public <querySleepResult> = (how did i sleep last night | what is my sleep score );
+public <queryTime> = <politeStart> (what's the time | what time is it | what is the time);
+public <queryWeather> = <politeStart> <querylang1> weather;
+public <querySensor> = <politeStart> <querylang1> <sensors>;
