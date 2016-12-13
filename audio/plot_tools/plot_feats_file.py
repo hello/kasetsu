@@ -28,6 +28,10 @@ for data in datas:
 
     tmp = data + "}"
     jdata = json.loads(tmp)
+
+    if not '+okay' in jdata['id']:
+        continue
+
     n = jdata['num_cols']
     bindata = base64.b64decode(jdata['payload'])
     x = np.fromstring(bindata,dtype=np.int8)

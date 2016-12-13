@@ -7,11 +7,15 @@ from matplotlib.pyplot import *
 PLOT_IMPULSE = True
 target_rate = 16000
 
-def load_data(filename):
+def load_data(filename,isright):
     rate,data = wavfile.read(filename)
 
-    if len(data.shape) > 1:
+    if len(data.shape) > 1 and not isright:
         data = data[:,0]
+
+    if len(data.shape) > 1 and isright:
+        data = data[:,1]
+
 
     if rate != target_rate:
         print 'file %s is not %dhz' % (filename,target_rate)
@@ -34,6 +38,7 @@ def conv_data(data,ref):
 
     print begin,end
     x = np.convolve(data,ref)
+    plot(x); show()
     x2 = x[begin:end]
     i = np.argmax(np.abs(x2))
 
@@ -47,29 +52,41 @@ def conv_data(data,ref):
         plot(dist,xx2); xlabel('distance (m)'); title('normalized room response'); show()
 
     h = np.fft.fft(xx)
-    f = np.linspace(0,target_rate,len(h)/2)
+    f = np.linspace(0,target_rate/2,len(h)/2)
     a = 20*np.log10(np.abs(h[0:len(h)/2]))
-    return f,a
+    return f,a,xx
 
 
 if __name__ == '__main__':
-    refdata = load_data('reference.wav')
+
+    isright = False
+    if len(sys.argv) >= 3:
+        if sys.argv[2] == 'left':
+            isright = False
+        elif sys.argv[2] == 'right':
+            isright = True
+        else:
+            print 'invalid option'
+            sys.exit(0)
+
+    refdata = load_data('reference.wav',False)
     ref = refdata[::-1]
 
     datas = []
 
     fnames = []
-    for i in range(1,len(sys.argv)):
-        fname = sys.argv[i]
-        data = load_data(fname)
-        f,h = conv_data(data,ref)
-        plot(f,h)
-        fnames.append(fname)
+    fname = sys.argv[1]
+    data = load_data(fname,isright)
+    f,h,impulse_response = conv_data(data,ref)
+    plot(f,h)
+    fnames.append(fname)
 
     legend(fnames)
     grid('on')
     ylabel('power (dB)')
     xlabel('freq (Hz)')
     show()
+
+    np.savetxt('impulse_response.csv',impulse_response,delimiter=',')
 
 

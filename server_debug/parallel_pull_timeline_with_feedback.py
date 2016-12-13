@@ -4,7 +4,6 @@ import datetime
 import requests
 import numpy as np
 import time
-import json
 import signal
 from multiprocessing import Pool
 import threading
@@ -14,7 +13,7 @@ import copy
 import os
 
 POOL_SIZE = 4
-k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
+#k_uri = 'https://research-api-benjo.hello.is/v1/prediction/sleep_events/{}/{}'
 k_uri = 'http://127.0.0.1:9987/v1/prediction/sleep_events/{}/{}'
 
 k_magic_auth=os.environ['RESEARCH_TOKEN']
@@ -54,8 +53,7 @@ def pull_date_for_user(userinfo):
 
         response = requests.get(url,params=k_params,headers = headers)
         if response.ok:
-
-           
+ 
             data = response.json()
 
             if isinstance(data, dict) and data.has_key('code') and int(data['code']) == 204:

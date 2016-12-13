@@ -1,4 +1,4 @@
-package com.hello.suripu.research.runners;
+package com.hello.alg.runners;
 
 import com.google.common.base.Optional;
 import com.hello.suripu.algorithm.hmm.BetaPdf;

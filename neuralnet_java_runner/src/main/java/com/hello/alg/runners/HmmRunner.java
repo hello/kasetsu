@@ -1,6 +1,7 @@
-package com.hello.suripu.research.runners;
+package com.hello.alg.runners;
 
 import com.google.common.base.Optional;
+import com.hello.alg.helpers.CsvUtils;
 import com.hello.suripu.algorithm.hmm.HmmDecodedResult;
 
 import java.io.IOException;
@@ -12,38 +13,11 @@ import java.nio.file.Paths;
  */
 public class HmmRunner {
 
-    //untested
-    static double [][] csvToDoubles(final String fileContents) {
-        final String [] lines = fileContents.split("\n");
-        int N = lines.length;
-
-        if (lines[N-1].length() <= 1) {
-            N--;
-        }
-
-        double [][] arr = new double[N][];
-
-        for (int irow = 0; irow < N; irow++) {
-
-            final String [] elements = lines[irow].split(",");
-            final double [] row = new double[elements.length];
-
-            for (int i = 0; i < elements.length; i++) {
-                row[i] = Double.valueOf(elements[i].trim()).doubleValue();
-            }
-
-            arr[irow] = row;
-
-        }
-
-        return arr;
-    }
-
 
     public static void main(String [] args ) throws IOException {
 
         //data should be of the format [numSensors x numTimeSteps]
-        final double [][] data  = csvToDoubles(new String(Files.readAllBytes(Paths.get(args[0]))));
+        final double [][] data  = CsvUtils.csvToDoubles(CsvUtils.getFileContents(args[0]));
 
         Optional<HmmModel> hmmOptional = HmmModelFactory.getModelById(args[1]);
 
