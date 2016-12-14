@@ -40,39 +40,8 @@ public class CsvUtils {
         return arr;
     }
 
-      /*
-
-        assumed format
-
-      x[0] = account_id
-      x[1] = timestamp
-      x[2] = light
-      x[3] = light variance
-      x[4] = wave count
-      x[5] = audio_num_disturbances
-      x[6] = audio_peak_disturbances_db
-      x[7] = on_duration
-      x[8] = partner_on_duration
-      x[9] = svm_mag
-
-*/
-
-    public static Multimap<Long,OneDaysSensorData> getSensorDataFromCsv(final double [][] csvdata) {
-        final Map<Long,Map<Long,double []>> dataByAccountAndTime = Maps.newHashMap();
-
-        double lastAccountId = -1.0;
-
-        for (final double [] line : csvdata) {
-            double accountId = line[0];
-
-            if (accountId != lastAccountId) {
-                //start a new
-            }
-
-        }
 
 
-    }
 
     public static String getFileContents(final String filename) throws IOException {
         return new String(Files.readAllBytes(Paths.get(filename)));

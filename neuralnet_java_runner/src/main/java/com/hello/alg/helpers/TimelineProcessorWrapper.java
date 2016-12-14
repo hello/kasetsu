@@ -1,10 +1,13 @@
 package com.hello.alg.helpers;
 
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hello.alg.api.TimelineSensorDataProtos;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.algorithmintegration.AlgorithmConfiguration;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -33,7 +36,6 @@ import com.hello.suripu.core.models.AllSensorSampleList;
 import com.hello.suripu.core.models.Calibration;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.models.Event;
 import com.hello.suripu.core.models.OnlineHmmData;
 import com.hello.suripu.core.models.OnlineHmmPriors;
 import com.hello.suripu.core.models.OnlineHmmScratchPad;
@@ -45,25 +47,23 @@ import com.hello.suripu.core.models.SleepScoreParameters;
 import com.hello.suripu.core.models.SleepStats;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.TimelineFeedback;
+import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.models.device.v2.Sense;
-import com.hello.suripu.core.util.CSVLoader;
 import com.hello.suripu.core.util.FeatureExtractionModelData;
 import com.hello.suripu.core.util.SleepHmmWithInterpretation;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-import com.hello.suripu.coredropwizard.timeline.*;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
 import dagger.Module;
 import dagger.Provides;
+import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -75,11 +75,18 @@ import java.util.UUID;
  */
 
 
-public class TimelineProcessorBuilder {
+public class TimelineProcessorWrapper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimelineProcessorBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimelineProcessorWrapper.class);
 
-    private NeuralNetEndpoint neuralNetEndpoint = null;
+    private final NeuralNetEndpoint neuralNetEndpoint;
+    private final InstrumentedTimelineProcessor timelineProcessor;
+
+    private AllSensorSampleList allSensorSampleList = new AllSensorSampleList();
+    private List<TrackerMotion> myMotions = Lists.newArrayList();
+    private List<TrackerMotion> partnerMotions = Lists.newArrayList();
+    private Long currentAccountId = 0L;
+    private DateTime currentTargetDate = null;
 
     final public PillDataReadDAO pillDataReadDAO = new PillDataReadDAO() {
         @Override
@@ -91,7 +98,7 @@ public class TimelineProcessorBuilder {
     };
 
 
-    final public DeviceDataReadAllSensorsDAO deviceDataReadAllSensorsDAO = new DeviceDataReadAllSensorsDAO() {
+    final private DeviceDataReadAllSensorsDAO deviceDataReadAllSensorsDAO = new DeviceDataReadAllSensorsDAO() {
         @Override
         public AllSensorSampleList generateTimeSeriesByUTCTimeAllSensors(
                 Long queryStartTimestampInUTC, Long queryEndTimestampInUTC, Long accountId, String externalDeviceId,
@@ -110,7 +117,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public RingTimeHistoryReadDAO ringTimeHistoryDAODynamoDB = new RingTimeHistoryReadDAO() {
+    final private RingTimeHistoryReadDAO ringTimeHistoryDAODynamoDB = new RingTimeHistoryReadDAO() {
         @Override
         public List<RingTime> getRingTimesBetween(String senseId, Long accountId, DateTime startTime, DateTime endTime) {
 
@@ -118,7 +125,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public FeedbackReadDAO feedbackDAO = new FeedbackReadDAO() {
+    final private FeedbackReadDAO feedbackDAO = new FeedbackReadDAO() {
         @Override
         public ImmutableList<TimelineFeedback> getCorrectedForNight(Long accountId, DateTime dateOfNight) {
             return ImmutableList.copyOf(Lists.<TimelineFeedback>newArrayList());
@@ -130,14 +137,14 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public SleepHmmDAO sleepHmmDAO = new SleepHmmDAO() {
+    final private SleepHmmDAO sleepHmmDAO = new SleepHmmDAO() {
         @Override
         public com.google.common.base.Optional<SleepHmmWithInterpretation> getLatestModelForDate(long accountId, long timeOfInterestMillis) {
             return com.google.common.base.Optional.absent();
         }
     };
 
-    final public AccountReadDAO accountDAO = new AccountReadDAO() {
+    final private AccountReadDAO accountDAO = new AccountReadDAO() {
         @Override
         public com.google.common.base.Optional<Account> getById(Long id) {
             final Account account = new Account.Builder().withDOB("1980-01-01").build();
@@ -171,7 +178,7 @@ public class TimelineProcessorBuilder {
     };
 
 
-    final public SleepStatsDAO sleepStatsDAO = new SleepStatsDAO() {
+    final private SleepStatsDAO sleepStatsDAO = new SleepStatsDAO() {
         @Override
         public Boolean updateStat(Long accountId, DateTime date, Integer overallSleepScore, SleepScore sleepScore, SleepStats stats, Integer offsetMillis) {
             return Boolean.TRUE;
@@ -198,7 +205,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public TimeZoneHistoryDAO timeZoneHistoryDAO= new TimeZoneHistoryDAO(){
+    final private TimeZoneHistoryDAO timeZoneHistoryDAO= new TimeZoneHistoryDAO(){
         @Override
         public Optional<TimeZoneHistory> updateTimeZone(final long accountId, final DateTime updatedTime, final String clientTimeZoneId, int clientTimeZoneOffsetMillis){
             return null;
@@ -230,7 +237,7 @@ public class TimelineProcessorBuilder {
 
     };
 
-    final public SenseColorDAO senseColorDAO = new SenseColorDAO() {
+    final private SenseColorDAO senseColorDAO = new SenseColorDAO() {
         @Override
         public com.google.common.base.Optional<Device.Color> getColorForSense(String senseId) {
             return com.google.common.base.Optional.absent();
@@ -257,7 +264,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public OnlineHmmModelsDAO priorsDAO = new OnlineHmmModelsDAO() {
+    final private OnlineHmmModelsDAO priorsDAO = new OnlineHmmModelsDAO() {
         @Override
         public OnlineHmmData getModelDataByAccountId(Long accountId, DateTime date) {
             return null;
@@ -274,14 +281,14 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public FeatureExtractionModelsDAO featureExtractionModelsDAO = new FeatureExtractionModelsDAO() {
+    final private FeatureExtractionModelsDAO featureExtractionModelsDAO = new FeatureExtractionModelsDAO() {
         @Override
         public FeatureExtractionModelData getLatestModelForDate(Long accountId, DateTime dateTimeLocalUTC, com.google.common.base.Optional<UUID> uuidForLogger) {
             return null;
         }
     };
 
-    final public CalibrationDAO calibrationDAO = new CalibrationDAO() {
+    final private CalibrationDAO calibrationDAO = new CalibrationDAO() {
         @Override
         public com.google.common.base.Optional<Calibration> get(String senseId) {
             return null;
@@ -328,7 +335,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public DefaultModelEnsembleDAO defaultModelEnsembleDAO = new DefaultModelEnsembleDAO() {
+    final private DefaultModelEnsembleDAO defaultModelEnsembleDAO = new DefaultModelEnsembleDAO() {
         @Override
         public OnlineHmmPriors getDefaultModelEnsemble() {
             return OnlineHmmPriors.createEmpty();
@@ -340,7 +347,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public UserTimelineTestGroupDAO userTimelineTestGroupDAO = new UserTimelineTestGroupDAO() {
+    final private UserTimelineTestGroupDAO userTimelineTestGroupDAO = new UserTimelineTestGroupDAO() {
         @Override
         public com.google.common.base.Optional<Long> getUserGestGroup(Long accountId, DateTime timeToQueryUTC) {
             return com.google.common.base.Optional.absent();
@@ -352,7 +359,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public MetricRegistry metric = new MetricRegistry();
+    final private MetricRegistry metric = new MetricRegistry();
 
     /*
     final DeviceReadDAO deviceReadForTimelineDAO = new DeviceReadForTimelineDAO() {
@@ -373,7 +380,7 @@ public class TimelineProcessorBuilder {
     };
     */
 
-    final public DeviceReadDAO deviceReadDAO = new DeviceReadDAO() {
+    final private DeviceReadDAO deviceReadDAO = new DeviceReadDAO() {
         @Override
         public com.google.common.base.Optional<Long> getDeviceForAccountId(@Bind("account_id") Long accountId, @Bind("device_id") String deviceName) {
             return null;
@@ -430,7 +437,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public AlgorithmConfiguration algorithmConfiguration = new AlgorithmConfiguration() {
+    final private AlgorithmConfiguration algorithmConfiguration = new AlgorithmConfiguration() {
         @Override
         public int getArtificalLightStartMinuteOfDay() {
             return 21*60 + 30;
@@ -442,7 +449,7 @@ public class TimelineProcessorBuilder {
         }
     };
 
-    final public SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDAO() {
+    final private SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDAO() {
 
         @Override
         public SleepScoreParameters getSleepScoreParametersByDate(Long accountId, DateTime nightDate) {
@@ -470,7 +477,7 @@ public class TimelineProcessorBuilder {
         }
     }
 
-    final public RolloutAdapter rolloutAdapter = new RolloutAdapter() {
+    final private RolloutAdapter rolloutAdapter = new RolloutAdapter() {
 
 
         @Override
@@ -515,32 +522,87 @@ public class TimelineProcessorBuilder {
     }
 
 
-    TimelineProcessorBuilder withNeuralNetEndpoint(NeuralNetEndpoint neuralNetEndpoint) {
+    public TimelineProcessorWrapper( NeuralNetEndpoint neuralNetEndpoint) {
         this.neuralNetEndpoint = neuralNetEndpoint;
-        return this;
-    }
-
-    TimelineProcessorBuilder withSourceData() {
-
-    }
-
-    public InstrumentedTimelineProcessor build() {
 
         ObjectGraphRoot.getInstance().init(new RolloutLocalModule());
         features.clear();
 
         final PairingDAO pairingDAO = new HistoricalPairingDAO(deviceReadDAO, deviceDataReadAllSensorsDAO);
 
-        return InstrumentedTimelineProcessor.createTimelineProcessor(
+        this.timelineProcessor =  InstrumentedTimelineProcessor.createTimelineProcessor(
                 pillDataReadDAO,deviceReadDAO,deviceDataReadAllSensorsDAO,
                 ringTimeHistoryDAODynamoDB,feedbackDAO, sleepHmmDAO,accountDAO,sleepStatsDAO,
                 new SenseDataDAODynamoDB(pairingDAO, deviceDataReadAllSensorsDAO, senseColorDAO, calibrationDAO),timeZoneHistoryDAO, priorsDAO,featureExtractionModelsDAO,
                 defaultModelEnsembleDAO,userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
                 neuralNetEndpoint,algorithmConfiguration, metric);
-
     }
 
 
+    private static List<Sample> samplesToSamples(final List<TimelineSensorDataProtos.Sample> samples,final double calibrationValue) {
+        final List<Sample> samplesOutputList = Lists.newArrayList();
+        for (final TimelineSensorDataProtos.Sample sample : samples) {
+            samplesOutputList.add(new Sample(sample.getTimestamp(),(float)(calibrationValue * sample.getValue()),sample.getTzOffset()));
+        }
+        return samplesOutputList;
+    }
+
+    private static List<TrackerMotion> motionToMotions(final List<TimelineSensorDataProtos.TrackerMotion> motions) {
+        final List<TrackerMotion> trackerMotions = Lists.newArrayList();
+
+        for (final TimelineSensorDataProtos.TrackerMotion m : motions) {
+            Long bitmask = null;
+
+            //if (m.hasBitmask()) {
+            //    bitmask = m.getBitmask();
+            //}
+
+            trackerMotions.add(
+                        new TrackerMotion(0L,0L,Long.valueOf(0L),m.getTimestamp(),(int)m.getSvmMag(),(int)m.getTzOffset(),Long.valueOf(0),Long.valueOf(0),Long.valueOf(m.getOnDuration())));
+        }
+
+        return trackerMotions;
+    }
+
+    private void updateDAOs(TimelineSensorDataProtos.OneDaysSensorData data) {
+        allSensorSampleList = new AllSensorSampleList();
+
+        //TODO calibrated based off of color and hardware version
+        final double calibrationAudioCountsToDb = 1.0 / 1024.0;
+        final double calibrationLightCountsToLux = 256.0 / (double)(1<<16);
+
+        allSensorSampleList.add(Sensor.SOUND_NUM_DISTURBANCES,samplesToSamples(data.getAudioNumDisturbancesDbList(),1.0));
+        allSensorSampleList.add(Sensor.SOUND_PEAK_DISTURBANCE,samplesToSamples(data.getAudioPeakDisturbanceDbList(),calibrationAudioCountsToDb));
+        allSensorSampleList.add(Sensor.LIGHT,samplesToSamples(data.getAudioPeakDisturbanceDbList(),calibrationLightCountsToLux));
+        allSensorSampleList.add(Sensor.WAVE_COUNT,samplesToSamples(data.getWavesList(),1.0));
+
+        myMotions = motionToMotions(data.getMyMotionList());
+        partnerMotions = motionToMotions(data.getPartnerMotionList());
+
+
+        //TODO clear results storage
+
+        //TODO store timeline feedback
+
+    }
+
+    public Optional<String> setDataAndRun(final String base64) {
+        try {
+            updateDAOs(TimelineSensorDataProtos.OneDaysSensorData.parseFrom(Base64.decodeBase64(base64)));
+
+            final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(currentAccountId,currentTargetDate,Optional.<TimelineFeedback>absent());
+
+            //TODO get results of timeline evaluation, pull sleep stats from DAO, form results and return as csv line
+
+            return Optional.of("");
+
+        } catch (InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
+
+
+        return Optional.absent();
+    }
 
 }
