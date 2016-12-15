@@ -71,7 +71,7 @@ def sense_line_to_sense_data(sense_line,protobuf):
     
 def data_to_protobuf(pill_data,partner_pill_data,sense_data,outfile):
     keys = pill_data.keys()
-
+    print len(keys)
     for key in keys:
         if not sense_data.has_key(key):
             print "%s has no sense data" % key
@@ -99,7 +99,7 @@ def data_to_protobuf(pill_data,partner_pill_data,sense_data,outfile):
         protobuf.account_id = account_id
         protobuf.date_of_night = evening
 
-        //TODO include account info
+        #TODO include account info
         outfile.write(base64.b64encode(protobuf.SerializeToString()) + '\n')
 
         

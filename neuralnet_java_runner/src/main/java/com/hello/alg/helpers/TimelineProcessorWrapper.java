@@ -508,7 +508,7 @@ public class TimelineProcessorWrapper {
         @Override
         public boolean userFeatureActive(String feature, long userId, List<String> userGroups) {
             Boolean hasFeature = features.get(feature);
-
+            //System.out.print(String.format("FEATURE: %s\n",feature));
             if (hasFeature == null) {
                 hasFeature = Boolean.FALSE;
             }
@@ -667,6 +667,22 @@ public class TimelineProcessorWrapper {
 
     public Optional<TimelineProcessorOutput> setDataAndRun(final String base64) {
         try {
+
+            setFeature("neural_net_algorithm",true);
+            setFeature("pill_pair_motion_filter",true);
+            setFeature("outlier_filter",false);
+            setFeature("feedback_in_timeline",false);
+            setFeature("sleep_score_no_motion_enforcement",false);
+            setFeature("off_bed_hmm_motion_filter",false);
+            setFeature("in_bed_search",false);
+            setFeature("sound_events_use_higher_threshold",false);
+            setFeature("sleep_stats_medium_sleep",false);
+            setFeature("environment_in_timeline_score",false);
+            setFeature("sleep_score_v4",false);
+            setFeature("sleep_score_v5",true);
+            setFeature("sleep_score_no_motion_enforcement",false);
+            setFeature("timeline_in_sleep_insights",false);
+
             updateDAOs(TimelineSensorDataProtos.OneDaysSensorData.parseFrom(Base64.decodeBase64(base64)));
 
             final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(currentAccountId,currentTargetDate,Optional.<TimelineFeedback>absent());

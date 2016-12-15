@@ -293,6 +293,15 @@ public final class TimelineSensorDataProtos {
      * <code>optional double value = 2;</code>
      */
     double getValue();
+
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    boolean hasTzOffset();
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    int getTzOffset();
   }
   /**
    * Protobuf type {@code Sample}
@@ -354,6 +363,11 @@ public final class TimelineSensorDataProtos {
             case 17: {
               bitField0_ |= 0x00000002;
               value_ = input.readDouble();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              tzOffset_ = input.readInt32();
               break;
             }
           }
@@ -426,9 +440,25 @@ public final class TimelineSensorDataProtos {
       return value_;
     }
 
+    public static final int TZ_OFFSET_FIELD_NUMBER = 3;
+    private int tzOffset_;
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    public boolean hasTzOffset() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    public int getTzOffset() {
+      return tzOffset_;
+    }
+
     private void initFields() {
       timestamp_ = 0L;
       value_ = 0D;
+      tzOffset_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -449,6 +479,9 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeDouble(2, value_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt32(3, tzOffset_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -465,6 +498,10 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(2, value_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(3, tzOffset_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -587,6 +624,8 @@ public final class TimelineSensorDataProtos {
         bitField0_ = (bitField0_ & ~0x00000001);
         value_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000002);
+        tzOffset_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -623,6 +662,10 @@ public final class TimelineSensorDataProtos {
           to_bitField0_ |= 0x00000002;
         }
         result.value_ = value_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.tzOffset_ = tzOffset_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -644,6 +687,9 @@ public final class TimelineSensorDataProtos {
         }
         if (other.hasValue()) {
           setValue(other.getValue());
+        }
+        if (other.hasTzOffset()) {
+          setTzOffset(other.getTzOffset());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -736,6 +782,38 @@ public final class TimelineSensorDataProtos {
         return this;
       }
 
+      private int tzOffset_ ;
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public boolean hasTzOffset() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public int getTzOffset() {
+        return tzOffset_;
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public Builder setTzOffset(int value) {
+        bitField0_ |= 0x00000004;
+        tzOffset_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public Builder clearTzOffset() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        tzOffset_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:Sample)
     }
 
@@ -786,6 +864,15 @@ public final class TimelineSensorDataProtos {
      * <code>optional int64 bitmask = 4;</code>
      */
     long getBitmask();
+
+    /**
+     * <code>optional int32 tz_offset = 5;</code>
+     */
+    boolean hasTzOffset();
+    /**
+     * <code>optional int32 tz_offset = 5;</code>
+     */
+    int getTzOffset();
   }
   /**
    * Protobuf type {@code TrackerMotion}
@@ -857,6 +944,11 @@ public final class TimelineSensorDataProtos {
             case 32: {
               bitField0_ |= 0x00000008;
               bitmask_ = input.readInt64();
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              tzOffset_ = input.readInt32();
               break;
             }
           }
@@ -959,11 +1051,27 @@ public final class TimelineSensorDataProtos {
       return bitmask_;
     }
 
+    public static final int TZ_OFFSET_FIELD_NUMBER = 5;
+    private int tzOffset_;
+    /**
+     * <code>optional int32 tz_offset = 5;</code>
+     */
+    public boolean hasTzOffset() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional int32 tz_offset = 5;</code>
+     */
+    public int getTzOffset() {
+      return tzOffset_;
+    }
+
     private void initFields() {
       timestamp_ = 0L;
       svmMag_ = 0;
       onDuration_ = 0;
       bitmask_ = 0L;
+      tzOffset_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1002,6 +1110,9 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeInt64(4, bitmask_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeInt32(5, tzOffset_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -1026,6 +1137,10 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(4, bitmask_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(5, tzOffset_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1152,6 +1267,8 @@ public final class TimelineSensorDataProtos {
         bitField0_ = (bitField0_ & ~0x00000004);
         bitmask_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000008);
+        tzOffset_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -1196,6 +1313,10 @@ public final class TimelineSensorDataProtos {
           to_bitField0_ |= 0x00000008;
         }
         result.bitmask_ = bitmask_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.tzOffset_ = tzOffset_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1223,6 +1344,9 @@ public final class TimelineSensorDataProtos {
         }
         if (other.hasBitmask()) {
           setBitmask(other.getBitmask());
+        }
+        if (other.hasTzOffset()) {
+          setTzOffset(other.getTzOffset());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1391,6 +1515,38 @@ public final class TimelineSensorDataProtos {
         return this;
       }
 
+      private int tzOffset_ ;
+      /**
+       * <code>optional int32 tz_offset = 5;</code>
+       */
+      public boolean hasTzOffset() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional int32 tz_offset = 5;</code>
+       */
+      public int getTzOffset() {
+        return tzOffset_;
+      }
+      /**
+       * <code>optional int32 tz_offset = 5;</code>
+       */
+      public Builder setTzOffset(int value) {
+        bitField0_ |= 0x00000010;
+        tzOffset_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 tz_offset = 5;</code>
+       */
+      public Builder clearTzOffset() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        tzOffset_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:TrackerMotion)
     }
 
@@ -1423,6 +1579,15 @@ public final class TimelineSensorDataProtos {
      * <code>optional int64 timestamp = 2;</code>
      */
     long getTimestamp();
+
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    boolean hasTzOffset();
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    int getTzOffset();
   }
   /**
    * Protobuf type {@code Event}
@@ -1490,6 +1655,11 @@ public final class TimelineSensorDataProtos {
             case 16: {
               bitField0_ |= 0x00000002;
               timestamp_ = input.readInt64();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              tzOffset_ = input.readInt32();
               break;
             }
           }
@@ -1562,9 +1732,25 @@ public final class TimelineSensorDataProtos {
       return timestamp_;
     }
 
+    public static final int TZ_OFFSET_FIELD_NUMBER = 3;
+    private int tzOffset_;
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    public boolean hasTzOffset() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int32 tz_offset = 3;</code>
+     */
+    public int getTzOffset() {
+      return tzOffset_;
+    }
+
     private void initFields() {
       eventType_ = com.hello.alg.api.TimelineSensorDataProtos.EventType.IN_BED;
       timestamp_ = 0L;
+      tzOffset_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1585,6 +1771,9 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt64(2, timestamp_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt32(3, tzOffset_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -1601,6 +1790,10 @@ public final class TimelineSensorDataProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(2, timestamp_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(3, tzOffset_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1723,6 +1916,8 @@ public final class TimelineSensorDataProtos {
         bitField0_ = (bitField0_ & ~0x00000001);
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
+        tzOffset_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -1759,6 +1954,10 @@ public final class TimelineSensorDataProtos {
           to_bitField0_ |= 0x00000002;
         }
         result.timestamp_ = timestamp_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.tzOffset_ = tzOffset_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1780,6 +1979,9 @@ public final class TimelineSensorDataProtos {
         }
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
+        }
+        if (other.hasTzOffset()) {
+          setTzOffset(other.getTzOffset());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1871,6 +2073,38 @@ public final class TimelineSensorDataProtos {
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000002);
         timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private int tzOffset_ ;
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public boolean hasTzOffset() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public int getTzOffset() {
+        return tzOffset_;
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public Builder setTzOffset(int value) {
+        bitField0_ |= 0x00000004;
+        tzOffset_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 tz_offset = 3;</code>
+       */
+      public Builder clearTzOffset() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        tzOffset_ = 0;
         onChanged();
         return this;
       }
@@ -6686,32 +6920,33 @@ public final class TimelineSensorDataProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\032timeline_sensor_data.proto\"*\n\006Sample\022\021" +
-      "\n\ttimestamp\030\001 \001(\003\022\r\n\005value\030\002 \001(\001\"Y\n\rTrac" +
-      "kerMotion\022\021\n\ttimestamp\030\001 \002(\003\022\017\n\007svm_mag\030" +
-      "\002 \002(\005\022\023\n\013on_duration\030\003 \002(\005\022\017\n\007bitmask\030\004 " +
-      "\001(\003\":\n\005Event\022\036\n\nevent_type\030\001 \001(\0162\n.Event" +
-      "Type\022\021\n\ttimestamp\030\002 \001(\003\"[\n\010UserInfo\022\021\n\ta" +
-      "ge_years\030\001 \001(\005\022\024\n\014weight_grams\030\002 \001(\005\022\021\n\t" +
-      "height_cm\030\003 \001(\005\022\023\n\013has_partner\030\004 \001(\010\"\357\003\n" +
-      "\021OneDaysSensorData\022\022\n\naccount_id\030\001 \001(\003\022\025" +
-      "\n\rdate_of_night\030\002 \001(\t\022!\n\tmy_motion\030\003 \003(\013",
-      "2\016.TrackerMotion\022&\n\016partner_motion\030\004 \003(\013" +
-      "2\016.TrackerMotion\022\032\n\tlight_lux\030\005 \003(\0132\007.Sa" +
-      "mple\022\026\n\005waves\030\006 \003(\0132\007.Sample\022*\n\031audio_pe" +
-      "ak_disturbance_db\030\007 \003(\0132\007.Sample\022*\n\031audi" +
-      "o_num_disturbances_db\030\010 \003(\0132\007.Sample\022\"\n\021" +
-      "audio_peak_energy\030\t \003(\0132\007.Sample\022\034\n\tuser" +
-      "_info\030\n \001(\0132\t.UserInfo\022!\n\021timeline_feedb" +
-      "ack\030\013 \003(\0132\006.Event\022$\n\rhardware_type\030\014 \001(\016" +
-      "2\r.HardwareType\022\"\n\014device_color\030\r \001(\0162\014." +
-      "DeviceColor\022\024\n\014sunrise_time\030\016 \001(\t\022\023\n\013sun",
-      "set_time\030\017 \001(\t*?\n\tEventType\022\n\n\006IN_BED\020\001\022" +
-      "\t\n\005SLEEP\020\002\022\013\n\007WAKE_UP\020\003\022\016\n\nOUT_OF_BED\020\004*" +
-      "*\n\014HardwareType\022\013\n\007SENSE_1\020\001\022\r\n\tSENSE_1p" +
-      "5\020\002*\'\n\013DeviceColor\022\n\n\006COTTON\020\001\022\014\n\010CHARCO" +
-      "AL\020\002B-\n\021com.hello.alg.apiB\030TimelineSenso" +
-      "rDataProtos"
+      "\n\032timeline_sensor_data.proto\"=\n\006Sample\022\021" +
+      "\n\ttimestamp\030\001 \001(\003\022\r\n\005value\030\002 \001(\001\022\021\n\ttz_o" +
+      "ffset\030\003 \001(\005\"l\n\rTrackerMotion\022\021\n\ttimestam" +
+      "p\030\001 \002(\003\022\017\n\007svm_mag\030\002 \002(\005\022\023\n\013on_duration\030" +
+      "\003 \002(\005\022\017\n\007bitmask\030\004 \001(\003\022\021\n\ttz_offset\030\005 \001(" +
+      "\005\"M\n\005Event\022\036\n\nevent_type\030\001 \001(\0162\n.EventTy" +
+      "pe\022\021\n\ttimestamp\030\002 \001(\003\022\021\n\ttz_offset\030\003 \001(\005" +
+      "\"[\n\010UserInfo\022\021\n\tage_years\030\001 \001(\005\022\024\n\014weigh" +
+      "t_grams\030\002 \001(\005\022\021\n\theight_cm\030\003 \001(\005\022\023\n\013has_" +
+      "partner\030\004 \001(\010\"\357\003\n\021OneDaysSensorData\022\022\n\na",
+      "ccount_id\030\001 \001(\003\022\025\n\rdate_of_night\030\002 \001(\t\022!" +
+      "\n\tmy_motion\030\003 \003(\0132\016.TrackerMotion\022&\n\016par" +
+      "tner_motion\030\004 \003(\0132\016.TrackerMotion\022\032\n\tlig" +
+      "ht_lux\030\005 \003(\0132\007.Sample\022\026\n\005waves\030\006 \003(\0132\007.S" +
+      "ample\022*\n\031audio_peak_disturbance_db\030\007 \003(\013" +
+      "2\007.Sample\022*\n\031audio_num_disturbances_db\030\010" +
+      " \003(\0132\007.Sample\022\"\n\021audio_peak_energy\030\t \003(\013" +
+      "2\007.Sample\022\034\n\tuser_info\030\n \001(\0132\t.UserInfo\022" +
+      "!\n\021timeline_feedback\030\013 \003(\0132\006.Event\022$\n\rha" +
+      "rdware_type\030\014 \001(\0162\r.HardwareType\022\"\n\014devi",
+      "ce_color\030\r \001(\0162\014.DeviceColor\022\024\n\014sunrise_" +
+      "time\030\016 \001(\t\022\023\n\013sunset_time\030\017 \001(\t*?\n\tEvent" +
+      "Type\022\n\n\006IN_BED\020\001\022\t\n\005SLEEP\020\002\022\013\n\007WAKE_UP\020\003" +
+      "\022\016\n\nOUT_OF_BED\020\004**\n\014HardwareType\022\013\n\007SENS" +
+      "E_1\020\001\022\r\n\tSENSE_1p5\020\002*\'\n\013DeviceColor\022\n\n\006C" +
+      "OTTON\020\001\022\014\n\010CHARCOAL\020\002B-\n\021com.hello.alg.a" +
+      "piB\030TimelineSensorDataProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -6730,19 +6965,19 @@ public final class TimelineSensorDataProtos {
     internal_static_Sample_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_Sample_descriptor,
-        new java.lang.String[] { "Timestamp", "Value", });
+        new java.lang.String[] { "Timestamp", "Value", "TzOffset", });
     internal_static_TrackerMotion_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_TrackerMotion_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_TrackerMotion_descriptor,
-        new java.lang.String[] { "Timestamp", "SvmMag", "OnDuration", "Bitmask", });
+        new java.lang.String[] { "Timestamp", "SvmMag", "OnDuration", "Bitmask", "TzOffset", });
     internal_static_Event_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_Event_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_Event_descriptor,
-        new java.lang.String[] { "EventType", "Timestamp", });
+        new java.lang.String[] { "EventType", "Timestamp", "TzOffset", });
     internal_static_UserInfo_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_UserInfo_fieldAccessorTable = new
