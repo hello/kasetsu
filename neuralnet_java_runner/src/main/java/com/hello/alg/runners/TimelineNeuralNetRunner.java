@@ -3,6 +3,7 @@ package com.hello.alg.runners;
 import com.google.common.base.Optional;
 import com.hello.alg.helpers.NeuralNetClient;
 import com.hello.alg.helpers.TimelineProcessorWrapper;
+import com.hello.alg.model.TimelineProcessorOutput;
 import com.hello.suripu.core.algorithmintegration.AlgorithmConfiguration;
 import org.apache.http.impl.client.HttpClientBuilder;
 
@@ -22,21 +23,6 @@ public class TimelineNeuralNetRunner {
     final static String NEURAL_NET_ENDPOINT = "/net";
 
 
-
-
-
-    final static AlgorithmConfiguration algorithmConfiguration = new AlgorithmConfiguration() {
-        @Override
-        public int getArtificalLightStartMinuteOfDay() {
-            return 0;
-        }
-
-        @Override
-        public int getArtificalLightStopMinuteOfDay() {
-            return 0;
-        }
-    };
-
     public static void main(String [] args ) throws IOException {
 
         final String neuralNetUrl = args[0];
@@ -46,7 +32,7 @@ public class TimelineNeuralNetRunner {
         //TODO configure this client to point at the right server
         final NeuralNetClient neuralNetEndpoint = NeuralNetClient.create(
                 HttpClientBuilder.create().build(),
-                NEURAL_NET_ENDPOINT);
+                neuralNetUrl + NEURAL_NET_ENDPOINT);
 
 
         final TimelineProcessorWrapper timelineProcessorWrapper = new TimelineProcessorWrapper(neuralNetEndpoint);
@@ -56,15 +42,14 @@ public class TimelineNeuralNetRunner {
             while ((line = reader.readLine()) != null) {
                 // each line should be base64 binary data that is a protobuf
 
-                final Optional<String> result = timelineProcessorWrapper.setDataAndRun(line);
+                final Optional<TimelineProcessorOutput> result = timelineProcessorWrapper.setDataAndRun(line);
 
                 if (!result.isPresent()) {
                     continue;
                 }
 
-                //TODO save to S3 or somethings
+                //TODO convert result to JSON
                 System.out.print(result.get());
-
 
             }
         }

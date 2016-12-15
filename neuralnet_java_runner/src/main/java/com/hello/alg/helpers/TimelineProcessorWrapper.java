@@ -4,10 +4,13 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hello.alg.api.TimelineSensorDataProtos;
+import com.hello.alg.model.TimelineProcessorOutput;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.algorithmintegration.AlgorithmConfiguration;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -36,6 +39,7 @@ import com.hello.suripu.core.models.AllSensorSampleList;
 import com.hello.suripu.core.models.Calibration;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.models.Event;
 import com.hello.suripu.core.models.OnlineHmmData;
 import com.hello.suripu.core.models.OnlineHmmPriors;
 import com.hello.suripu.core.models.OnlineHmmScratchPad;
@@ -44,12 +48,14 @@ import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.models.SleepScore;
 import com.hello.suripu.core.models.SleepScoreParameters;
+import com.hello.suripu.core.models.SleepSegment;
 import com.hello.suripu.core.models.SleepStats;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.models.device.v2.Sense;
+import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeatureExtractionModelData;
 import com.hello.suripu.core.util.SleepHmmWithInterpretation;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
@@ -59,12 +65,14 @@ import dagger.Module;
 import dagger.Provides;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,13 +95,31 @@ public class TimelineProcessorWrapper {
     private List<TrackerMotion> partnerMotions = Lists.newArrayList();
     private Long currentAccountId = 0L;
     private DateTime currentTargetDate = null;
+    private List<Event> feedbackEvents = Lists.newArrayList();
+    private SleepScore sleepScoreResult = null;
+    private SleepStats sleepStatsResult = null;
+    private Integer tzOffset;
+
+    private static final ImmutableSet<Event.Type> SLEEP_EVENT_TYPES;
+
+    static {
+        final Set<Event.Type> eventSet = Sets.newHashSet();
+        eventSet.add(Event.Type.IN_BED);
+        eventSet.add(Event.Type.SLEEP);
+        eventSet.add(Event.Type.WAKE_UP);
+        eventSet.add(Event.Type.OUT_OF_BED);
+
+        SLEEP_EVENT_TYPES = ImmutableSet.copyOf(eventSet);
+    }
 
     final public PillDataReadDAO pillDataReadDAO = new PillDataReadDAO() {
         @Override
         public ImmutableList<TrackerMotion> getBetweenLocalUTC(long accountId, DateTime startLocalTime, DateTime endLocalTime) {
+            if (accountId == currentAccountId) {
+                return ImmutableList.copyOf(myMotions);
+            }
 
-
-            return ImmutableList.copyOf(Lists.<TrackerMotion>newArrayList());
+            return ImmutableList.copyOf(partnerMotions);
         }
     };
 
@@ -104,9 +130,6 @@ public class TimelineProcessorWrapper {
                 Long queryStartTimestampInUTC, Long queryEndTimestampInUTC, Long accountId, String externalDeviceId,
                 int slotDurationInMinutes, Integer missingDataDefaultValue, com.google.common.base.Optional<Device.Color> color,
                 com.google.common.base.Optional<Calibration> calibrationOptional, final Boolean useAudioPeakEnergy) {
-
-
-            final AllSensorSampleList allSensorSampleList = new AllSensorSampleList();
 
             return allSensorSampleList;
         }
@@ -181,6 +204,8 @@ public class TimelineProcessorWrapper {
     final private SleepStatsDAO sleepStatsDAO = new SleepStatsDAO() {
         @Override
         public Boolean updateStat(Long accountId, DateTime date, Integer overallSleepScore, SleepScore sleepScore, SleepStats stats, Integer offsetMillis) {
+            sleepScoreResult = sleepScore;
+            sleepStatsResult = stats;
             return Boolean.TRUE;
         }
 
@@ -216,15 +241,15 @@ public class TimelineProcessorWrapper {
         }
         @Override
         public List<TimeZoneHistory> getTimeZoneHistory(final long accountId, final DateTime start){
-            return null;
+            return Lists.newArrayList(new TimeZoneHistory(0L,tzOffset,"foobars"));
         }
         @Override
         public List<TimeZoneHistory> getTimeZoneHistory(final long accountId, final DateTime start, final DateTime end){
-            return null;
+            return Lists.newArrayList(new TimeZoneHistory(0L,tzOffset,"foobars"));
         }
         @Override
         public  List<TimeZoneHistory> getTimeZoneHistory(final long accountId, final DateTime start, final DateTime end, int limit){
-            return null;
+            return Lists.newArrayList(new TimeZoneHistory(0L,tzOffset,"foobars"));
         }
         @Override
         public Optional<TimeZoneHistory> getCurrentTimeZone(final long accountId){
@@ -566,6 +591,10 @@ public class TimelineProcessorWrapper {
     }
 
     private void updateDAOs(TimelineSensorDataProtos.OneDaysSensorData data) {
+
+        currentAccountId = data.getAccountId();
+        currentTargetDate = DateTimeUtil.ymdStringToDateTime(data.getDateOfNight());
+
         allSensorSampleList = new AllSensorSampleList();
 
         //TODO calibrated based off of color and hardware version
@@ -581,21 +610,74 @@ public class TimelineProcessorWrapper {
         partnerMotions = motionToMotions(data.getPartnerMotionList());
 
 
+        feedbackEvents = Lists.newArrayList();
+        for (final TimelineSensorDataProtos.Event event : data.getTimelineFeedbackList()) {
+            Event.Type type = null;
+            switch (event.getEventType()) {
+
+                case IN_BED:
+                    type = Event.Type.IN_BED;
+                    break;
+                case SLEEP:
+                    type = Event.Type.SLEEP;
+                    break;
+                case WAKE_UP:
+                    type = Event.Type.WAKE_UP;
+                    break;
+                case OUT_OF_BED:
+                    type = Event.Type.OUT_OF_BED;
+                    break;
+
+                default:
+                    continue;
+            }
+
+            feedbackEvents.add(Event.createFromType(type,event.getTimestamp(),event.getTimestamp() + DateTimeConstants.MILLIS_PER_MINUTE,event.getTzOffset(),"",null,null));
+
+        }
+
+
+        if (!myMotions.isEmpty()) {
+            tzOffset = myMotions.get(0).offsetMillis;
+        }
+
+
         //TODO clear results storage
 
-        //TODO store timeline feedback
 
     }
 
-    public Optional<String> setDataAndRun(final String base64) {
+    private TimelineProcessorOutput getOutput(final TimelineResult timelineResult) {
+        //get events I want
+        final List<Event> events = Lists.newArrayList();
+        for (final Iterator<SleepSegment> it = timelineResult.timelines.get(0).events.iterator(); it.hasNext();) {
+            final SleepSegment segment = it.next();
+
+            if (SLEEP_EVENT_TYPES.contains(segment.getEvent().getType())) {
+                //save event
+                events.add(segment.getEvent());
+            }
+        }
+
+        //get feedback
+
+        return new TimelineProcessorOutput(events,feedbackEvents,sleepStatsResult,sleepScoreResult);
+
+    }
+
+    public Optional<TimelineProcessorOutput> setDataAndRun(final String base64) {
         try {
             updateDAOs(TimelineSensorDataProtos.OneDaysSensorData.parseFrom(Base64.decodeBase64(base64)));
 
             final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(currentAccountId,currentTargetDate,Optional.<TimelineFeedback>absent());
 
             //TODO get results of timeline evaluation, pull sleep stats from DAO, form results and return as csv line
+            if (timelineResult.timelines.isEmpty()) {
+                return Optional.absent();
+            }
 
-            return Optional.of("");
+
+            return Optional.of(getOutput(timelineResult));
 
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
