@@ -51,7 +51,7 @@ public class TimelineNeuralNetRunner {
                     continue;
                 }
 
-                final String jsonInString = mapper.writeValueAsString(result.get());
+                final String jsonInString = mapper.writeValueAsString(result.get()) + "\n";
 
                 System.out.print(jsonInString);
 
