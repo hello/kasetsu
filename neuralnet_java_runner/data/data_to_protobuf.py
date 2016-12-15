@@ -10,6 +10,7 @@ import base64
 pill_data_file = 'all_pill.csv000'
 partner_pill_data_file = 'all_partner_pill.csv000'
 sense_data_file = 'all_sense_data.csv000'
+demography_data_file = 'demography.csv'
 
 def read_pill_file(filename):
     pill_data = defaultdict(list)
@@ -18,6 +19,9 @@ def read_pill_file(filename):
         reader = csv.reader(csvfile, delimiter=',')
         #aggregate by acccount id and evening
         for line in reader:
+            if len(line) == 0:
+                continue
+            
             key = line[0] + '_' + line[1]
             pill_data[key].append(line[2::])
 
@@ -30,6 +34,9 @@ def read_partner_pill_file(filename):
         reader = csv.reader(csvfile, delimiter=',')
         #aggregate by acccount id and evening
         for line in reader:
+            if len(line) == 0:
+                continue
+            
             key = line[0] + '_' + line[2]
             pill_data[key].append(line[3::])
 
@@ -41,10 +48,29 @@ def read_sense_file(filename):
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         for line in reader:
+
+            if len(line) == 0:
+                continue
+            
             key = line[1] + '_' + line[0]
             sense_data[key].append(line[2::])
             
     return sense_data
+
+def read_demography_file(filename):
+    demodata = defaultdict(list)
+
+    with open(filename, 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        for line in reader:
+
+            if len(line) == 0:
+                continue
+            
+            key = int(line[1]) #just account_id here
+            demodata[key].append(line[2::])
+            
+    return demodata
 
 def string_to_utc_timestamp(timestr):
     dt = datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pytz.utc)
@@ -68,8 +94,25 @@ def sense_line_to_sense_data(sense_line,protobuf):
         vals[i].tz_offset = offset
         vals[i].value = float(sense_line[2+i])
             
+def demodata_to_protobuf(account_id,demo_data,protobuf):
+
+    demo_data_by_account = demo_data[account_id]
+
+    if len(demo_data_by_account) == 0:
+        print 'no demographics found for user %d' % account_id
+        return
+
+    line = demo_data_by_account[0]
     
-def data_to_protobuf(pill_data,partner_pill_data,sense_data,outfile):
+    protobuf.user_info.weight_grams = int(float(line[1]))
+    protobuf.user_info.height_cm = int(float(line[0]))
+    protobuf.user_info.date_of_birth= line[3]
+
+    genderstr = line[4]
+    protobuf.user_info.gender = timeline_sensor_data_pb2.Gender.Value(genderstr)
+
+
+def data_to_protobuf(pill_data,partner_pill_data,sense_data,demo_data,outfile):
     keys = pill_data.keys()
     print len(keys)
     for key in keys:
@@ -86,6 +129,8 @@ def data_to_protobuf(pill_data,partner_pill_data,sense_data,outfile):
         evening = keyinfo[1].split(' ')[0]
         
         protobuf = timeline_sensor_data_pb2.OneDaysSensorData()
+
+        demodata_to_protobuf(account_id,demo_data,protobuf)
         
         for line in pill_by_userday:
             pill_line_to_tracker_motion(line,protobuf.my_motion.add())
@@ -104,13 +149,23 @@ def data_to_protobuf(pill_data,partner_pill_data,sense_data,outfile):
 
         
 
-                
+def main():
+    print 'reading demographic data from %s' % demography_data_file
+    demo_data = read_demography_file(demography_data_file)
 
+    print 'reading pill data from %s' % pill_data_file
+    pill_data = read_pill_file(pill_data_file)
 
-pill_data = read_pill_file(pill_data_file)
-partner_pill_data = read_partner_pill_file(partner_pill_data_file)
-sense_data = read_sense_file(sense_data_file)
+    print 'reading partner pill data from %s' % partner_pill_data_file
+    partner_pill_data = read_partner_pill_file(partner_pill_data_file)
 
-data_to_protobuf(pill_data,partner_pill_data,sense_data)
+    print 'reading sense data from %s' % sense_data_file
+    sense_data = read_sense_file(sense_data_file)
 
-print pill_data[pill_data.keys()[0]]
+    
+    f = open('outfile.dat','wb')
+    data_to_protobuf(pill_data,partner_pill_data,sense_data,demo_data,f)
+    f.close()
+
+if __name__ == '__main__':
+    main()

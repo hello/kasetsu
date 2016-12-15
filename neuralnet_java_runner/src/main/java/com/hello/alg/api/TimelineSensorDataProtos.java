@@ -272,6 +272,97 @@ public final class TimelineSensorDataProtos {
     // @@protoc_insertion_point(enum_scope:DeviceColor)
   }
 
+  /**
+   * Protobuf enum {@code Gender}
+   */
+  public enum Gender
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>OTHER = 1;</code>
+     */
+    OTHER(0, 1),
+    /**
+     * <code>MALE = 2;</code>
+     */
+    MALE(1, 2),
+    /**
+     * <code>FEMALE = 3;</code>
+     */
+    FEMALE(2, 3),
+    ;
+
+    /**
+     * <code>OTHER = 1;</code>
+     */
+    public static final int OTHER_VALUE = 1;
+    /**
+     * <code>MALE = 2;</code>
+     */
+    public static final int MALE_VALUE = 2;
+    /**
+     * <code>FEMALE = 3;</code>
+     */
+    public static final int FEMALE_VALUE = 3;
+
+
+    public final int getNumber() { return value; }
+
+    public static Gender valueOf(int value) {
+      switch (value) {
+        case 1: return OTHER;
+        case 2: return MALE;
+        case 3: return FEMALE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<Gender>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<Gender>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<Gender>() {
+            public Gender findValueByNumber(int number) {
+              return Gender.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return com.hello.alg.api.TimelineSensorDataProtos.getDescriptor().getEnumTypes().get(3);
+    }
+
+    private static final Gender[] VALUES = values();
+
+    public static Gender valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private Gender(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:Gender)
+  }
+
   public interface SampleOrBuilder extends
       // @@protoc_insertion_point(interface_extends:Sample)
       com.google.protobuf.MessageOrBuilder {
@@ -2125,40 +2216,45 @@ public final class TimelineSensorDataProtos {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional int32 age_years = 1;</code>
-     */
-    boolean hasAgeYears();
-    /**
-     * <code>optional int32 age_years = 1;</code>
-     */
-    int getAgeYears();
-
-    /**
-     * <code>optional int32 weight_grams = 2;</code>
+     * <code>optional int32 weight_grams = 1;</code>
      */
     boolean hasWeightGrams();
     /**
-     * <code>optional int32 weight_grams = 2;</code>
+     * <code>optional int32 weight_grams = 1;</code>
      */
     int getWeightGrams();
 
     /**
-     * <code>optional int32 height_cm = 3;</code>
+     * <code>optional int32 height_cm = 2;</code>
      */
     boolean hasHeightCm();
     /**
-     * <code>optional int32 height_cm = 3;</code>
+     * <code>optional int32 height_cm = 2;</code>
      */
     int getHeightCm();
 
     /**
-     * <code>optional bool has_partner = 4;</code>
+     * <code>optional string date_of_birth = 3;</code>
      */
-    boolean hasHasPartner();
+    boolean hasDateOfBirth();
     /**
-     * <code>optional bool has_partner = 4;</code>
+     * <code>optional string date_of_birth = 3;</code>
      */
-    boolean getHasPartner();
+    java.lang.String getDateOfBirth();
+    /**
+     * <code>optional string date_of_birth = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getDateOfBirthBytes();
+
+    /**
+     * <code>optional .Gender gender = 4;</code>
+     */
+    boolean hasGender();
+    /**
+     * <code>optional .Gender gender = 4;</code>
+     */
+    com.hello.alg.api.TimelineSensorDataProtos.Gender getGender();
   }
   /**
    * Protobuf type {@code UserInfo}
@@ -2214,22 +2310,29 @@ public final class TimelineSensorDataProtos {
             }
             case 8: {
               bitField0_ |= 0x00000001;
-              ageYears_ = input.readInt32();
+              weightGrams_ = input.readInt32();
               break;
             }
             case 16: {
               bitField0_ |= 0x00000002;
-              weightGrams_ = input.readInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
               heightCm_ = input.readInt32();
               break;
             }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              dateOfBirth_ = bs;
+              break;
+            }
             case 32: {
-              bitField0_ |= 0x00000008;
-              hasPartner_ = input.readBool();
+              int rawValue = input.readEnum();
+              com.hello.alg.api.TimelineSensorDataProtos.Gender value = com.hello.alg.api.TimelineSensorDataProtos.Gender.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(4, rawValue);
+              } else {
+                bitField0_ |= 0x00000008;
+                gender_ = value;
+              }
               break;
             }
           }
@@ -2272,71 +2375,98 @@ public final class TimelineSensorDataProtos {
     }
 
     private int bitField0_;
-    public static final int AGE_YEARS_FIELD_NUMBER = 1;
-    private int ageYears_;
+    public static final int WEIGHT_GRAMS_FIELD_NUMBER = 1;
+    private int weightGrams_;
     /**
-     * <code>optional int32 age_years = 1;</code>
+     * <code>optional int32 weight_grams = 1;</code>
      */
-    public boolean hasAgeYears() {
+    public boolean hasWeightGrams() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>optional int32 age_years = 1;</code>
-     */
-    public int getAgeYears() {
-      return ageYears_;
-    }
-
-    public static final int WEIGHT_GRAMS_FIELD_NUMBER = 2;
-    private int weightGrams_;
-    /**
-     * <code>optional int32 weight_grams = 2;</code>
-     */
-    public boolean hasWeightGrams() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>optional int32 weight_grams = 2;</code>
+     * <code>optional int32 weight_grams = 1;</code>
      */
     public int getWeightGrams() {
       return weightGrams_;
     }
 
-    public static final int HEIGHT_CM_FIELD_NUMBER = 3;
+    public static final int HEIGHT_CM_FIELD_NUMBER = 2;
     private int heightCm_;
     /**
-     * <code>optional int32 height_cm = 3;</code>
+     * <code>optional int32 height_cm = 2;</code>
      */
     public boolean hasHeightCm() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional int32 height_cm = 3;</code>
+     * <code>optional int32 height_cm = 2;</code>
      */
     public int getHeightCm() {
       return heightCm_;
     }
 
-    public static final int HAS_PARTNER_FIELD_NUMBER = 4;
-    private boolean hasPartner_;
+    public static final int DATE_OF_BIRTH_FIELD_NUMBER = 3;
+    private java.lang.Object dateOfBirth_;
     /**
-     * <code>optional bool has_partner = 4;</code>
+     * <code>optional string date_of_birth = 3;</code>
      */
-    public boolean hasHasPartner() {
+    public boolean hasDateOfBirth() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional string date_of_birth = 3;</code>
+     */
+    public java.lang.String getDateOfBirth() {
+      java.lang.Object ref = dateOfBirth_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          dateOfBirth_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string date_of_birth = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getDateOfBirthBytes() {
+      java.lang.Object ref = dateOfBirth_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        dateOfBirth_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int GENDER_FIELD_NUMBER = 4;
+    private com.hello.alg.api.TimelineSensorDataProtos.Gender gender_;
+    /**
+     * <code>optional .Gender gender = 4;</code>
+     */
+    public boolean hasGender() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional bool has_partner = 4;</code>
+     * <code>optional .Gender gender = 4;</code>
      */
-    public boolean getHasPartner() {
-      return hasPartner_;
+    public com.hello.alg.api.TimelineSensorDataProtos.Gender getGender() {
+      return gender_;
     }
 
     private void initFields() {
-      ageYears_ = 0;
       weightGrams_ = 0;
       heightCm_ = 0;
-      hasPartner_ = false;
+      dateOfBirth_ = "";
+      gender_ = com.hello.alg.api.TimelineSensorDataProtos.Gender.OTHER;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -2352,16 +2482,16 @@ public final class TimelineSensorDataProtos {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, ageYears_);
+        output.writeInt32(1, weightGrams_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeInt32(2, weightGrams_);
+        output.writeInt32(2, heightCm_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt32(3, heightCm_);
+        output.writeBytes(3, getDateOfBirthBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBool(4, hasPartner_);
+        output.writeEnum(4, gender_.getNumber());
       }
       getUnknownFields().writeTo(output);
     }
@@ -2374,19 +2504,19 @@ public final class TimelineSensorDataProtos {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, ageYears_);
+          .computeInt32Size(1, weightGrams_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(2, weightGrams_);
+          .computeInt32Size(2, heightCm_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(3, heightCm_);
+          .computeBytesSize(3, getDateOfBirthBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(4, hasPartner_);
+          .computeEnumSize(4, gender_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2505,13 +2635,13 @@ public final class TimelineSensorDataProtos {
 
       public Builder clear() {
         super.clear();
-        ageYears_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000001);
         weightGrams_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         heightCm_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        dateOfBirth_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
-        hasPartner_ = false;
+        gender_ = com.hello.alg.api.TimelineSensorDataProtos.Gender.OTHER;
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
@@ -2544,19 +2674,19 @@ public final class TimelineSensorDataProtos {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.ageYears_ = ageYears_;
+        result.weightGrams_ = weightGrams_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.weightGrams_ = weightGrams_;
+        result.heightCm_ = heightCm_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.heightCm_ = heightCm_;
+        result.dateOfBirth_ = dateOfBirth_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.hasPartner_ = hasPartner_;
+        result.gender_ = gender_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2573,17 +2703,19 @@ public final class TimelineSensorDataProtos {
 
       public Builder mergeFrom(com.hello.alg.api.TimelineSensorDataProtos.UserInfo other) {
         if (other == com.hello.alg.api.TimelineSensorDataProtos.UserInfo.getDefaultInstance()) return this;
-        if (other.hasAgeYears()) {
-          setAgeYears(other.getAgeYears());
-        }
         if (other.hasWeightGrams()) {
           setWeightGrams(other.getWeightGrams());
         }
         if (other.hasHeightCm()) {
           setHeightCm(other.getHeightCm());
         }
-        if (other.hasHasPartner()) {
-          setHasPartner(other.getHasPartner());
+        if (other.hasDateOfBirth()) {
+          bitField0_ |= 0x00000004;
+          dateOfBirth_ = other.dateOfBirth_;
+          onChanged();
+        }
+        if (other.hasGender()) {
+          setGender(other.getGender());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2612,65 +2744,33 @@ public final class TimelineSensorDataProtos {
       }
       private int bitField0_;
 
-      private int ageYears_ ;
+      private int weightGrams_ ;
       /**
-       * <code>optional int32 age_years = 1;</code>
+       * <code>optional int32 weight_grams = 1;</code>
        */
-      public boolean hasAgeYears() {
+      public boolean hasWeightGrams() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>optional int32 age_years = 1;</code>
-       */
-      public int getAgeYears() {
-        return ageYears_;
-      }
-      /**
-       * <code>optional int32 age_years = 1;</code>
-       */
-      public Builder setAgeYears(int value) {
-        bitField0_ |= 0x00000001;
-        ageYears_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional int32 age_years = 1;</code>
-       */
-      public Builder clearAgeYears() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        ageYears_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private int weightGrams_ ;
-      /**
-       * <code>optional int32 weight_grams = 2;</code>
-       */
-      public boolean hasWeightGrams() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>optional int32 weight_grams = 2;</code>
+       * <code>optional int32 weight_grams = 1;</code>
        */
       public int getWeightGrams() {
         return weightGrams_;
       }
       /**
-       * <code>optional int32 weight_grams = 2;</code>
+       * <code>optional int32 weight_grams = 1;</code>
        */
       public Builder setWeightGrams(int value) {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000001;
         weightGrams_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int32 weight_grams = 2;</code>
+       * <code>optional int32 weight_grams = 1;</code>
        */
       public Builder clearWeightGrams() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         weightGrams_ = 0;
         onChanged();
         return this;
@@ -2678,64 +2778,143 @@ public final class TimelineSensorDataProtos {
 
       private int heightCm_ ;
       /**
-       * <code>optional int32 height_cm = 3;</code>
+       * <code>optional int32 height_cm = 2;</code>
        */
       public boolean hasHeightCm() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional int32 height_cm = 3;</code>
+       * <code>optional int32 height_cm = 2;</code>
        */
       public int getHeightCm() {
         return heightCm_;
       }
       /**
-       * <code>optional int32 height_cm = 3;</code>
+       * <code>optional int32 height_cm = 2;</code>
        */
       public Builder setHeightCm(int value) {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         heightCm_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int32 height_cm = 3;</code>
+       * <code>optional int32 height_cm = 2;</code>
        */
       public Builder clearHeightCm() {
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         heightCm_ = 0;
         onChanged();
         return this;
       }
 
-      private boolean hasPartner_ ;
+      private java.lang.Object dateOfBirth_ = "";
       /**
-       * <code>optional bool has_partner = 4;</code>
+       * <code>optional string date_of_birth = 3;</code>
        */
-      public boolean hasHasPartner() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+      public boolean hasDateOfBirth() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional bool has_partner = 4;</code>
+       * <code>optional string date_of_birth = 3;</code>
        */
-      public boolean getHasPartner() {
-        return hasPartner_;
+      public java.lang.String getDateOfBirth() {
+        java.lang.Object ref = dateOfBirth_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            dateOfBirth_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
       }
       /**
-       * <code>optional bool has_partner = 4;</code>
+       * <code>optional string date_of_birth = 3;</code>
        */
-      public Builder setHasPartner(boolean value) {
-        bitField0_ |= 0x00000008;
-        hasPartner_ = value;
+      public com.google.protobuf.ByteString
+          getDateOfBirthBytes() {
+        java.lang.Object ref = dateOfBirth_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          dateOfBirth_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string date_of_birth = 3;</code>
+       */
+      public Builder setDateOfBirth(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        dateOfBirth_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional bool has_partner = 4;</code>
+       * <code>optional string date_of_birth = 3;</code>
        */
-      public Builder clearHasPartner() {
+      public Builder clearDateOfBirth() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        dateOfBirth_ = getDefaultInstance().getDateOfBirth();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string date_of_birth = 3;</code>
+       */
+      public Builder setDateOfBirthBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        dateOfBirth_ = value;
+        onChanged();
+        return this;
+      }
+
+      private com.hello.alg.api.TimelineSensorDataProtos.Gender gender_ = com.hello.alg.api.TimelineSensorDataProtos.Gender.OTHER;
+      /**
+       * <code>optional .Gender gender = 4;</code>
+       */
+      public boolean hasGender() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional .Gender gender = 4;</code>
+       */
+      public com.hello.alg.api.TimelineSensorDataProtos.Gender getGender() {
+        return gender_;
+      }
+      /**
+       * <code>optional .Gender gender = 4;</code>
+       */
+      public Builder setGender(com.hello.alg.api.TimelineSensorDataProtos.Gender value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000008;
+        gender_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional .Gender gender = 4;</code>
+       */
+      public Builder clearGender() {
         bitField0_ = (bitField0_ & ~0x00000008);
-        hasPartner_ = false;
+        gender_ = com.hello.alg.api.TimelineSensorDataProtos.Gender.OTHER;
         onChanged();
         return this;
       }
@@ -6927,26 +7106,27 @@ public final class TimelineSensorDataProtos {
       "\003 \002(\005\022\017\n\007bitmask\030\004 \001(\003\022\021\n\ttz_offset\030\005 \001(" +
       "\005\"M\n\005Event\022\036\n\nevent_type\030\001 \001(\0162\n.EventTy" +
       "pe\022\021\n\ttimestamp\030\002 \001(\003\022\021\n\ttz_offset\030\003 \001(\005" +
-      "\"[\n\010UserInfo\022\021\n\tage_years\030\001 \001(\005\022\024\n\014weigh" +
-      "t_grams\030\002 \001(\005\022\021\n\theight_cm\030\003 \001(\005\022\023\n\013has_" +
-      "partner\030\004 \001(\010\"\357\003\n\021OneDaysSensorData\022\022\n\na",
-      "ccount_id\030\001 \001(\003\022\025\n\rdate_of_night\030\002 \001(\t\022!" +
-      "\n\tmy_motion\030\003 \003(\0132\016.TrackerMotion\022&\n\016par" +
-      "tner_motion\030\004 \003(\0132\016.TrackerMotion\022\032\n\tlig" +
-      "ht_lux\030\005 \003(\0132\007.Sample\022\026\n\005waves\030\006 \003(\0132\007.S" +
-      "ample\022*\n\031audio_peak_disturbance_db\030\007 \003(\013" +
-      "2\007.Sample\022*\n\031audio_num_disturbances_db\030\010" +
-      " \003(\0132\007.Sample\022\"\n\021audio_peak_energy\030\t \003(\013" +
-      "2\007.Sample\022\034\n\tuser_info\030\n \001(\0132\t.UserInfo\022" +
-      "!\n\021timeline_feedback\030\013 \003(\0132\006.Event\022$\n\rha" +
-      "rdware_type\030\014 \001(\0162\r.HardwareType\022\"\n\014devi",
-      "ce_color\030\r \001(\0162\014.DeviceColor\022\024\n\014sunrise_" +
-      "time\030\016 \001(\t\022\023\n\013sunset_time\030\017 \001(\t*?\n\tEvent" +
-      "Type\022\n\n\006IN_BED\020\001\022\t\n\005SLEEP\020\002\022\013\n\007WAKE_UP\020\003" +
-      "\022\016\n\nOUT_OF_BED\020\004**\n\014HardwareType\022\013\n\007SENS" +
-      "E_1\020\001\022\r\n\tSENSE_1p5\020\002*\'\n\013DeviceColor\022\n\n\006C" +
-      "OTTON\020\001\022\014\n\010CHARCOAL\020\002B-\n\021com.hello.alg.a" +
-      "piB\030TimelineSensorDataProtos"
+      "\"c\n\010UserInfo\022\024\n\014weight_grams\030\001 \001(\005\022\021\n\the" +
+      "ight_cm\030\002 \001(\005\022\025\n\rdate_of_birth\030\003 \001(\t\022\027\n\006" +
+      "gender\030\004 \001(\0162\007.Gender\"\357\003\n\021OneDaysSensorD",
+      "ata\022\022\n\naccount_id\030\001 \001(\003\022\025\n\rdate_of_night" +
+      "\030\002 \001(\t\022!\n\tmy_motion\030\003 \003(\0132\016.TrackerMotio" +
+      "n\022&\n\016partner_motion\030\004 \003(\0132\016.TrackerMotio" +
+      "n\022\032\n\tlight_lux\030\005 \003(\0132\007.Sample\022\026\n\005waves\030\006" +
+      " \003(\0132\007.Sample\022*\n\031audio_peak_disturbance_" +
+      "db\030\007 \003(\0132\007.Sample\022*\n\031audio_num_disturban" +
+      "ces_db\030\010 \003(\0132\007.Sample\022\"\n\021audio_peak_ener" +
+      "gy\030\t \003(\0132\007.Sample\022\034\n\tuser_info\030\n \001(\0132\t.U" +
+      "serInfo\022!\n\021timeline_feedback\030\013 \003(\0132\006.Eve" +
+      "nt\022$\n\rhardware_type\030\014 \001(\0162\r.HardwareType",
+      "\022\"\n\014device_color\030\r \001(\0162\014.DeviceColor\022\024\n\014" +
+      "sunrise_time\030\016 \001(\t\022\023\n\013sunset_time\030\017 \001(\t*" +
+      "?\n\tEventType\022\n\n\006IN_BED\020\001\022\t\n\005SLEEP\020\002\022\013\n\007W" +
+      "AKE_UP\020\003\022\016\n\nOUT_OF_BED\020\004**\n\014HardwareType" +
+      "\022\013\n\007SENSE_1\020\001\022\r\n\tSENSE_1p5\020\002*\'\n\013DeviceCo" +
+      "lor\022\n\n\006COTTON\020\001\022\014\n\010CHARCOAL\020\002*)\n\006Gender\022" +
+      "\t\n\005OTHER\020\001\022\010\n\004MALE\020\002\022\n\n\006FEMALE\020\003B-\n\021com." +
+      "hello.alg.apiB\030TimelineSensorDataProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -6983,7 +7163,7 @@ public final class TimelineSensorDataProtos {
     internal_static_UserInfo_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_UserInfo_descriptor,
-        new java.lang.String[] { "AgeYears", "WeightGrams", "HeightCm", "HasPartner", });
+        new java.lang.String[] { "WeightGrams", "HeightCm", "DateOfBirth", "Gender", });
     internal_static_OneDaysSensorData_descriptor =
       getDescriptor().getMessageTypes().get(4);
     internal_static_OneDaysSensorData_fieldAccessorTable = new

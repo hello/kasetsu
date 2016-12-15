@@ -40,6 +40,7 @@ import com.hello.suripu.core.models.Calibration;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.Event;
+import com.hello.suripu.core.models.Gender;
 import com.hello.suripu.core.models.OnlineHmmData;
 import com.hello.suripu.core.models.OnlineHmmPriors;
 import com.hello.suripu.core.models.OnlineHmmScratchPad;
@@ -99,6 +100,10 @@ public class TimelineProcessorWrapper {
     private SleepScore sleepScoreResult = null;
     private SleepStats sleepStatsResult = null;
     private Integer tzOffset;
+    private String dateOfBirth;
+    private Integer weightInGrams;
+    private Integer heightInCm;
+    private Gender gender;
 
     private static final ImmutableSet<Event.Type> SLEEP_EVENT_TYPES;
 
@@ -170,7 +175,13 @@ public class TimelineProcessorWrapper {
     final private AccountReadDAO accountDAO = new AccountReadDAO() {
         @Override
         public com.google.common.base.Optional<Account> getById(Long id) {
-            final Account account = new Account.Builder().withDOB("1980-01-01").build();
+            final Account account = new Account.Builder()
+                    .withDOB(dateOfBirth)
+                    .withHeight(heightInCm)
+                    .withWeight(weightInGrams)
+                    .withGender(gender)
+                    .build();
+            
             return com.google.common.base.Optional.of(account);
         }
 
@@ -639,6 +650,30 @@ public class TimelineProcessorWrapper {
 
         if (!myMotions.isEmpty()) {
             tzOffset = myMotions.get(0).offsetMillis;
+        }
+
+
+        dateOfBirth = "1980-01-01";
+        gender = Gender.MALE;
+        heightInCm = 60;
+        weightInGrams = 70*1000;
+        if (data.hasUserInfo()) {
+            dateOfBirth = data.getUserInfo().getDateOfBirth();
+
+            switch (data.getUserInfo().getGender()) {
+                case OTHER:
+                    gender = Gender.OTHER;
+                    break;
+                case MALE:
+                    gender = Gender.MALE;
+                    break;
+                case FEMALE:
+                    gender = Gender.FEMALE;
+                    break;
+            }
+
+            heightInCm = data.getUserInfo().getHeightCm();
+            weightInGrams = data.getUserInfo().getWeightGrams();
         }
 
 
