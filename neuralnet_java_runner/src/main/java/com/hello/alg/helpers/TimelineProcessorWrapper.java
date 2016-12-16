@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hello.alg.api.TimelineSensorDataProtos;
 import com.hello.alg.model.TimelineProcessorOutput;
+import com.hello.suripu.api.logging.LoggingProtos;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.algorithmintegration.AlgorithmConfiguration;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -727,6 +728,53 @@ public class TimelineProcessorWrapper {
             //TODO get results of timeline evaluation, pull sleep stats from DAO, form results and return as csv line
             if (timelineResult.timelines.isEmpty()) {
                 return Optional.absent();
+            }
+
+            if (!timelineResult.logV2.isPresent()) {
+                return Optional.absent();
+            }
+
+            List<LoggingProtos.TimelineLog> logs = LoggingProtos.BatchLogMessage.parseFrom(timelineResult.logV2.get().toProtoBuf()).getTimelineLogList();
+
+            if (logs.size() > 1) {
+
+                String err = String.format("ERROR FOR ACCOUNT_ID=%d ON NIGHT %s: ", logs.get(0).getAccountId(), logs.get(0).getNightOf());
+
+                switch(logs.get(0).getError()) {
+
+                    case NO_ERROR:
+                        break;
+                    case INTENDED_ALGORITHM_FAILURE:
+                        break;
+                    case TIMESPAN_TOO_SHORT:
+                        break;
+                    case NOT_ENOUGH_DATA:
+                        break;
+                    case NO_DATA:
+                        break;
+                    case LOW_AMPLITUDE_DATA:
+                        break;
+                    case PARTNER_FILTER_REJECTED_MY_DATA:
+                        break;
+                    case MISSING_KEY_EVENTS:
+                        err += "MISSING_KEY_EVENTS";
+                        break;
+                    case INVALID_SLEEP_SCORE:
+                        break;
+                    case NOT_ENOUGH_SLEEP_TIME:
+                        break;
+                    case UNEXEPECTED:
+                        break;
+                    case DATA_GAP_TOO_LARGE:
+                        break;
+                    case EVENTS_OUT_OF_ORDER:
+                        err += "EVENTS_OUT_OF_ORDER";
+                        break;
+                }
+
+                System.out.print(err + "\n");
+
+                return Optional.absent(); //something bad happened
             }
 
             return Optional.of(getOutput(timelineResult));
