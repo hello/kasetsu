@@ -6,6 +6,7 @@ import com.hello.alg.helpers.NeuralNetClient;
 import com.hello.alg.helpers.TimelineProcessorWrapper;
 import com.hello.alg.model.TimelineProcessorOutput;
 import com.hello.suripu.core.algorithmintegration.AlgorithmConfiguration;
+import com.hello.suripu.core.util.AlgorithmType;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 
@@ -39,7 +40,7 @@ public class TimelineNeuralNetRunner {
                 neuralNetUrl);
 
 
-        final TimelineProcessorWrapper timelineProcessorWrapper = new TimelineProcessorWrapper(neuralNetEndpoint);
+        final TimelineProcessorWrapper timelineProcessorWrapper = new TimelineProcessorWrapper(AlgorithmType.NEURAL_NET_FOUR_EVENT,neuralNetEndpoint);
 
         try(BufferedReader reader = Files.newBufferedReader(Paths.get(filename), StandardCharsets.UTF_8)) {
             String line;

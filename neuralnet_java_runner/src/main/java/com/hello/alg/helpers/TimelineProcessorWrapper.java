@@ -56,6 +56,7 @@ import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.models.device.v2.Sense;
+import com.hello.suripu.core.util.AlgorithmType;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeatureExtractionModelData;
 import com.hello.suripu.core.util.SleepHmmWithInterpretation;
@@ -88,7 +89,7 @@ public class TimelineProcessorWrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimelineProcessorWrapper.class);
 
-    private final NeuralNetEndpoint neuralNetEndpoint;
+    private final Map<String,NeuralNetEndpoint> neuralNetEndpoints = Maps.newHashMap();
     private final InstrumentedTimelineProcessor timelineProcessor;
 
     private AllSensorSampleList allSensorSampleList = new AllSensorSampleList();
@@ -181,7 +182,7 @@ public class TimelineProcessorWrapper {
                     .withWeight(weightInGrams)
                     .withGender(gender)
                     .build();
-            
+
             return com.google.common.base.Optional.of(account);
         }
 
@@ -558,8 +559,8 @@ public class TimelineProcessorWrapper {
     }
 
 
-    public TimelineProcessorWrapper( NeuralNetEndpoint neuralNetEndpoint) {
-        this.neuralNetEndpoint = neuralNetEndpoint;
+    public TimelineProcessorWrapper(final AlgorithmType netType, NeuralNetEndpoint neuralNetEndpoint) {
+        this.neuralNetEndpoints.put(netType.name(),neuralNetEndpoint);
 
         ObjectGraphRoot.getInstance().init(new RolloutLocalModule());
         features.clear();
@@ -572,7 +573,7 @@ public class TimelineProcessorWrapper {
                 new SenseDataDAODynamoDB(pairingDAO, deviceDataReadAllSensorsDAO, senseColorDAO, calibrationDAO),timeZoneHistoryDAO, priorsDAO,featureExtractionModelsDAO,
                 defaultModelEnsembleDAO,userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
-                neuralNetEndpoint,algorithmConfiguration, metric);
+                neuralNetEndpoints,algorithmConfiguration, metric);
     }
 
 
@@ -658,7 +659,7 @@ public class TimelineProcessorWrapper {
         heightInCm = 60;
         weightInGrams = 70*1000;
         if (data.hasUserInfo()) {
-            dateOfBirth = data.getUserInfo().getDateOfBirth();
+            dateOfBirth = data.getUserInfo().getDateOfBirth().split(" ")[0];
 
             switch (data.getUserInfo().getGender()) {
                 case OTHER:
@@ -704,6 +705,7 @@ public class TimelineProcessorWrapper {
         try {
 
             setFeature("neural_net_algorithm",true);
+            setFeature("neural_net_four_events_algorithm",true);
             setFeature("pill_pair_motion_filter",true);
             setFeature("outlier_filter",false);
             setFeature("feedback_in_timeline",false);
@@ -716,7 +718,7 @@ public class TimelineProcessorWrapper {
             setFeature("sleep_score_v4",false);
             setFeature("sleep_score_v5",true);
             setFeature("sleep_score_no_motion_enforcement",false);
-            setFeature("timeline_in_sleep_insights",false);
+            setFeature("timeline_in_sleep_insights",true);
 
             updateDAOs(TimelineSensorDataProtos.OneDaysSensorData.parseFrom(Base64.decodeBase64(base64)));
 
@@ -726,7 +728,6 @@ public class TimelineProcessorWrapper {
             if (timelineResult.timelines.isEmpty()) {
                 return Optional.absent();
             }
-
 
             return Optional.of(getOutput(timelineResult));
 
