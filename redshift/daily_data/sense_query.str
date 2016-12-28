@@ -1,0 +1,8 @@
+UNLOAD ('
+SELECT DATE_TRUNC(\'day\',local_utc_ts - INTERVAL \'12 hour\') as usernight,account_id,ts,offset_millis,ambient_light,wave_count,audio_peak_disturbances_db,audio_num_disturbances FROM prod_sense_data WHERE account_id IN ({0}) AND local_utc_ts >= \'{1}\' AND local_utc_ts < \'{2}\' ORDER BY account_id,ts;
+')
+TO
+'s3://hello-data/neuralnet/longterm/sense_{3}'
+CREDENTIALS
+'aws_access_key_id={4};aws_secret_access_key={5}' delimiter ',' PARALLEL OFF GZIP;
+

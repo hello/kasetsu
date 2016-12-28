@@ -1,0 +1,31 @@
+--get user pill data
+UNLOAD
+('
+WITH
+partner_map AS
+(SELECT p1.account_id AS my_id, p2.account_id AS partner_id
+FROM
+(SELECT account_id,device_id FROM account_device_map WHERE account_id IN ({0})) p1
+JOIN
+(SELECT account_id,device_id FROM account_device_map) p2
+ON p1.device_id = p2.device_id
+WHERE p1.account_id != p2.account_id)
+
+SELECT account_id,partner_map.partner_id,usernight,ts,offset_millis,svm_no_gravity, on_duration_seconds FROM
+(
+    (SELECT account_id,DATE_TRUNC(\'day\',local_utc_ts - INTERVAL \'12 hour\') as usernight,ts,offset_millis,svm_no_gravity, on_duration_seconds
+     FROM prod_pill_data
+     WHERE account_id IN (SELECT partner_id FROM partner_map)
+     AND local_utc_ts >= \'{1}\' AND local_utc_ts < \'{2}\'
+     ORDER BY account_id,ts) pill_data
+JOIN
+    partner_map
+ON
+    pill_data.account_id=partner_map.my_id
+
+) ORDER BY account_id,ts;
+')
+TO
+'s3://hello-data/neuralnet/longterm/partnerpill_{3}.csv'
+CREDENTIALS
+'aws_access_key_id={4};aws_secret_access_key={5}' delimiter ',' PARALLEL OFF GZIP;

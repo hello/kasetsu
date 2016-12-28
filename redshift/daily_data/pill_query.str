@@ -1,0 +1,12 @@
+--get user pill data
+UNLOAD
+('
+ SELECT account_id,DATE_TRUNC(\'day\',local_utc_ts - INTERVAL \'12 hour\') as usernight,ts,offset_millis,svm_no_gravity, on_duration_seconds 
+FROM prod_pill_data
+ WHERE account_id IN ({0}) AND local_utc_ts >= \'{1}\' AND local_utc_ts < \'{2}\'
+ ORDER BY account_id,ts;
+')
+TO
+'s3://hello-data/neuralnet/longterm/mypill_{3}.csv'
+CREDENTIALS
+'aws_access_key_id={4};aws_secret_access_key={5}' delimiter ',' PARALLEL OFF GZIP;
