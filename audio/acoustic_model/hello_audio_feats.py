@@ -20,7 +20,6 @@ def int16_unpack_array(bindata):
     return np.array(x)
 
 def get_feats_file(fname):
-    print fname
     f = open(fname,'r')
     x = int16_unpack_array(f.read())
     x = x.reshape(x.shape[0] / 40,40).astype(float)
