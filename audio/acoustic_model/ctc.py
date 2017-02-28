@@ -40,7 +40,7 @@ def ctc_lambda_func(args):
 
 def ctc_lambda_decode(args):
     y_pred,input_length = args
-    return K.ctc_decode(y_pred, input_length, greedy=False, beam_width=10, top_paths=1)
+    return K.ctc_decode(y_pred, input_length, greedy=True)#, beam_width=100, top_paths=1)
 
 
 def data_to_vecs(data,label_sequences):
@@ -91,6 +91,7 @@ def main():
     #get the data
     data,label_sequences,symbol_indices = hello_audio_feats.read_all_data('./data/')
     x,x_labels,x_in_lens,x_label_lens,max_symbols = data_to_vecs(data,label_sequences)
+    x = x.astype('float32')
     input_shape = (x.shape[1],x.shape[2])
     num_phonemes = len(symbol_indices)
 
@@ -103,27 +104,36 @@ def main():
     y_pred = Activation('softmax', name='SOFTMAX')(dense)
 
     #stuff for the loss function
-    input_length = Input(name='input_length', shape=[1], dtype='int32')
-    label_length = Input(name='label_length', shape=[1], dtype='int32')
-    labels = Input(name='LABELS', shape=[max_symbols], dtype='float32')
+    input_length = Input(name='input_length', shape=[1], dtype='int64')
+    label_length = Input(name='label_length', shape=[1], dtype='int64')
+    labels = Input(name='labels', shape=[max_symbols], dtype='float32')
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
-#    predict_out = Lambda(ctc_lambda_decode,output_shape=(1,),name='decode')([y_pred,input_length])
+
+
     #the model with the net and the loss function
-    model = Model(input=[input_data, labels, input_length, label_length], output=[loss_out])
+    model_loss = Model(input=[input_data, labels, input_length, label_length], output=[loss_out])
+    model_pred = Model(input=[input_data],output=[y_pred])
 
     #optimizer
     sgd = SGD(lr=0.02, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
 
     #compile!
-    model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
-
+    model_loss.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
+    
     filepath = 'test' + '_weights.{epoch:02d}-{val_loss:.2f}.h5'
     checkpoint_callback = keras.callbacks.ModelCheckpoint('weights.{epoch:03d}.h5', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
 
     #fit
-    model.fit([x,x_labels,x_in_lens,x_label_lens], [x_labels], batch_size=32, nb_epoch=2,callbacks = [checkpoint_callback])
+    model_loss.fit([x,x_labels,x_in_lens,x_label_lens], [x_labels], batch_size=32, nb_epoch=1,callbacks = [checkpoint_callback])
+
+    y = model_pred.predict(x)
+    y_tensor = K.variable(value=y)
+    in_len_tensor = K.variable(value=x_in_lens)
+    q = K.ctc_decode(y_tensor,in_len_tensor,greedy=True,beam_width=100, top_paths=1)[0][0]
+    print K.eval(q)
 
 
+    
 if __name__ == '__main__':
     main()
 
