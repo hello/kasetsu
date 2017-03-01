@@ -1,14 +1,16 @@
 from keras.preprocessing import sequence
 from keras.models import Model
-from keras.layers import TimeDistributed,Dense, Activation, Embedding,Input,LSTM,Lambda
+from keras.layers import TimeDistributed,Dense, Activation, Embedding,Input,LSTM,Lambda,Dropout
 import keras.callbacks
 
 from keras import backend as K
-from keras.optimizers import SGD,Adam
+from keras.optimizers import SGD,Adam,Adagrad
 import hello_audio_feats
 import sys
 import numpy as np
 import tensorflow as tf
+
+nb_epochs = 500
 
 '''
 ctc_batch_cost(y_true, y_pred, input_length, label_length)
@@ -100,14 +102,18 @@ def main():
     #the neural net
     input_data = Input(name='the_input', shape=input_shape, dtype='float32')
     lstm1 = LSTM(128,return_sequences=True,name='LSTM1')(input_data)
-    lstm2 = LSTM(64,return_sequences=True,name='LSTM2')(lstm1)
-    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(lstm2)
+    dlstm1 = Dropout(0.2)(lstm1)
+    lstm2 = LSTM(64,return_sequences=True,name='LSTM2')(dlstm1)
+    dlstm2 = Dropout(0.2)(lstm2)
+    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm2)
     y_pred = Activation('softmax', name='SOFTMAX')(dense)
 
     #stuff for the loss function
     output_shape = (x.shape[1],num_phonemes + 1)
     actual_mask = np.ones((x.shape[0],x.shape[1],num_phonemes + 1),dtype='float32')
     actual_mask[:,0:5,:] = 0.0
+    for i in range(x_in_lens.shape[0]):
+        actual_mask[i,x_in_lens[i]::] = 0.0
     
     input_length = Input(name='input_length', shape=[1], dtype='int64')
     label_length = Input(name='label_length', shape=[1], dtype='int64')
@@ -122,14 +128,13 @@ def main():
 
     #optimizer
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
-    adam = Adam()
     #compile!
-    model_loss.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=adam)
+    model_loss.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=Adagrad())
     
     checkpoint_callback = keras.callbacks.ModelCheckpoint('weights.{epoch:03d}.h5', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
 
     #fit
-    model_loss.fit([x,x_labels,x_in_lens,x_label_lens,actual_mask], [x_labels], batch_size=64, nb_epoch=20,callbacks = [checkpoint_callback])
+    model_loss.fit([x,x_labels,x_in_lens,x_label_lens,actual_mask], [x_labels], batch_size=64, nb_epoch=nb_epochs,callbacks = [checkpoint_callback])
 
     y = model_pred.predict(x)
     y_tensor = K.variable(value=y)
