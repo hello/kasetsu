@@ -24,7 +24,7 @@ def get_feats_file(fname):
     x = int16_unpack_array(f.read())
     x = x.reshape(x.shape[0] / 40,40).astype(float)
     f.close()
-    return x
+    return x / 4096.0
 
 
 def get_key_from_filename(fname):

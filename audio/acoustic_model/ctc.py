@@ -9,8 +9,9 @@ import hello_audio_feats
 import sys
 import numpy as np
 import tensorflow as tf
-
-nb_epochs = 500
+from matplotlib.pyplot import *
+nb_epochs = 10000
+the_batch_size=128
 
 '''
 ctc_batch_cost(y_true, y_pred, input_length, label_length)
@@ -67,7 +68,7 @@ def data_to_vecs(data,label_sequences):
     #dimensions are (sample, time, vec)
     nsamples = len(data)
     x = np.zeros((nsamples,max_time,feat_size))
-    labels = np.zeros((nsamples,max_symbols),dtype='int64')
+    labels = np.ones((nsamples,max_symbols),dtype='int64')*-1
     count = 0
 
     label_lengths = []
@@ -94,6 +95,10 @@ def main():
     #get the data
     data,label_sequences,symbol_indices = hello_audio_feats.read_all_data('./data/')
     x,x_labels,x_in_lens,x_label_lens,max_symbols = data_to_vecs(data,label_sequences)
+    symbol_lookup = {}
+    for key,val in symbol_indices.iteritems():
+        symbol_lookup[val] = key
+        
     x = x.astype('float32')
     input_shape = (x.shape[1],x.shape[2])
     num_phonemes = len(symbol_indices)
@@ -105,7 +110,9 @@ def main():
     dlstm1 = Dropout(0.2)(lstm1)
     lstm2 = LSTM(64,return_sequences=True,name='LSTM2')(dlstm1)
     dlstm2 = Dropout(0.2)(lstm2)
-    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm2)
+    lstm3 = LSTM(64,return_sequences=True,name='LSTM3')(dlstm2)
+    dlstm3 = Dropout(0.2)(lstm3)
+    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm3)
     y_pred = Activation('softmax', name='SOFTMAX')(dense)
 
     #stuff for the loss function
@@ -129,21 +136,29 @@ def main():
     #optimizer
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
     #compile!
-    model_loss.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=Adagrad())
+    model_loss.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
     
     checkpoint_callback = keras.callbacks.ModelCheckpoint('weights.{epoch:03d}.h5', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
 
     #fit
-    model_loss.fit([x,x_labels,x_in_lens,x_label_lens,actual_mask], [x_labels], batch_size=64, nb_epoch=nb_epochs,callbacks = [checkpoint_callback])
+    if len(sys.argv) >  2:
+        model_loss.load_weights(sys.argv[2])
 
-    y = model_pred.predict(x)
-    y_tensor = K.variable(value=y)
-    in_len_tensor = K.variable(value=x_in_lens)
-    q = K.ctc_decode(y_tensor,in_len_tensor,greedy=True,beam_width=100, top_paths=1)[0][0]
-    print K.eval(q)
+    if len(sys.argv) > 1 and sys.argv[1] == 'eval':
+        y = model_pred.predict(x) * actual_mask
 
+        y_tensor = K.variable(value=y)
+        in_len_tensor = K.variable(value=x_in_lens)
+        q = K.ctc_decode(y_tensor,in_len_tensor,greedy=False,beam_width=10, top_paths=1)[0][0]
+        print K.eval(q)
+        figure(1)
+        plot(y[0,:,:])
+        figure(2)
+        plot(y[100,:,:])
+        show()
+    else:
+	model_loss.fit([x,x_labels,x_in_lens,x_label_lens,actual_mask], [x_labels], batch_size=the_batch_size, nb_epoch=nb_epochs,callbacks = [checkpoint_callback])
 
-    
 if __name__ == '__main__':
     main()
 
