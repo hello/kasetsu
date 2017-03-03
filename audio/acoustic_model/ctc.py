@@ -106,13 +106,11 @@ def main():
     #symbolic graph stuff#
     #the neural net
     input_data = Input(name='the_input', shape=input_shape, dtype='float32')
-    lstm1 = LSTM(128,return_sequences=True,name='LSTM1')(input_data)
+    lstm1 = LSTM(512,return_sequences=True,name='LSTM1')(input_data)
     dlstm1 = Dropout(0.2)(lstm1)
-    lstm2 = LSTM(64,return_sequences=True,name='LSTM2')(dlstm1)
+    lstm2 = LSTM(256,return_sequences=True,name='LSTM2')(dlstm1)
     dlstm2 = Dropout(0.2)(lstm2)
-    lstm3 = LSTM(64,return_sequences=True,name='LSTM3')(dlstm2)
-    dlstm3 = Dropout(0.2)(lstm3)
-    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm3)
+    dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm2)
     y_pred = Activation('softmax', name='SOFTMAX')(dense)
 
     #stuff for the loss function
@@ -132,6 +130,7 @@ def main():
     #the model with the net and the loss function
     model_loss = Model(input=[input_data, labels, input_length, label_length,mask], output=[loss_out])
     model_pred = Model(input=[input_data],output=[y_pred])
+    model_pred.save('model_pred.h5')
 
     #optimizer
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
@@ -144,9 +143,9 @@ def main():
     if len(sys.argv) >  2:
         model_loss.load_weights(sys.argv[2])
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'eval':
+    if len(sys.argv) > 1 and sys.argv[1] == 'eval': 
         y = model_pred.predict(x) * actual_mask
-
+     
         y_tensor = K.variable(value=y)
         in_len_tensor = K.variable(value=x_in_lens)
         q = K.ctc_decode(y_tensor,in_len_tensor,greedy=False,beam_width=10, top_paths=1)[0][0]

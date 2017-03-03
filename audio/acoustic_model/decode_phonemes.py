@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib.pyplot import *
 
 istart = 0
-aggro_mode = True
+aggro_mode = False
 
 symbol_indices = json.load(open('symbols.json','r'))
 symbol_lookup = {-1 : '' }

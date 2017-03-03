@@ -111,7 +111,7 @@ def main():
 
     lstm2_forward = LSTM(128,return_sequences=True,name='LSTM2_FORWARD',init='he_normal')(dlstm1)
     lstm2_backward = LSTM(128,return_sequences=True,name='LSTM2_BACKWARD',init='he_normal',go_backwards=True)(dlstm1)
-    lstm2_merged = merge([lstm2_forward, lstm2_backward], mode='concat') #keep the forward/backwards info separate, for some reason
+    lstm2_merged = merge([lstm2_forward, lstm2_backward], mode='sum')
     dlstm2 = Dropout(0.2)(lstm2_merged)
  
     dense = TimeDistributed(Dense(num_phonemes + 1,name='DENSE'))(dlstm2)
@@ -121,7 +121,6 @@ def main():
     output_shape = (x.shape[1],num_phonemes + 1)
     actual_mask = np.ones((x.shape[0],x.shape[1],num_phonemes + 1),dtype='float32')
     actual_mask[:,0:5,:] = 0.0
-    actual_mask[:,-5:-1,:] = 0.0
     for i in range(x_in_lens.shape[0]):
         actual_mask[i,x_in_lens[i]::] = 0.0
     
